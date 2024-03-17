@@ -1,0 +1,32 @@
+{
+    "name": "@helios-lang/contract-utils",
+    "version": "0.1.0",
+    "description": "Convenience and type-safety utilities for using Helios validators from within Typescript",
+    "main": "src/index.js",
+    "type": "module",
+    "bin": {
+        "hl2ts": "src/hl2ts.js"
+    },
+    "scripts": {
+        "build": "npx tsc",
+        "clean": "find src/ -name *.d.ts* | xargs rm",
+        "prettify": "npx prettier . --write",
+        "test": "npm run test:pretty && npm run test:types && npm run test:suite",
+        "test:pretty": "npx prettier . --check",
+        "test:suite": "node --test  --experimental-test-coverage",
+        "test:types": "npx tsc -p jsconfig.json --noEmit"
+    },
+    "author": "Christian Schmitz",
+    "license": "BSD-3-Clause",
+    "devDependencies": {
+        "@types/node": "^20.11.24",
+        "prettier": "^3.1.0",
+        "typescript": "^5.3.2"
+    },
+    "prettier": {
+        "trailingComma": "none",
+        "tabWidth": 4,
+        "semi": false,
+        "singleQuote": false
+    }
+}
