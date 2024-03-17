@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 
+import { loadLibrary } from "./lib/index.js"
+
 async function main() {
     console.log("hl2ts")
 
-    console.log(eval(`import("@hyperionbt/helios")`))
+    const lib = await loadLibrary()
+
+    console.log(lib.version)
 }
 
 main()
