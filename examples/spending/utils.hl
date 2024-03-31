@@ -1,0 +1,5 @@
+module utils
+
+func compare(a: String, b: String) -> Bool {
+    a == b
+}

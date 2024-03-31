@@ -1,5 +1,110 @@
 /**
  * @typedef {import("./Lib.js").Lib} Lib
+ * @typedef {import("./Lib.js").SourceDetails} SourceDetails
+ */
+
+/**
+ * @typedef {import("../codegen/index.js").Module} ModuleDetails
+ * @typedef {import("../codegen/index.js").Validator} ValidatorDetails
+ * @typedef {import("../codegen/index.js").TypeSchema} InternalTypeDetails
+ */
+
+/**
+ * @typedef {{
+ *   [name: string]: string[]
+ * }} DagDependencies
+ */
+
+/**
+ * @typedef {{
+ * }} HashType
+ */
+
+/**
+ * @typedef {{
+ *   includes: (m: string) => boolean
+ * }} IR
+ */
+
+/**
+ * @typedef {{
+ *   name: string
+ * }} EnumStatement
+ */
+
+/**
+ * @typedef {{
+ *   name: string
+ * }} StructStatement
+ */
+
+/**
+ * @typedef {StructStatement | EnumStatement | any} Statement
+ */
+
+/**
+ * @typedef {{
+ *   name: {value: string}
+ *   filterDependencies: (all: Module[]) => Module[]
+ *   statements: Statement[]
+ * }} Module
+ */
+/**
+ * @typedef {{
+ *   name: string
+ *   toIR: (ctx: any, extra: Map<string, IR>) => IR
+ *   types: UserTypes
+ *   mainImportedModules: Module[]
+ *   mainModule: Module
+ *   mainArgTypes: DataType[]
+ * }} Program
+ */
+
+/**
+ * @typedef {{
+ *   typeDetails?: TypeDetails
+ * }} DataType
+ */
+
+/**
+ * @typedef {{
+ *   type:  string
+ * } | {
+ *   type:     "List"
+ *   itemType: TypeSchema
+ * } | {
+ *   type:      "Map"
+ *   keyType:   TypeSchema
+ *   valueType: TypeSchema
+ * } | {
+ *   type:     "Option"
+ *   someType: TypeSchema
+ * } | {
+ *   type:       "Struct"
+ *   fieldTypes: NamedTypeSchema[]
+ * } | {
+ *   type:         "Enum"
+ *   variantTypes: {name: string, fieldTypes: NamedTypeSchema[]}[]
+ * }} TypeSchema
+ */
+
+/**
+ * @typedef {{
+ * 	 name: string
+ * } & TypeSchema} NamedTypeSchema
+ */
+
+/**
+ * @typedef {{
+ *   inputType: string
+ *   outputType: string
+ *   internalType: TypeSchema
+ * }} TypeDetails
+ */
+
+/**
+ * @typedef {{
+ * }} UserTypes
  */
 
 /**
@@ -7,7 +112,7 @@
  */
 export class Lib_v0_16 {
     /**
-     * @param {any} lib 
+     * @param {any} lib
      */
     constructor(lib) {
         this.lib = lib
@@ -18,5 +123,212 @@ export class Lib_v0_16 {
      */
     get version() {
         return this.lib.VERSION
+    }
+
+    /**
+     * @private
+     * @param {string} purpose
+     * @returns {HashType}
+     */
+    getValidatorType(purpose) {
+        switch (purpose) {
+            case "spending":
+                return this.lib.ValidatorHashType
+            case "minting":
+                return this.lib.MintingPolicyHashType
+            case "staking":
+                return this.lib.StakingValidatorHashType
+            default:
+                throw new Error("unhandled validator type")
+        }
+    }
+
+    /**
+     * @private
+     * @param {SourceDetails[]} validators
+     * @param {SourceDetails[]} modules
+     * @param {{[name: string]: HashType}} validatorTypes
+     * @returns {Program[]}
+     */
+    createPrograms(validators, modules, validatorTypes) {
+        const moduleSrcs = modules.map((m) => m.sourceCode)
+
+        return validators.map((v) =>
+            this.lib.Program.newInternal(
+                v.sourceCode,
+                moduleSrcs,
+                validatorTypes,
+                {
+                    allowPosParams: false,
+                    invertEntryPoint: true
+                }
+            )
+        )
+    }
+
+    /**
+     * @private
+     * @param {Program} program
+     * @param {{[name: string]: HashType}} validatorTypes
+     * @returns {IR}
+     */
+    toTestIR(program, validatorTypes) {
+        const extra = new Map()
+
+        for (let validatorName in validatorTypes) {
+            extra.set(
+                `__helios__scripts__${validatorName}`,
+                new this.lib.IR(`#`)
+            )
+        }
+
+        return program.toIR(new this.lib.ToIRContext(false), extra)
+    }
+
+    /**
+     * @private
+     * @param {Program[]} validators
+     * @param {{[name: string]: HashType}} validatorTypes
+     * @returns {DagDependencies}
+     */
+    buildDagDependencies(validators, validatorTypes) {
+        /**
+         * @type {DagDependencies}
+         */
+        const dag = {}
+
+        validators.forEach((v) => {
+            const ir = this.toTestIR(v, validatorTypes)
+
+            dag[v.name] = Object.keys(validatorTypes).filter((name) =>
+                ir.includes(`__helios__scripts__${name}`)
+            )
+        })
+
+        return dag
+    }
+
+    /**
+     * @param {{[name: string]: SourceDetails}} validators
+     * @param {{[name: string]: SourceDetails}} modules
+     * @returns {{modules: {[name: string]: ModuleDetails}, validators: {[name: string]: ValidatorDetails}}}
+     */
+    typeCheck(validators, modules) {
+        const validatorTypes = Object.fromEntries(
+            Object.values(validators).map((v) => [
+                v.name,
+                this.getValidatorType(v.purpose)
+            ])
+        )
+
+        // create validator programs
+        let validatorPrograms = this.createPrograms(
+            Object.values(validators),
+            Object.values(modules),
+            validatorTypes
+        )
+
+        // build dag
+        const dag = this.buildDagDependencies(validatorPrograms, validatorTypes)
+
+        // sort the validators according to the dag, a valid order should exist
+        // validatorPrograms = this.sortValidators(validatorPrograms, dag)
+
+        /**
+         * @type {{[name: string]: ValidatorDetails}}
+         */
+        const validatorDetails = {}
+
+        /**
+         * @type {{[name: string]: ModuleDetails}}
+         */
+        const moduleDetails = {}
+
+        for (let v of validatorPrograms) {
+            const hashDependencies = dag[v.name]
+            const allModules = v.mainImportedModules
+            const moduleDepedencies = v.mainModule
+                .filterDependencies(allModules)
+                .map((m) => m.name.value)
+            const purpose = validators[v.name].purpose
+
+            validatorDetails[v.name] = {
+                name: v.name,
+                purpose: validators[v.name].purpose,
+                sourceCode: validators[v.name].sourceCode,
+                hashDependencies: hashDependencies,
+                moduleDepedencies: moduleDepedencies,
+                types: {},
+                Redeemer: this.getInternalTypeDetails(
+                    v.mainArgTypes[purpose == "spending" ? 1 : 0]
+                ),
+                Datum:
+                    purpose == "spending"
+                        ? this.getInternalTypeDetails(v.mainArgTypes[0])
+                        : undefined
+            }
+
+            for (let m of v.mainImportedModules) {
+                if (!(m.name.value in moduleDetails)) {
+                    moduleDetails[m.name.value] = {
+                        name: m.name.value,
+                        purpose: "module",
+                        sourceCode: modules[m.name.value].sourceCode,
+                        moduleDepedencies: m
+                            .filterDependencies(allModules)
+                            .map((m) => m.name.value),
+                        types: {} // not yet exported
+                    }
+                }
+            }
+        }
+
+        return { modules: moduleDetails, validators: validatorDetails }
+    }
+
+    /**
+     * @param {TypeSchema} it
+     * @returns {InternalTypeDetails}
+     */
+    convertInternalType(it) {
+        if ("itemType" in it) {
+            return { listItemType: this.convertInternalType(it.itemType) }
+        } else if ("someType" in it) {
+            return { optionSomeType: this.convertInternalType(it.someType) }
+        } else if ("fieldTypes" in it) {
+            return {
+                structFieldTypes: it.fieldTypes.map((ft) => ({
+                    name: ft.name,
+                    type: this.convertInternalType(ft)
+                }))
+            }
+        } else if ("keyType" in it) {
+            return {
+                mapKeyType: this.convertInternalType(it.keyType),
+                mapValueType: this.convertInternalType(it.valueType)
+            }
+        } else if ("variantTypes" in it) {
+            return {
+                enumVariantTypes: it.variantTypes.map((vt) => ({
+                    name: vt.name,
+                    fieldTypes: vt.fieldTypes.map((ft) => ({
+                        name: ft.name,
+                        type: this.convertInternalType(ft)
+                    }))
+                }))
+            }
+        } else {
+            return { primitiveType: it.type }
+        }
+    }
+
+    /**
+     * @param {DataType} dt
+     * @returns {InternalTypeDetails}
+     */
+    getInternalTypeDetails(dt) {
+        const it = dt?.typeDetails?.internalType ?? { type: "Any" }
+
+        return this.convertInternalType(it)
     }
 }
