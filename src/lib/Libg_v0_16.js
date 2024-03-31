@@ -327,8 +327,16 @@ export class Lib_v0_16 {
      * @returns {InternalTypeDetails}
      */
     getInternalTypeDetails(dt) {
-        const it = dt?.typeDetails?.internalType ?? { type: "Any" }
+        try {
+            const it = dt?.typeDetails?.internalType ?? { type: "Any" }
 
-        return this.convertInternalType(it)
+            return this.convertInternalType(it)
+        } catch (e) {
+            if (e.message.includes("Data")) {
+                return {primitiveType: "Data"}
+            } else {
+                throw e
+            }
+        }
     }
 }
