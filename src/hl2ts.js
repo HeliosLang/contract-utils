@@ -109,7 +109,7 @@ function preparseFiles(files) {
         const sourceCode = translateImportPaths(files[path], (relPath) => {
             const absPath = resolve(join(dirname(path), relPath))
 
-            const d = partialSources[absPath]
+            const d = partialSources[absPath] ?? partialSources[absPath + ".hl"]
 
             if (!d) {
                 throw new Error(`'${relPath}' not found`)
