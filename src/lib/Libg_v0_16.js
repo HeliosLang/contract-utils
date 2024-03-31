@@ -333,7 +333,7 @@ export class Lib_v0_16 {
             return this.convertInternalType(it)
         } catch (e) {
             if (e.message.includes("Data")) {
-                return {primitiveType: "Data"}
+                return { primitiveType: "Data" }
             } else {
                 throw e
             }

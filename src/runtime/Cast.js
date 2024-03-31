@@ -91,6 +91,8 @@ function schemaToUplc(schema, x) {
             case "Credential":
             case "PaymentCredential":
                 return Credential.fromAlike(x).toUplcData()
+            case "Data":
+                return x
             case "DatumHash":
                 return DatumHash.fromAlike(x).toUplcData()
             case "DCert":
@@ -199,6 +201,8 @@ function uplcToSchema(schema, data) {
                 return ByteArrayData.expect(data).bytes
             case "Credential":
                 return Credential.fromUplcData(data)
+            case "Data":
+                return data
             case "DCert":
                 throw new Error(
                     "can't convert UplcData back into DCert (significant loss of information)"

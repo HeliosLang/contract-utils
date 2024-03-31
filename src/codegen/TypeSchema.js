@@ -46,6 +46,8 @@ export function genTypes(schema) {
                 return ["number[]", "number[]"]
             case "Credential":
                 return ["Credential", "Credential | PubKeyHash | ValidatorHash"]
+            case "Data":
+                return ["UplcData", "UplcData"]
             case "Duration":
                 return ["bigint", "bigint | number"]
             case "Int":

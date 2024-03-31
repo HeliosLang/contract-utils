@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { promises, readFileSync } from "node:fs"
+import { promises, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { readHeader, translateImportPaths } from "@helios-lang/compiler-utils"
 import { TypescriptWriter } from "./codegen/index.js"
@@ -8,22 +8,15 @@ import { loadLibrary } from "./lib/index.js"
 
 /**
  * @typedef {import("./lib/Lib.js").Lib} Lib
- */
-
-/**
  * @typedef {import("./lib/Lib.js").SourceDetails} SourceDetails
- */
-
-/**
  * @typedef {import("./lib/Lib.js").ModuleDetails} ModuleDetails
- */
-
-/**
  * @typedef {import("./lib/Lib.js").ValidatorDetails} ValidatorDetails
  */
 
 async function main() {
     console.log("hl2ts")
+
+    const { outDir } = parseArgs(process.argv)
 
     const lib = await loadLibrary()
     const filePaths = await listFiles(process.cwd(), ".hl")
@@ -32,16 +25,36 @@ async function main() {
     const { modules, validators } = typeCheck(lib, sources)
 
     const w = new TypescriptWriter()
-    console.log(modules, validators)
+
     w.writeModules(modules)
     w.writeValidators(validators)
     const [js, dts] = w.finalize()
 
-    console.log(js)
-    console.log(dts)
+    const jsPath = join(outDir, "index.js")
+    const dtsPath = join(outDir, "index.d.ts")
+
+    writeFileSync(jsPath, js)
+    writeFileSync(dtsPath, dts)
 }
 
 main()
+
+/**
+ * @param {string[]} args
+ * @returns {{outDir: string}}
+ */
+function parseArgs(args) {
+    let i = args.indexOf("-o")
+    if (i != -1) {
+        if (i == args.length - 1) {
+            throw new Error("expected argument after -o")
+        }
+
+        return { outDir: resolve(args[i + 1]) }
+    } else {
+        return { outDir: process.cwd() }
+    }
+}
 
 /**
  * @param {string} dir
