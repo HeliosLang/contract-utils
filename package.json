@@ -3,12 +3,14 @@
     "version": "0.1.6",
     "description": "Convenience and type-safety utilities for using Helios validators from within Typescript",
     "main": "src/index.js",
+    "types": "types/index.d.ts",
     "type": "module",
     "bin": {
         "hl2ts": "src/hl2ts.js"
     },
     "scripts": {
-        "build": "npx tsc",
+        "build": "npm run build:types",
+        "build:types": "npx tsc -p jsconfig.json --noEmit false --emitDeclarationOnly",
         "clean": "find src/ -name *.d.ts* | xargs rm",
         "prettify": "npx prettier . --write",
         "test": "npm run test:pretty && npm run test:types && npm run test:suite",

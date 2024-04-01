@@ -26,8 +26,10 @@ async function main() {
 
     const w = new TypescriptWriter()
 
+    w.writeHeaders()
     w.writeModules(modules)
     w.writeValidators(validators)
+    
     const [js, dts] = w.finalize()
 
     const jsPath = join(outDir, "index.js")
