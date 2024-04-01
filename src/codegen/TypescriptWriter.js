@@ -98,6 +98,14 @@ export class TypescriptWriter {
         )
     }
 
+    writeHeaders() {
+        this.wjs.writeLine("import { Cast } from \"@helios-lang/contract-utils\";")
+
+        this.wdts.writeLine("import type {UplcData} from \"@helios-lang/ledger\";")
+        this.wdts.writeLine("import { Address, AssetClass, Credential, DatumHash, MintingPolicyHash, PubKeyHash, StakingCredential, StakingHash, StakingValidatorHash, TimeRange, TxId, TxOutputDatum, ValidatorHash, Value} from \"@helios-lang/ledger\";")
+        this.wdts.writeLine("import { Cast } from \"@helios-lang/contract-utils\";")
+    }
+
     /**
      * @param {{[name: string]: Module}} ms
      */

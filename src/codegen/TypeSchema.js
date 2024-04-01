@@ -81,7 +81,7 @@ export function genTypes(schema) {
             case "String":
                 return ["string", "string"]
             case "Time":
-                return ["Date", "Data | bigint | number"]
+                return ["Date", "Date | bigint | number"]
             case "TimeRange":
                 return [
                     "TimeRange",
