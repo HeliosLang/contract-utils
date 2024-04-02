@@ -4,7 +4,6 @@ log.*
 *.log
 .prettierignore
 .vscode
-jsconfig.json
 *.test.js
 *.test.d.ts
 *.test.d.ts.map

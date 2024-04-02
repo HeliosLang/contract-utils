@@ -1,0 +1,5 @@
+minting match_string_policy
+
+func main(redeemer: String, _) -> Bool {
+    redeemer == "Hello"
+}

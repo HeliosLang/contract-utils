@@ -1,8 +1,23 @@
 /**
  * @typedef {{
+ *   otherValidators: {[name: string]: {purpose: string, hash: string}},
+ *   dependsOnOwnHash?: boolean,
+ *   ownHash?: string,
+ *   optimize: boolean
+ * }} CompileOptions
+ */
+
+/**
+ * @typedef {{
+ *   cborHex: string
+ * }} CompileOutput
+ */
+/**
+ * @typedef {{
  *   version: string
  *   typeCheck: (validators: {[name: string]: SourceDetails}, modules: {[name: string]: SourceDetails}) => ({
  * modules: {[name: string]: ModuleDetails}, validators: {[name: string]: ValidatorDetails}})
+ *   compile: (main: string, modules: string[], options: CompileOptions) => CompileOutput
  * }} Lib
  */
 

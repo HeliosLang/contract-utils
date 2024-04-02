@@ -1,1 +1,1 @@
-export { Cast } from "./runtime/index.js"
+export { Cast, ContractContextBuilder } from "./runtime/index.js"

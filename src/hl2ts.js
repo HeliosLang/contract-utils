@@ -29,7 +29,7 @@ async function main() {
     w.writeHeaders()
     w.writeModules(modules)
     w.writeValidators(validators)
-    
+
     const [js, dts] = w.finalize()
 
     const jsPath = join(outDir, "index.js")

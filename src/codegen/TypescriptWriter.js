@@ -82,8 +82,8 @@ export class TypescriptWriter {
 }
 `,
             `export const ${v.name}: {
-    $name: string
-    $purpose: string
+    $name: "${v.name}"
+    $purpose: "${v.purpose}"
     $sourceCode: string
     $dependencies: [${v.moduleDepedencies.map((d) => `typeof ${d}`).join(", ")}]
     $hashDependencies: [${v.hashDependencies
@@ -99,11 +99,19 @@ export class TypescriptWriter {
     }
 
     writeHeaders() {
-        this.wjs.writeLine("import { Cast } from \"@helios-lang/contract-utils\";")
+        this.wjs.writeLine(
+            'import { Cast } from "@helios-lang/contract-utils";'
+        )
 
-        this.wdts.writeLine("import type {UplcData} from \"@helios-lang/ledger\";")
-        this.wdts.writeLine("import { Address, AssetClass, Credential, DatumHash, MintingPolicyHash, PubKeyHash, StakingCredential, StakingHash, StakingValidatorHash, TimeRange, TxId, TxOutputDatum, ValidatorHash, Value} from \"@helios-lang/ledger\";")
-        this.wdts.writeLine("import { Cast } from \"@helios-lang/contract-utils\";")
+        this.wdts.writeLine(
+            'import type {UplcData} from "@helios-lang/ledger";'
+        )
+        this.wdts.writeLine(
+            'import { Address, AssetClass, Credential, DatumHash, MintingPolicyHash, PubKeyHash, StakingCredential, StakingHash, StakingValidatorHash, TimeRange, TxId, TxOutputDatum, ValidatorHash, Value} from "@helios-lang/ledger";'
+        )
+        this.wdts.writeLine(
+            'import { Cast } from "@helios-lang/contract-utils";'
+        )
     }
 
     /**

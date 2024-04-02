@@ -36,8 +36,8 @@ import {
  */
 
 /**
- * @template TStrict
- * @template TPermissive
+ * @template [TStrict=UplcData]
+ * @template [TPermissive=UplcData]
  */
 export class Cast {
     /**
@@ -57,7 +57,7 @@ export class Cast {
      * @param {UplcData} data
      * @returns {TStrict}
      */
-    fromUplc(data) {
+    fromUplcData(data) {
         return uplcToSchema(this.schema, data)
     }
 
@@ -65,7 +65,7 @@ export class Cast {
      * @param {TPermissive} x
      * @returns {UplcData}
      */
-    toUplc(x) {
+    toUplcData(x) {
         return schemaToUplc(this.schema, x)
     }
 }
@@ -167,8 +167,11 @@ function schemaToUplc(schema, x) {
         const tag = schema.enumVariantTypes.findIndex(
             (v) => v.name == variantName
         )
-        if (tag != -1) {
-            throw new Error("invalid variant")
+
+        if (tag == -1) {
+            throw new Error(
+                `invalid variant ${variantName} (expected: ${schema.enumVariantTypes.map((v) => v.name).join(", ")})`
+            )
         }
 
         return new ConstrData(

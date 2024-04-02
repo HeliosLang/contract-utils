@@ -6,3 +6,4 @@ log.*
 *.log
 examples/**/*.json
 examples/**/*.js
+!examples/**/contract.js
