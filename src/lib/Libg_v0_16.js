@@ -358,6 +358,10 @@ export class Lib_v0_16 {
             })
         )
 
+        if (options.dependsOnOwnHash) {
+            otherValidatorTypes[name] = this.getValidatorType(purpose)
+        }
+
         const program = this.lib.Program.newInternal(
             main,
             modules,

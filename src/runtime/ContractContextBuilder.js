@@ -223,6 +223,8 @@ export class ContractContextBuilder {
 
             const modules = collectModules(validator)
 
+            const otherValidators = getOtherValidators()
+
             const { cborHex: optimizedCborHex } = lib.compile(
                 validator.$sourceCode,
                 Array.from(modules.values()),
