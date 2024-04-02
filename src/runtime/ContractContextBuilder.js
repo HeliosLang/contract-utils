@@ -158,14 +158,13 @@ export class ContractContextBuilder {
             let stack = validator.$dependencies.slice()
 
             let m = stack.pop()
+
             while (m) {
-                if (result.has(m.$name)) {
-                    continue
+                if (!result.has(m.$name)) {
+                    result.set(m.$name, m.$sourceCode)
+
+                    stack = stack.concat(m.$dependencies)
                 }
-
-                result.set(m.$name, m.$sourceCode)
-
-                stack = stack.concat(m.$dependencies)
 
                 m = stack.pop()
             }
