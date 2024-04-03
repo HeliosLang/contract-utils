@@ -1,3 +1,6 @@
+import { bytesToHex } from "@helios-lang/compiler"
+import { readHeader } from "@helios-lang/compiler-utils"
+
 /**
  * @typedef {import("../codegen/index.js").Module} ModuleDetails
  * @typedef {import("../codegen/index.js").Validator} ValidatorDetails
@@ -5,12 +8,9 @@
  * @typedef {import("./Lib.js").CompileOptions} CompileOptions
  * @typedef {import("./Lib.js").CompileOutput} CompileOutput
  * @typedef {import("./Lib.js").Lib} Lib
+ * @typedef {import("./Lib.js").LibOptions} LibOptions
  * @typedef {import("./Lib.js").SourceDetails} SourceDetails
  */
-
-import { bytesToHex } from "@helios-lang/compiler"
-import { readHeader } from "@helios-lang/compiler-utils"
-import { UplcProgramV1 } from "@helios-lang/uplc"
 
 /**
  * @typedef {{
@@ -116,9 +116,15 @@ import { UplcProgramV1 } from "@helios-lang/uplc"
 export class Lib_v0_16 {
     /**
      * @param {any} lib
+     * @param {LibOptions} options
      */
-    constructor(lib) {
+    constructor(lib, { isMainnet, checkCasts }) {
         this.lib = lib
+
+        this.lib.config.set({
+            IS_TESTNET: !(isMainnet ?? false),
+            CHECK_CASTS: checkCasts ?? false
+        })
     }
 
     /**

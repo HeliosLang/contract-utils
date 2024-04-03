@@ -13,6 +13,7 @@ import { ContractContext } from "./ContractContext.js"
 
 /**
  * @typedef {import("../lib/index.js").Lib} Lib
+ * @typedef {import("../lib/index.js").LibOptions} LibOptions
  * @typedef {import("./ContractContext.js").Validator} CompiledValidator
  */
 
@@ -121,8 +122,8 @@ export class ContractContextBuilder {
     }
 
     /**
-     *
      * @param {Option<{[name: string]: string}>} expectedHashes
+     * @param {LibOptions} options
      * @returns {{
      *   [K in keyof T]:
      *     T[K]["$purpose"] extends "spending" ? ValidatorHash<
@@ -147,8 +148,8 @@ export class ContractContextBuilder {
      *     > : never
      * }}
      */
-    build(expectedHashes = None) {
-        const lib = loadLibrary()
+    build(expectedHashes = None, options = {}) {
+        const lib = loadLibrary(options)
 
         const allValidatorTypes = this.getValidatorTypes(lib)
 

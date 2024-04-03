@@ -14,6 +14,14 @@
  *   prettyIR: string
  * }} CompileOutput
  */
+
+/**
+ * @typedef {{
+ *   isMainnet?: boolean
+ *   checkCasts?: boolean
+ * }} LibOptions
+ */
+
 /**
  * @typedef {{
  *   version: string
