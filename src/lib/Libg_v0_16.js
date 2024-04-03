@@ -130,7 +130,8 @@ export class Lib_v0_16 {
 
         this.lib.config.set({
             IS_TESTNET: !(options?.isMainnet ?? false),
-            CHECK_CASTS: options?.checkCasts ?? false
+            CHECK_CASTS: options?.checkCasts ?? false,
+            IGNORE_UNEVALUATED_CONSTANTS: true
         })
 
         this.options = options
