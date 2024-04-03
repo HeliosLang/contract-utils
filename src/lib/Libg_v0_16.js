@@ -406,7 +406,7 @@ export class Lib_v0_16 {
         for (let other in otherValidators) {
             const key = `__helios__scripts__${other}`
 
-            extra.set(key, new IR(`#${otherValidators[other]}`))
+            extra.set(key, new IR(`#${otherValidators[other].hash}`))
         }
 
         const optimize = options.optimize
