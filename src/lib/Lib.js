@@ -19,6 +19,7 @@
  * @typedef {{
  *   isMainnet?: boolean
  *   checkCasts?: boolean
+ *   moduleOrder?: string[]
  * }} LibOptions
  */
 

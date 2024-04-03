@@ -115,16 +115,25 @@ import { readHeader } from "@helios-lang/compiler-utils"
  */
 export class Lib_v0_16 {
     /**
+     * @private
+     * @readonly
+     * @type {LibOptions}
+     */
+    options
+
+    /**
      * @param {any} lib
      * @param {LibOptions} options
      */
-    constructor(lib, { isMainnet, checkCasts }) {
+    constructor(lib, options) {
         this.lib = lib
 
         this.lib.config.set({
-            IS_TESTNET: !(isMainnet ?? false),
-            CHECK_CASTS: checkCasts ?? false
+            IS_TESTNET: !(options?.isMainnet ?? false),
+            CHECK_CASTS: options?.checkCasts ?? false
         })
+
+        this.options = options
     }
 
     /**
@@ -346,6 +355,39 @@ export class Lib_v0_16 {
                 throw e
             }
         }
+    }
+
+    /**
+     * @param {string[]} modules
+     * @returns {string[]}
+     */
+    sortModules(modules) {
+        if (!this.options?.moduleOrder) {
+            return modules
+        }
+
+        const n = modules.length
+        const tmp = modules.slice()
+
+        tmp.sort((a, b) => {
+            const nameA = readHeader(a)[1]
+            const nameB = readHeader(b)[1]
+
+            let iA = this.options.moduleOrder?.indexOf(nameA)
+            let iB = this.options.moduleOrder?.indexOf(nameB)
+
+            if (iA === undefined || iA == -1) {
+                iA = n
+            }
+
+            if (iB === undefined || iB == -1) {
+                iB = n
+            }
+
+            return iA - iB
+        })
+
+        return tmp
     }
 
     /**
