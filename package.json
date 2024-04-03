@@ -1,6 +1,6 @@
 {
     "name": "@helios-lang/contract-utils",
-    "version": "0.1.17",
+    "version": "0.1.18",
     "description": "Convenience and type-safety utilities for using Helios validators from within Typescript",
     "main": "src/index.js",
     "types": "types/index.d.ts",
