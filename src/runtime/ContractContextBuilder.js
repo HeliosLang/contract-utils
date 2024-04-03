@@ -12,6 +12,7 @@ import { Cast } from "./Cast.js"
 import { ContractContext } from "./ContractContext.js"
 
 /**
+ * @typedef {import("../lib/index.js").Lib} Lib
  * @typedef {import("./ContractContext.js").Validator} CompiledValidator
  */
 
@@ -107,6 +108,19 @@ export class ContractContextBuilder {
     }
 
     /**
+     * @private
+     * @param {Lib} lib
+     * @returns {{[name: string]: any}}
+     */
+    getValidatorTypes(lib) {
+        return Object.fromEntries(
+            Object.entries(this.validators).map(([name, v]) => {
+                return [name, lib.getValidatorType(v.$purpose)]
+            })
+        )
+    }
+
+    /**
      *
      * @param {Option<{[name: string]: string}>} expectedHashes
      * @returns {{
@@ -135,6 +149,8 @@ export class ContractContextBuilder {
      */
     build(expectedHashes = None) {
         const lib = loadLibrary()
+
+        const allValidatorTypes = this.getValidatorTypes(lib)
 
         /**
          * @type {{[name: string]: (
@@ -223,14 +239,13 @@ export class ContractContextBuilder {
 
             const modules = collectModules(validator)
 
-            const otherValidators = getOtherValidators()
-
             const { cborHex: optimizedCborHex } = lib.compile(
                 validator.$sourceCode,
                 Array.from(modules.values()),
                 {
                     optimize: true,
                     otherValidators: getOtherValidators(),
+                    allValidatorTypes: allValidatorTypes,
                     dependsOnOwnHash: validator.$dependsOnOwnHash
                 }
             )
@@ -276,6 +291,7 @@ export class ContractContextBuilder {
                 {
                     optimize: false,
                     otherValidators: getOtherValidators(),
+                    allValidatorTypes: allValidatorTypes,
                     ownHash: validator.$dependsOnOwnHash ? ownHash : undefined
                 }
             )

@@ -129,7 +129,6 @@ export class Lib_v0_16 {
     }
 
     /**
-     * @private
      * @param {string} purpose
      * @returns {HashType}
      */
@@ -352,15 +351,7 @@ export class Lib_v0_16 {
     compile(main, modules, options) {
         const [purpose, name] = readHeader(main)
         const otherValidators = options.otherValidators ?? {}
-        const otherValidatorTypes = Object.fromEntries(
-            Object.keys(otherValidators).map((k) => {
-                return [k, this.getValidatorType(otherValidators[k].purpose)]
-            })
-        )
-
-        if (options.dependsOnOwnHash) {
-            otherValidatorTypes[name] = this.getValidatorType(purpose)
-        }
+        const otherValidatorTypes = options.allValidatorTypes
 
         const program = this.lib.Program.newInternal(
             main,
