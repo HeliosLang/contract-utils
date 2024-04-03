@@ -229,7 +229,7 @@ export class ContractContextBuilder {
         function buildValidator(validator) {
             const name = validator.$name
 
-            if (name in validator) {
+            if (name in validators) {
                 return
             }
 
@@ -239,7 +239,7 @@ export class ContractContextBuilder {
 
             const modules = collectModules(validator)
 
-            const { cborHex: optimizedCborHex } = lib.compile(
+            const { cborHex: optimizedCborHex, prettyIR } = lib.compile(
                 validator.$sourceCode,
                 Array.from(modules.values()),
                 {
@@ -256,6 +256,8 @@ export class ContractContextBuilder {
 
             if (expectedHashes && name in expectedHashes) {
                 if (expectedHashes[name] != ownHash) {
+                    console.log(prettyIR)
+
                     throw new Error(
                         `expected hash ${expectedHashes[name]} for validator ${name}, got ${ownHash}`
                     )
@@ -300,34 +302,25 @@ export class ContractContextBuilder {
                 UplcProgramV2.fromCbor(unoptimizedCborHex)
 
             if (purpose == "spending") {
-                validators[validator.$name] = new ValidatorHash(
-                    ownTypedHash.bytes,
-                    {
-                        program: optimizedProgram.withAlt(unoptimizedProgram),
-                        datum: expectSome(validator.$Datum),
-                        redeemer: validator.$Redeemer
-                    }
-                )
+                validators[name] = new ValidatorHash(ownHash, {
+                    program: optimizedProgram.withAlt(unoptimizedProgram),
+                    datum: expectSome(validator.$Datum),
+                    redeemer: validator.$Redeemer
+                })
             } else if (purpose == "minting") {
-                validators[validator.$name] = new MintingPolicyHash(
-                    ownTypedHash.bytes,
-                    {
-                        program: optimizedProgram.withAlt(unoptimizedProgram),
-                        redeemer: validator.$Redeemer
-                    }
-                )
+                validators[name] = new MintingPolicyHash(ownHash, {
+                    program: optimizedProgram.withAlt(unoptimizedProgram),
+                    redeemer: validator.$Redeemer
+                })
             } else if (
                 purpose == "staking" ||
                 purpose == "certifying" ||
                 purpose == "rewarding"
             ) {
-                validators[validator.$name] = new StakingValidatorHash(
-                    ownTypedHash.bytes,
-                    {
-                        program: optimizedProgram.withAlt(unoptimizedProgram),
-                        redeemer: validator.$Redeemer
-                    }
-                )
+                validators[name] = new StakingValidatorHash(ownHash, {
+                    program: optimizedProgram.withAlt(unoptimizedProgram),
+                    redeemer: validator.$Redeemer
+                })
             } else {
                 throw new Error("unhandled purpose")
             }

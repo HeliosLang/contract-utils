@@ -11,6 +11,7 @@
 /**
  * @typedef {{
  *   cborHex: string
+ *   prettyIR: string
  * }} CompileOutput
  */
 /**

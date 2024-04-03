@@ -423,6 +423,7 @@ export class Lib_v0_16 {
             const cborHex = bytesToHex(irProgram.toUplc().toCbor())
 
             return {
+                prettyIR: irProgram.program.annotate(),
                 cborHex
             }
         } else {
@@ -431,6 +432,7 @@ export class Lib_v0_16 {
             const cborHex = bytesToHex(irProgram.toUplc().toCbor())
 
             return {
+                prettyIR: irProgram.program.annotate(),
                 cborHex
             }
         }
