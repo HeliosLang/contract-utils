@@ -401,6 +401,8 @@ export class Lib_v0_16 {
         const otherValidators = options.otherValidators ?? {}
         const otherValidatorTypes = options.allValidatorTypes
 
+        modules = this.sortModules(modules)
+
         const program = this.lib.Program.newInternal(
             main,
             modules,
