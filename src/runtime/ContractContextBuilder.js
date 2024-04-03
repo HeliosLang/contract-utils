@@ -104,20 +104,6 @@ export class ContractContextBuilder {
     }
 
     /**
-     * @template {Validator} V
-     * @param {V} validator
-     * @returns {ContractContextBuilder<T & {
-     *   [K in V["$name"]]: V
-     * }>}
-     */
-    with(validator) {
-        return new ContractContextBuilder({
-            ...this.validators,
-            [validator.$name]: validator
-        })
-    }
-
-    /**
      * @param {Module[]} modules
      * @returns {ContractContextBuilder<T>}
      */
@@ -126,15 +112,19 @@ export class ContractContextBuilder {
     }
 
     /**
-     * @private
-     * @param {Lib} lib
-     * @returns {{[name: string]: any}}
+     * @template {Validator} V
+     * @param {V} validator
+     * @returns {ContractContextBuilder<T & {
+     *   [K in V["$name"]]: V
+     * }>}
      */
-    getValidatorTypes(lib) {
-        return Object.fromEntries(
-            Object.entries(this.validators).map(([name, v]) => {
-                return [name, lib.getValidatorType(v.$purpose)]
-            })
+    with(validator) {
+        return new ContractContextBuilder(
+            {
+                ...this.validators,
+                [validator.$name]: validator
+            },
+            this.forcedModules
         )
     }
 
@@ -168,6 +158,19 @@ export class ContractContextBuilder {
         }
 
         return result
+    }
+
+    /**
+     * @private
+     * @param {Lib} lib
+     * @returns {{[name: string]: any}}
+     */
+    getValidatorTypes(lib) {
+        return Object.fromEntries(
+            Object.entries(this.validators).map(([name, v]) => {
+                return [name, lib.getValidatorType(v.$purpose)]
+            })
+        )
     }
 
     /**
