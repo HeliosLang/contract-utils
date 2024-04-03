@@ -81,10 +81,19 @@ export class ContractContextBuilder {
 
     /**
      * @private
-     * @param {T} validators
+     * @readonly
+     * @type {Option<Module[]>}
      */
-    constructor(validators) {
+    forcedModules
+
+    /**
+     * @private
+     * @param {T} validators
+     * @param {Option<Module[]>} forcedModules
+     */
+    constructor(validators, forcedModules = None) {
         this.validators = validators
+        this.forcedModules = forcedModules
     }
 
     /**
@@ -109,6 +118,14 @@ export class ContractContextBuilder {
     }
 
     /**
+     * @param {Module[]} modules
+     * @returns {ContractContextBuilder<T>}
+     */
+    setModules(modules) {
+        return new ContractContextBuilder(this.validators, modules)
+    }
+
+    /**
      * @private
      * @param {Lib} lib
      * @returns {{[name: string]: any}}
@@ -119,6 +136,38 @@ export class ContractContextBuilder {
                 return [name, lib.getValidatorType(v.$purpose)]
             })
         )
+    }
+
+    /**
+     * @private
+     * @param {Validator} validator
+     * @returns {Map<string, string>}
+     */
+    getModules(validator) {
+        if (this.forcedModules) {
+            return new Map(
+                this.forcedModules.map((m) => [m.$name, m.$sourceCode])
+            )
+        }
+
+        /**
+         * @type {Map<string, string>}
+         */
+        const result = new Map()
+        let stack = validator.$dependencies.slice()
+        let m = stack.pop()
+
+        while (m) {
+            if (!result.has(m.$name)) {
+                result.set(m.$name, m.$sourceCode)
+
+                stack = stack.concat(m.$dependencies)
+            }
+
+            m = stack.pop()
+        }
+
+        return result
     }
 
     /**
@@ -163,33 +212,6 @@ export class ContractContextBuilder {
         const validators = {}
 
         /**
-         * @param {Validator} validator
-         * @returns {Map<string, string>}
-         */
-        function collectModules(validator) {
-            /**
-             * @type {Map<string, string>}
-             */
-            const result = new Map()
-
-            let stack = validator.$dependencies.slice()
-
-            let m = stack.pop()
-
-            while (m) {
-                if (!result.has(m.$name)) {
-                    result.set(m.$name, m.$sourceCode)
-
-                    stack = stack.concat(m.$dependencies)
-                }
-
-                m = stack.pop()
-            }
-
-            return result
-        }
-
-        /**
          * @returns {{[name: string]: {purpose: string, hash: string}}}
          */
         function getOtherValidators() {
@@ -227,7 +249,7 @@ export class ContractContextBuilder {
         /**
          * @param {Validator} validator
          */
-        function buildValidator(validator) {
+        const buildValidator = (validator) => {
             const name = validator.$name
 
             if (name in validators) {
@@ -238,7 +260,7 @@ export class ContractContextBuilder {
                 buildValidator(v)
             }
 
-            const modules = collectModules(validator)
+            const modules = this.getModules(validator)
 
             const { cborHex: optimizedCborHex, prettyIR } = lib.compile(
                 validator.$sourceCode,
@@ -265,28 +287,7 @@ export class ContractContextBuilder {
                 }
             }
 
-            /**
-             * @type {ScriptHash}
-             */
-            let ownTypedHash
-
             const purpose = validator.$purpose
-
-            switch (purpose) {
-                case "spending":
-                    ownTypedHash = new ValidatorHash(ownHash)
-                    break
-                case "minting":
-                    ownTypedHash = new MintingPolicyHash(ownHash)
-                    break
-                case "staking":
-                case "certifying":
-                case "rewarding":
-                    ownTypedHash = new StakingValidatorHash(ownHash)
-                    break
-                default:
-                    throw new Error("unhandled purpose")
-            }
 
             const { cborHex: unoptimizedCborHex } = lib.compile(
                 validator.$sourceCode,
