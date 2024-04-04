@@ -1,8 +1,9 @@
-export { TypescriptWriter } from "./TypescriptWriter.js"
-export { Writer } from "./Writer.js"
+export { LoadedScriptsWriter } from "./LoadedScriptsWriter.js"
 
 /**
- * @typedef {import("./Module.js").Module} Module
+ * @typedef {import("./LoadedModule.js").LoadedModule} LoadedModule
+ * @typedef {import("./LoadedValidator.js").LoadedValidator} LoadedValidator
+ * @typedef {import("./TypeCheckedModule.js").TypeCheckedModule} TypeCheckedModule
+ * @typedef {import("./TypeCheckedValidator.js").TypeCheckedValidator} TypeCheckedValidator
  * @typedef {import("./TypeSchema.js").TypeSchema} TypeSchema
- * @typedef {import("./Validator.js").Validator} Validator
  */

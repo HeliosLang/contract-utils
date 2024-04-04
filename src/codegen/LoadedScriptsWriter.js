@@ -1,47 +1,64 @@
+import { StringWriter } from "@helios-lang/codec-utils"
 import { genTypes } from "./TypeSchema.js"
-import { Writer } from "./Writer.js"
 
 /**
- * @typedef {import("./Module.js").Module} Module
- * @typedef {import("./Validator.js").Validator} Validator
+ * @typedef {import("./TypeCheckedModule.js").TypeCheckedModule} TypeCheckedModule
+ * @typedef {import("./TypeCheckedValidator.js").TypeCheckedValidator} TypeCheckedValidator
  */
 
-export class TypescriptWriter {
+export class LoadedScriptsWriter {
     constructor() {
-        this.wjs = new Writer()
-        this.wdts = new Writer()
+        this.definition = new StringWriter()
+        this.declaration = new StringWriter()
     }
 
     /**
-     * @param {string} js
-     * @param {string} dts
-     * @returns {TypescriptWriter}
+     * @param {string} def
+     * @param {string} decl
+     * @returns {LoadedScriptsWriter}
      */
-    write(js, dts = "") {
-        this.wjs.write(js)
-        this.wdts.write(dts)
-        return this
-    }
-
-    /**
-     * @param {string} js
-     * @param {string} dts
-     * @returns {TypescriptWriter}
-     */
-    writeLine(js, dts = "") {
-        if (js != "") {
-            this.wjs.writeLine(js)
-        }
-
-        if (dts != "") {
-            this.wdts.writeLine(dts)
-        }
+    write(def, decl = "") {
+        this.definition.write(def)
+        this.declaration.write(decl)
 
         return this
     }
 
+    writeHeaders() {
+        this.definition.writeLine(
+            'import { Cast } from "@helios-lang/contract-utils";'
+        )
+
+        this.declaration.writeLine(
+            'import type {UplcData} from "@helios-lang/ledger";'
+        )
+        this.declaration.writeLine(
+            'import { Address, AssetClass, Credential, DatumHash, MintingPolicyHash, PubKeyHash, StakingCredential, StakingHash, StakingValidatorHash, TimeRange, TxId, TxOutputDatum, ValidatorHash, Value} from "@helios-lang/ledger";'
+        )
+        this.declaration.writeLine(
+            'import { Cast } from "@helios-lang/contract-utils";'
+        )
+    }
+
     /**
-     * @param {Module} m
+     * @param {string} def
+     * @param {string} decl
+     * @returns {LoadedScriptsWriter}
+     */
+    writeLine(def, decl = "") {
+        if (def != "") {
+            this.definition.writeLine(def)
+        }
+
+        if (decl != "") {
+            this.declaration.writeLine(decl)
+        }
+
+        return this
+    }
+
+    /**
+     * @param {TypeCheckedModule} m
      */
     writeModule(m) {
         this.write(
@@ -63,7 +80,7 @@ export class TypescriptWriter {
     }
 
     /**
-     * @param {Validator} v
+     * @param {TypeCheckedValidator} v
      */
     writeValidator(v) {
         const redeemerTypes = genTypes(v.Redeemer)
@@ -98,24 +115,8 @@ export class TypescriptWriter {
         )
     }
 
-    writeHeaders() {
-        this.wjs.writeLine(
-            'import { Cast } from "@helios-lang/contract-utils";'
-        )
-
-        this.wdts.writeLine(
-            'import type {UplcData} from "@helios-lang/ledger";'
-        )
-        this.wdts.writeLine(
-            'import { Address, AssetClass, Credential, DatumHash, MintingPolicyHash, PubKeyHash, StakingCredential, StakingHash, StakingValidatorHash, TimeRange, TxId, TxOutputDatum, ValidatorHash, Value} from "@helios-lang/ledger";'
-        )
-        this.wdts.writeLine(
-            'import { Cast } from "@helios-lang/contract-utils";'
-        )
-    }
-
     /**
-     * @param {{[name: string]: Module}} ms
+     * @param {{[name: string]: TypeCheckedModule}} ms
      */
     writeModules(ms) {
         /**
@@ -127,7 +128,7 @@ export class TypescriptWriter {
 
         while (todo.length > 0) {
             /**
-             * @type {Module[]}
+             * @type {TypeCheckedModule[]}
              */
             let todoNext = []
 
@@ -149,7 +150,7 @@ export class TypescriptWriter {
 
     /**
      *
-     * @param {{[name: string]: Validator}} validators
+     * @param {{[name: string]: TypeCheckedValidator}} validators
      */
     writeValidators(validators) {
         /**
@@ -161,7 +162,7 @@ export class TypescriptWriter {
 
         while (todo.length > 0) {
             /**
-             * @type {Validator[]}
+             * @type {TypeCheckedValidator[]}
              */
             let todoNext = []
 
@@ -187,6 +188,6 @@ export class TypescriptWriter {
      * @returns {[string, string]}
      */
     finalize() {
-        return [this.wjs.finalize(), this.wdts.finalize()]
+        return [this.definition.finalize(), this.declaration.finalize()]
     }
 }

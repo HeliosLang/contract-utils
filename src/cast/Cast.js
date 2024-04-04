@@ -6,7 +6,6 @@ import {
     AssetClass,
     Credential,
     DatumHash,
-    DCert,
     MintingPolicyHash,
     PubKeyHash,
     ScriptHash,
@@ -26,7 +25,9 @@ import {
     IntData,
     ListData,
     MapData,
+    decodeBoolData,
     decodeOptionData,
+    encodeBoolData,
     encodeOptionData
 } from "@helios-lang/uplc"
 
@@ -36,8 +37,8 @@ import {
  */
 
 /**
- * @template [TStrict=UplcData]
- * @template [TPermissive=UplcData]
+ * @template [TStrict=any]
+ * @template [TPermissive=any]
  */
 export class Cast {
     /**
@@ -85,7 +86,7 @@ function schemaToUplc(schema, x) {
             case "AssetClass":
                 return AssetClass.fromAlike(x).toUplcData()
             case "Bool":
-                return new ConstrData(x ? 1 : 0, [])
+                return encodeBoolData(x)
             case "ByteArray":
                 return new ByteArrayData(x)
             case "Credential":
@@ -186,6 +187,7 @@ function schemaToUplc(schema, x) {
 }
 
 /**
+ * This should fail when deviating
  * @param {TypeSchema} schema
  * @param {UplcData} data
  * @returns {any}
@@ -199,7 +201,7 @@ function uplcToSchema(schema, data) {
                 // TODO: should this throw an error?
                 return null
             case "Bool":
-                return ConstrData.expect(data).tag == 1
+                return decodeBoolData(data, true)
             case "ByteArray":
                 return ByteArrayData.expect(data).bytes
             case "Credential":
@@ -261,8 +263,9 @@ function uplcToSchema(schema, data) {
             ? uplcToSchema(schema.optionSomeType, optionData)
             : None
     } else if ("structFieldTypes" in schema) {
+        const nExpected = schema.structFieldTypes.length
         // TODO: Cip-68 support
-        if (schema.structFieldTypes.length == 1) {
+        if (nExpected == 1) {
             return {
                 [schema.structFieldTypes[0].name]: uplcToSchema(
                     schema.structFieldTypes[0].type,
@@ -270,10 +273,18 @@ function uplcToSchema(schema, data) {
                 )
             }
         } else {
+            const fields = ListData.expect(data).items
+
+            if (fields.length != nExpected) {
+                throw new Error(
+                    `expected ${nExpected} fields in struct, got ${fields.length} fields`
+                )
+            }
+
             return Object.fromEntries(
-                ListData.expect(data).items.map((item, i) => [
+                fields.map((field, i) => [
                     schema.structFieldTypes[i].name,
-                    uplcToSchema(schema.structFieldTypes[i].type, item)
+                    uplcToSchema(schema.structFieldTypes[i].type, field)
                 ])
             )
         }
@@ -281,6 +292,18 @@ function uplcToSchema(schema, data) {
         const { tag, fields } = ConstrData.expect(data)
 
         const variantSchema = schema.enumVariantTypes[tag]
+
+        if (!variantSchema) {
+            throw new Error(`tag ${tag} out of range`)
+        }
+
+        const nExpected = variantSchema.fieldTypes.length
+
+        if (fields.length != nExpected) {
+            throw new Error(
+                `expected ${nExpected} fields for variant ${variantSchema.name} (tag ${tag}), got ${fields.length} fields`
+            )
+        }
 
         return {
             [variantSchema.name]: Object.fromEntries(

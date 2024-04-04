@@ -3,14 +3,14 @@
 import { promises, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { readHeader, translateImportPaths } from "@helios-lang/compiler-utils"
-import { TypescriptWriter } from "./codegen/index.js"
-import { loadLibrary } from "./lib/index.js"
+import { LoadedScriptsWriter } from "./codegen/index.js"
+import { loadCompilerLib } from "./compiler/index.js"
 
 /**
- * @typedef {import("./lib/Lib.js").Lib} Lib
- * @typedef {import("./lib/Lib.js").SourceDetails} SourceDetails
- * @typedef {import("./lib/Lib.js").ModuleDetails} ModuleDetails
- * @typedef {import("./lib/Lib.js").ValidatorDetails} ValidatorDetails
+ * @typedef {import("./compiler/CompilerLib.js").CompilerLib} CompilerLib
+ * @typedef {import("./compiler/CompilerLib.js").SourceDetails} SourceDetails
+ * @typedef {import("./compiler/CompilerLib.js").TypeCheckedModule} ModuleDetails
+ * @typedef {import("./compiler/CompilerLib.js").TypeCheckedValidator} ValidatorDetails
  */
 
 async function main() {
@@ -18,13 +18,13 @@ async function main() {
 
     const { outDir } = parseArgs(process.argv)
 
-    const lib = await loadLibrary()
+    const lib = loadCompilerLib()
     const filePaths = await listFiles(process.cwd(), ".hl")
     const files = readFiles(filePaths)
     const sources = preparseFiles(files)
     const { modules, validators } = typeCheck(lib, sources)
 
-    const w = new TypescriptWriter()
+    const w = new LoadedScriptsWriter()
 
     w.writeHeaders()
     w.writeModules(modules)
@@ -174,7 +174,7 @@ function splitValidatorsAndModules(sources) {
 }
 
 /**
- * @param {Lib} lib
+ * @param {CompilerLib} lib
  * @param {{[name: string]: SourceDetails}} sources
  * @returns {{modules: {[name: string]: ModuleDetails}, validators: {[name: string]: ValidatorDetails}}}
  */

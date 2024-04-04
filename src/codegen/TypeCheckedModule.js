@@ -1,3 +1,5 @@
+export {}
+
 /**
  * @typedef {import("./TypeSchema.js").TypeSchema} TypeSchema
  */
@@ -9,7 +11,5 @@
  *   sourceCode: string
  *   moduleDepedencies: string[]
  *   types: {[name: string]: TypeSchema}
- * }} Module
+ * }} TypeCheckedModule
  */
-
-export const _ = {}
