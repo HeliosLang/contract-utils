@@ -32,7 +32,9 @@ export function loadCompilerLib() {
                     return new CompilerLib_v0_16(unsafeLib)
             }
         default:
-            throw new Error(`compiler version ${unsafeLib.VERSION} not supported`)
+            throw new Error(
+                `compiler version ${unsafeLib.VERSION} not supported`
+            )
     }
 }
 
