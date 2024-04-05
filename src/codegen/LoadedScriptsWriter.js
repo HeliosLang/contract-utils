@@ -7,12 +7,109 @@ import { genTypes } from "./TypeSchema.js"
  */
 
 export class LoadedScriptsWriter {
+    /**
+     * @private
+     */
     constructor() {
         this.definition = new StringWriter()
         this.declaration = new StringWriter()
     }
 
     /**
+     * Constructs a LoadedScriptsWriter instance and initializes it be writing the header
+     * @returns {LoadedScriptsWriter}
+     */
+    static new() {
+        const w = new LoadedScriptsWriter()
+
+        w.writeHeaders()
+
+        return w
+    }
+
+    /**
+     * @param {{[name: string]: TypeCheckedModule}} ms
+     * @returns {LoadedScriptsWriter}
+     */
+    writeModules(ms) {
+        /**
+         * @type {Set<string>}
+         */
+        const done = new Set()
+
+        let todo = Object.values(ms)
+
+        while (todo.length > 0) {
+            /**
+             * @type {TypeCheckedModule[]}
+             */
+            let todoNext = []
+
+            for (let i = 0; i < todo.length; i++) {
+                const m = todo[i]
+
+                if (m.moduleDepedencies.every((d) => done.has(d))) {
+                    this.writeModule(m)
+
+                    done.add(m.name)
+                } else {
+                    todoNext.push(m)
+                }
+            }
+
+            todo = todoNext
+        }
+
+        return this
+    }
+
+    /**
+     * @param {{[name: string]: TypeCheckedValidator}} validators
+     * @returns {LoadedScriptsWriter}
+     */
+    writeValidators(validators) {
+        /**
+         * @type {Set<string>}
+         */
+        const done = new Set()
+
+        let todo = Object.values(validators)
+
+        while (todo.length > 0) {
+            /**
+             * @type {TypeCheckedValidator[]}
+             */
+            let todoNext = []
+
+            for (let i = 0; i < todo.length; i++) {
+                const v = todo[i]
+
+                if (
+                    v.hashDependencies.every((d) => done.has(d) || d == v.name)
+                ) {
+                    this.writeValidator(v)
+
+                    done.add(v.name)
+                } else {
+                    todoNext.push(v)
+                }
+            }
+
+            todo = todoNext
+        }
+
+        return this
+    }
+
+    /**
+     * @returns {[string, string]}
+     */
+    finalize() {
+        return [this.definition.finalize(), this.declaration.finalize()]
+    }
+
+    /**
+     * @private
      * @param {string} def
      * @param {string} decl
      * @returns {LoadedScriptsWriter}
@@ -24,6 +121,9 @@ export class LoadedScriptsWriter {
         return this
     }
 
+    /**
+     * @private
+     */
     writeHeaders() {
         this.definition.writeLine(
             'import { Cast } from "@helios-lang/contract-utils";'
@@ -41,23 +141,7 @@ export class LoadedScriptsWriter {
     }
 
     /**
-     * @param {string} def
-     * @param {string} decl
-     * @returns {LoadedScriptsWriter}
-     */
-    writeLine(def, decl = "") {
-        if (def != "") {
-            this.definition.writeLine(def)
-        }
-
-        if (decl != "") {
-            this.declaration.writeLine(decl)
-        }
-
-        return this
-    }
-
-    /**
+     * @private
      * @param {TypeCheckedModule} m
      */
     writeModule(m) {
@@ -80,6 +164,7 @@ export class LoadedScriptsWriter {
     }
 
     /**
+     * @private
      * @param {TypeCheckedValidator} v
      */
     writeValidator(v) {
@@ -113,81 +198,5 @@ export class LoadedScriptsWriter {
 }
 `
         )
-    }
-
-    /**
-     * @param {{[name: string]: TypeCheckedModule}} ms
-     */
-    writeModules(ms) {
-        /**
-         * @type {Set<string>}
-         */
-        const done = new Set()
-
-        let todo = Object.values(ms)
-
-        while (todo.length > 0) {
-            /**
-             * @type {TypeCheckedModule[]}
-             */
-            let todoNext = []
-
-            for (let i = 0; i < todo.length; i++) {
-                const m = todo[i]
-
-                if (m.moduleDepedencies.every((d) => done.has(d))) {
-                    this.writeModule(m)
-
-                    done.add(m.name)
-                } else {
-                    todoNext.push(m)
-                }
-            }
-
-            todo = todoNext
-        }
-    }
-
-    /**
-     *
-     * @param {{[name: string]: TypeCheckedValidator}} validators
-     */
-    writeValidators(validators) {
-        /**
-         * @type {Set<string>}
-         */
-        const done = new Set()
-
-        let todo = Object.values(validators)
-
-        while (todo.length > 0) {
-            /**
-             * @type {TypeCheckedValidator[]}
-             */
-            let todoNext = []
-
-            for (let i = 0; i < todo.length; i++) {
-                const v = todo[i]
-
-                if (
-                    v.hashDependencies.every((d) => done.has(d) || d == v.name)
-                ) {
-                    this.writeValidator(v)
-
-                    done.add(v.name)
-                } else {
-                    todoNext.push(v)
-                }
-            }
-
-            todo = todoNext
-        }
-    }
-
-    /**
-     * @returns {[string, string]}
-     */
-    finalize() {
-        return [this.definition.finalize(), this.declaration.finalize()]
     }
 }

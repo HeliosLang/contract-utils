@@ -1,4 +1,8 @@
 /**
+ * TODO: references and ids for recursive types and more descriptive codegen
+ * TODO: use `kind: "internal" | "list" | "map" | "struct" | "option" | "enum"` instead of `primitiveType` etc.
+ * TODO: additional property for struct: `format: "list" | "map"`
+ * TODO: rename primitiveType -> internalType
  * @typedef {{
  *     primitiveType: string
  * } | {

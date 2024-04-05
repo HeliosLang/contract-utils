@@ -25,6 +25,13 @@ export {}
 
 /**
  * @typedef {{
+ *   modules: {[name: string]: TypeCheckedModule}
+ *   validators: {[name: string]: TypeCheckedValidator}
+ * }} TypeCheckOutput
+ */
+
+/**
+ * @typedef {{
  *   name: string
  *   purpose: string
  *   sourceCode: string
@@ -35,7 +42,7 @@ export {}
  * @typedef {{
  *   version: string
  *   getScriptHashType: (purpose: string) => any
- *   typeCheck: (validators: {[name: string]: SourceDetails}, modules: {[name: string]: SourceDetails}) => ({
+ *   typeCheck: (validators: string[], modules: string[]) => ({
  *     modules: {[name: string]: TypeCheckedModule},
  *     validators: {[name: string]: TypeCheckedValidator}
  *   })

@@ -2,13 +2,15 @@ import { bytesToHex } from "@helios-lang/compiler"
 import { readHeader } from "@helios-lang/compiler-utils"
 
 /**
- * @typedef {import("../codegen/index.js").TypeCheckedModule} ModuleDetails
- * @typedef {import("../codegen/index.js").TypeCheckedValidator} ValidatorDetails
+ * @typedef {import("../codegen/index.js").TypeCheckedModule} TypeCheckedModule
+ * @typedef {import("../codegen/index.js").TypeCheckedValidator} TypeCheckedValidator
+ 
  * @typedef {import("../codegen/index.js").TypeSchema} InternalTypeDetails
  * @typedef {import("./CompilerLib.js").CompileOptions} CompileOptions
  * @typedef {import("./CompilerLib.js").CompileOutput} CompileOutput
  * @typedef {import("./CompilerLib.js").CompilerLib} CompilerLib
  * @typedef {import("./CompilerLib.js").SourceDetails} SourceDetails
+ * @typedef {import("./CompilerLib.js").TypeCheckOutput} TypeCheckOutput
  */
 
 /**
@@ -46,7 +48,22 @@ import { readHeader } from "@helios-lang/compiler-utils"
 
 /**
  * @typedef {{
- *   name: {value: string}
+ *   src: {
+ *     raw: string
+ *   }
+ * }} Site
+ */
+
+/**
+ * @typedef {{
+ *   value: string
+ *   site: Site
+ * }} WordToken
+ */
+
+/**
+ * @typedef {{
+ *   name: WordToken
  *   filterDependencies: (all: Module[]) => Module[]
  *   statements: Statement[]
  * }} Module
@@ -54,6 +71,7 @@ import { readHeader } from "@helios-lang/compiler-utils"
 /**
  * @typedef {{
  *   name: string
+ *   purpose: "testing" | "minting" | "spending" | "staking" | "endpoint" | "module" | "unknown"
  *   toIR: (ctx: any, extra: Map<string, IR>) => IR
  *   types: UserTypes
  *   mainImportedModules: Module[]
@@ -145,53 +163,54 @@ export class CompilerLib_v0_16 {
     }
 
     /**
-     * @param {{[name: string]: SourceDetails}} validators
-     * @param {{[name: string]: SourceDetails}} modules
-     * @returns {{modules: {[name: string]: ModuleDetails}, validators: {[name: string]: ValidatorDetails}}}
+     * @param {string[]} validators
+     * @param {string[]} modules
+     * @returns {TypeCheckOutput}
      */
     typeCheck(validators, modules) {
         const validatorTypes = Object.fromEntries(
-            Object.values(validators).map((v) => [
-                v.name,
-                this.getScriptHashType(v.purpose)
-            ])
+            validators.map((v) => {
+                const [purpose, name] = readHeader(v)
+                return [name, this.getScriptHashType(purpose)]
+            })
         )
 
         // create validator programs
         let validatorPrograms = this.createPrograms(
-            Object.values(validators),
-            Object.values(modules),
+            validators,
+            modules,
             validatorTypes
         )
 
         // build dag
         const dag = this.buildDagDependencies(validatorPrograms, validatorTypes)
 
-        // sort the validators according to the dag, a valid order should exist
-        // validatorPrograms = this.sortValidators(validatorPrograms, dag)
+        /**
+         * @type {{[name: string]: TypeCheckedValidator}}
+         */
+        const typeCheckedValidators = {}
 
         /**
-         * @type {{[name: string]: ValidatorDetails}}
+         * @type {{[name: string]: TypeCheckedModule}}
          */
-        const validatorDetails = {}
+        const typeCheckedModules = {}
 
-        /**
-         * @type {{[name: string]: ModuleDetails}}
-         */
-        const moduleDetails = {}
-
+        // collect the validators and the modules from the typechecked programs
         for (let v of validatorPrograms) {
-            const hashDependencies = dag[v.name]
+            const name = v.name
+            const purpose = v.purpose
+            const sourceCode = v.mainModule.name.site.src.raw
+            const hashDependencies = dag[name]
+
             const allModules = v.mainImportedModules
             const moduleDepedencies = v.mainModule
                 .filterDependencies(allModules)
                 .map((m) => m.name.value)
-            const purpose = validators[v.name].purpose
 
-            validatorDetails[v.name] = {
-                name: v.name,
-                purpose: validators[v.name].purpose,
-                sourceCode: validators[v.name].sourceCode,
+            typeCheckedValidators[name] = {
+                name: name,
+                purpose: purpose,
+                sourceCode: sourceCode,
                 hashDependencies: hashDependencies,
                 moduleDepedencies: moduleDepedencies,
                 types: {},
@@ -204,22 +223,31 @@ export class CompilerLib_v0_16 {
                         : undefined
             }
 
+            // add any module dependencies that haven't been added before
             for (let m of v.mainImportedModules) {
-                if (!(m.name.value in moduleDetails)) {
-                    moduleDetails[m.name.value] = {
-                        name: m.name.value,
-                        purpose: "module",
-                        sourceCode: modules[m.name.value].sourceCode,
-                        moduleDepedencies: m
-                            .filterDependencies(allModules)
-                            .map((m) => m.name.value),
-                        types: {} // not yet exported
-                    }
+                const name = m.name.value
+                const sourceCode = m.name.site.src.raw
+
+                if (name in typeCheckedModules) {
+                    continue
+                }
+
+                typeCheckedModules[name] = {
+                    name: name,
+                    purpose: "module",
+                    sourceCode: sourceCode,
+                    moduleDepedencies: m
+                        .filterDependencies(allModules)
+                        .map((m) => m.name.value),
+                    types: {} // not yet exported
                 }
             }
         }
 
-        return { modules: moduleDetails, validators: validatorDetails }
+        return {
+            modules: typeCheckedModules,
+            validators: typeCheckedValidators
+        }
     }
 
     /**
@@ -337,24 +365,17 @@ export class CompilerLib_v0_16 {
 
     /**
      * @private
-     * @param {SourceDetails[]} validators
-     * @param {SourceDetails[]} modules
+     * @param {string[]} validators
+     * @param {string[]} modules
      * @param {{[name: string]: ScriptHashType}} validatorTypes
      * @returns {Program[]}
      */
     createPrograms(validators, modules, validatorTypes) {
-        const moduleSrcs = modules.map((m) => m.sourceCode)
-
         return validators.map((v) =>
-            this.lib.Program.newInternal(
-                v.sourceCode,
-                moduleSrcs,
-                validatorTypes,
-                {
-                    allowPosParams: false,
-                    invertEntryPoint: true
-                }
-            )
+            this.lib.Program.newInternal(v, modules, validatorTypes, {
+                allowPosParams: false,
+                invertEntryPoint: true
+            })
         )
     }
 
