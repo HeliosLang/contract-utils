@@ -106,7 +106,11 @@ export class LoadedScriptsWriter {
      * @returns {[string, string, string]}
      */
     finalize() {
-        return [this.definition.finalize(), this.declaration.finalize(), this.combined.finalize()]
+        return [
+            this.definition.finalize(),
+            this.declaration.finalize(),
+            this.combined.finalize()
+        ]
     }
 
     /**
@@ -128,19 +132,14 @@ export class LoadedScriptsWriter {
     writeHeaders() {
         this.definition.writeLine(
             'import { Cast } from "@helios-lang/contract-utils";'
-        );
+        )
 
-        ([this.declaration, this.combined]).forEach(w => {
-            w.writeLine(
-                'import type {UplcData} from "@helios-lang/ledger";'
-            )
+        ;[this.declaration, this.combined].forEach((w) => {
+            w.writeLine('import type {UplcData} from "@helios-lang/ledger";')
             w.writeLine(
                 'import { Address, AssetClass, DatumHash, MintingPolicyHash, PubKey, PubKeyHash, SpendingCredential, StakingCredential, StakingHash, StakingValidatorHash, TimeRange, TxId, TxOutputDatum, ValidatorHash, Value } from "@helios-lang/ledger";'
             )
-            w.writeLine(
-                'import { Cast } from "@helios-lang/contract-utils";'
-            )
-
+            w.writeLine('import { Cast } from "@helios-lang/contract-utils";')
         })
     }
 
@@ -157,7 +156,7 @@ export class LoadedScriptsWriter {
     $dependencies: [${m.moduleDepedencies.join(", ")}],
 }
 `
-)
+        )
 
         this.declaration.write(
             `export const ${m.name}: {
@@ -200,7 +199,7 @@ export class LoadedScriptsWriter {
     ${datumTypes ? `$Datum: new Cast(${JSON.stringify(v.Datum)})` : ""}
 }
 `
-)
+        )
         this.declaration.write(
             `export const ${v.name}: {
     $name: "${v.name}"
@@ -216,7 +215,7 @@ export class LoadedScriptsWriter {
     ${datumTypes ? `$Datum: Cast<${datumTypes[0]}, ${datumTypes[1]}>` : ""}
 }
 `
-)
+        )
 
         this.combined.write(
             `export const ${v.name} = {

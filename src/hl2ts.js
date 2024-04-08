@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 
-import { existsSync, fstat, promises, readFileSync, writeFileSync } from "node:fs"
+import {
+    existsSync,
+    fstat,
+    promises,
+    readFileSync,
+    writeFileSync
+} from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { Cli, Command, EnumOpt, StringOpt } from "@helios-lang/cli-utils"
 import { LoadedScriptsWriter } from "./codegen/index.js"
@@ -22,13 +28,11 @@ import { None } from "@helios-lang/type-utils"
  * }} SourceDetails
  */
 
-   /**
-     * @typedef {"javascript" | "typescript"} FormatKind
-     */
+/**
+ * @typedef {"javascript" | "typescript"} FormatKind
+ */
 
 async function main() {
- 
-
     const cli = new Cli({
         minArgs: 0,
         maxArgs: 0,
@@ -41,11 +45,17 @@ async function main() {
             format: new EnumOpt({
                 long: "--format",
                 short: "-f",
-                variants: /** @type {FormatKind[]} */ (["javascript", "typescript"]),
+                variants: /** @type {FormatKind[]} */ ([
+                    "javascript",
+                    "typescript"
+                ]),
                 default: () => {
                     const path = findPackageJson()
 
-                    if (path && existsSync(join(dirname(path), "tsconfig.json"))) {
+                    if (
+                        path &&
+                        existsSync(join(dirname(path), "tsconfig.json"))
+                    ) {
                         return "typescript"
                     } else {
                         return "javascript"
@@ -64,7 +74,7 @@ async function main() {
  * @param {{outDir: string, format: FormatKind}} options
  * @returns {Promise<void>}
  */
-async function mainInternal(_args, {outDir, format}) {
+async function mainInternal(_args, { outDir, format }) {
     const lib = loadCompilerLib()
 
     const filePaths = await listFiles(process.cwd(), ".hl")
@@ -114,7 +124,7 @@ function parseArgs(args) {
 
     let i = args.indexOf("-o")
     if (i != -1) {
-        if (i == args.length - 1 || args[i+1].startsWith("-")) {
+        if (i == args.length - 1 || args[i + 1].startsWith("-")) {
             throw new Error("expected argument after -o")
         }
 
@@ -173,7 +183,7 @@ function findPackageJson(fileName = "package.json") {
     let path = join(dir, fileName)
     let found = existsSync(path)
 
-    while(!found) {
+    while (!found) {
         dir = dirname(dir)
         path = join(dir, fileName)
         found = existsSync(path)

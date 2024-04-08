@@ -17,11 +17,10 @@ export function createApp() {
 
     const address = Address.fromHash(context.match_string)
 
-    let b = new TxBuilder()
-        .mint(assetClass, 10, true)
+    let b = new TxBuilder().mint(assetClass, 10, true)
 
-
-    let c = b.pay(address, 1_000_000n, { hash: { One: { message: "hello" } } })
+    let c = b
+        .pay(address, 1_000_000n, { hash: { One: { message: "hello" } } })
         // Types from Helios are propagated into Typescript, allowing typesafe conversion of Datums
         .pay(address, 2_000_000n, { hash: { Two: { code: "hello" } } })
 }

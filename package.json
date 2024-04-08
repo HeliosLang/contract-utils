@@ -9,9 +9,9 @@
         "hl2ts": "src/hl2ts.js"
     },
     "scripts": {
-        "build": "npm run build:types",
+        "build": "npm run prettify && npm run build:types && npm run test:suite",
         "build:types": "npx tsc -p jsconfig.json --noEmit false --emitDeclarationOnly",
-        "prepack": "npm run test:pretty && npm run test:suite && npm run build",
+        "prepack": "npm run build",
         "prettify": "npx prettier . --write",
         "test": "npm run test:pretty && npm run test:types && npm run test:suite",
         "test:pretty": "npx prettier . --check",
