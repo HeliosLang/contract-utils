@@ -114,10 +114,10 @@ export function genTypes(schema) {
         }
     } else if ("listItemType" in schema) {
         const [c, p] = genTypes(schema.listItemType)
-        return [`${c}[]`, `${p}[]`]
+        return [`(${c})[]`, `(${p})[]`]
     } else if ("optionSomeType" in schema) {
         const [c, p] = genTypes(schema.optionSomeType)
-        return [`${c} | null`, `${p} | null | undefined`]
+        return [`(${c}) | null`, `(${p}) | null | undefined`]
     } else if ("mapKeyType" in schema) {
         const [ck, pk] = genTypes(schema.mapKeyType)
         const [cv, pv] = genTypes(schema.mapValueType)
