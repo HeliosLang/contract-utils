@@ -99,6 +99,8 @@ function schemaToUplc(schema, x) {
                 return DatumHash.fromAlike(x).toUplcData()
             case "DCert":
                 return x.toUplcData()
+            case "Int":
+                return new IntData(x)
             case "MintingPolicyHash":
                 return MintingPolicyHash.fromAlike(x).toUplcData()
             case "PubKeyHash":
@@ -217,6 +219,8 @@ function uplcToSchema(schema, data) {
                 throw new Error(
                     "can't convert UplcData back into DCert (significant loss of information)"
                 )
+            case "Int":
+                return IntData.expect(data).value
             case "MintingPolicyHash":
                 return MintingPolicyHash.fromUplcData(data)
             case "PubKeyHash":
