@@ -4,6 +4,7 @@ import { genTypes } from "./TypeSchema.js"
 /**
  * @typedef {import("./TypeCheckedModule.js").TypeCheckedModule} TypeCheckedModule
  * @typedef {import("./TypeCheckedValidator.js").TypeCheckedValidator} TypeCheckedValidator
+ * @typedef {import("./TypeSchema.js").TypeSchema} TypeSchema
  */
 
 export class LoadedScriptsWriter {
@@ -143,28 +144,43 @@ export class LoadedScriptsWriter {
     }
 
     /**
+     *
+     * @param {Record<string, TypeSchema>} types
+     */
+    writeTypes(types) {
+        for (let key in types) {
+            const t = types[key]
+            const tsTypes = genTypes(t)
+
+            this.definition.write(
+                `    ${key}: new Cast(${JSON.stringify(t)}),\n`
+            )
+            this.declaration.write(
+                `    ${key}: Cast<${tsTypes[0]}, ${tsTypes[1]}>,\n`
+            )
+            this.combined.write(
+                `    ${key}: new Cast<${tsTypes[0]}, ${tsTypes[1]}>(${JSON.stringify(t)}),\n`
+            )
+        }
+    }
+
+    /**
      * @private
      * @param {TypeCheckedModule} m
      */
     writeModule(m) {
-        this.definition.write(
-            `export const ${m.name} = {
+        this.definition.write(`export const ${m.name} = {
     $name: "${m.name}",
     $purpose: "${m.purpose}",
     $sourceCode: ${JSON.stringify(m.sourceCode)},
-    $dependencies: [${m.moduleDepedencies.join(", ")}],
-}
-`
-        )
+    $dependencies: [${m.moduleDepedencies.join(", ")}],\n`)
 
         this.declaration.write(
             `export const ${m.name}: {
     $name: string
     $purpose: string
     $sourceCode: string
-    $dependencies: [${m.moduleDepedencies.map((d) => `typeof ${d}`).join(", ")}]
-}
-`
+    $dependencies: [${m.moduleDepedencies.map((d) => `typeof ${d}`).join(", ")}],\n`
         )
 
         this.combined.write(
@@ -172,10 +188,14 @@ export class LoadedScriptsWriter {
     $name: "${m.name}" as "${m.name}",
     $purpose: "${m.purpose}" as "${m.purpose}",
     $sourceCode: ${JSON.stringify(m.sourceCode)} as string,
-    $dependencies: [${m.moduleDepedencies.join(", ")}],
-}
-`
+    $dependencies: [${m.moduleDepedencies.join(", ")}],\n`
         )
+
+        this.writeTypes(m.types)
+
+        this.definition.write(`}\n`)
+        this.declaration.write(`}\n`)
+        this.combined.write(`}\n`)
     }
 
     /**
@@ -195,10 +215,9 @@ export class LoadedScriptsWriter {
     $hashDependencies: [${v.hashDependencies.filter((d) => d != v.name).join(", ")}],
     $dependsOnOwnHash: ${v.hashDependencies.some((d) => d == v.name)},
     $Redeemer: new Cast(${JSON.stringify(v.Redeemer)}),
-    ${datumTypes ? `$Datum: new Cast(${JSON.stringify(v.Datum)})` : ""}
-}
-`
+${datumTypes ? `    $Datum: new Cast(${JSON.stringify(v.Datum)}),\n` : ""}`
         )
+
         this.declaration.write(
             `export const ${v.name}: {
     $name: "${v.name}"
@@ -211,9 +230,7 @@ export class LoadedScriptsWriter {
         .join(", ")}]
     $dependsOnOwnHash: boolean
     $Redeemer: Cast<${redeemerTypes[0]}, ${redeemerTypes[1]}>
-    ${datumTypes ? `$Datum: Cast<${datumTypes[0]}, ${datumTypes[1]}>` : ""}
-}
-`
+${datumTypes ? `    $Datum: Cast<${datumTypes[0]}, ${datumTypes[1]}>,\n` : ""}`
         )
 
         this.combined.write(
@@ -225,9 +242,13 @@ export class LoadedScriptsWriter {
     $hashDependencies: [${v.hashDependencies.filter((d) => d != v.name).join(", ")}],
     $dependsOnOwnHash: ${v.hashDependencies.some((d) => d == v.name)} as boolean,
     $Redeemer: new Cast<${redeemerTypes[0]}, ${redeemerTypes[1]}>(${JSON.stringify(v.Redeemer)}),
-    ${datumTypes ? `$Datum: new Cast<${datumTypes[0]}, ${datumTypes[1]}>(${JSON.stringify(v.Datum)})` : ""}
-}
-`
+${datumTypes ? `    $Datum: new Cast<${datumTypes[0]}, ${datumTypes[1]}>(${JSON.stringify(v.Datum)}),\n` : ""}`
         )
+
+        this.writeTypes(v.types)
+
+        this.definition.write(`}\n`)
+        this.declaration.write(`}\n`)
+        this.combined.write(`}\n`)
     }
 }

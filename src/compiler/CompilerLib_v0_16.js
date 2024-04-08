@@ -1,5 +1,6 @@
 import { bytesToHex } from "@helios-lang/compiler"
 import { readHeader } from "@helios-lang/compiler-utils"
+import { expectSome } from "@helios-lang/type-utils"
 
 /**
  * @typedef {import("../codegen/index.js").TypeCheckedModule} TypeCheckedModule
@@ -31,18 +32,8 @@ import { readHeader } from "@helios-lang/compiler-utils"
 
 /**
  * @typedef {{
- *   name: string
- * }} EnumStatement
- */
-
-/**
- * @typedef {{
- *   name: string
- * }} StructStatement
- */
-
-/**
- * @typedef {StructStatement | EnumStatement | any} Statement
+ *   name: WordToken
+ * }} Statement
  */
 
 /**
@@ -71,12 +62,32 @@ import { readHeader } from "@helios-lang/compiler-utils"
  * @typedef {{
  *   name: string
  *   purpose: "testing" | "minting" | "spending" | "staking" | "endpoint" | "module" | "unknown"
- *   toIR: (ctx: any, extra: Map<string, IR>) => IR
+ *   toIR(ctx: any, extra: Map<string, IR>): IR
  *   types: UserTypes
  *   mainImportedModules: Module[]
  *   mainModule: Module
  *   mainArgTypes: DataType[]
+ *   throwErrors()
+ *   evalTypes(validatorTypes: {[name: string]: ScriptHashType}): TopScope
  * }} Program
+ */
+
+/**
+ * @typedef {{
+ *   getModuleScope(name: WordToken): Scope
+ * }} TopScope
+ */
+
+/**
+ * @typedef {{
+ *   asDataType?: DataType
+ * }} HeliosType
+ */
+
+/**
+ * @typedef {{
+ *   loopTypes(callback: (name: string, type: HeliosType) => void)
+ * }} Scope
  */
 
 /**
@@ -162,6 +173,53 @@ export class CompilerLib_v0_16 {
     }
 
     /**
+     * @param {string} main
+     * @param {string[]} modules
+     * @param {CompileOptions} options
+     * @returns {CompileOutput}
+     */
+    compile(main, modules, options) {
+        const [purpose, name] = readHeader(main)
+
+        // use `Program.newInternal()` instead of `Program.new()` so we can inject custom IR before finally compiling to a UplcProgram
+        const program = this.lib.Program.newInternal(
+            main,
+            modules,
+            options.allValidatorHashTypes,
+            {
+                allowPosParams: false,
+                invertEntryPoint: true
+            }
+        )
+
+        const extra = this.generateExtraIRDefinitions(
+            name,
+            purpose,
+            program.nPosParams,
+            options
+        )
+        const optimize = options.optimize
+        const ir = program.toIR(new this.lib.ToIRContext(optimize), extra)
+
+        const irProgram =
+            program.nPosParams > 0
+                ? this.lib.IRParametricProgram.new(
+                      ir,
+                      purpose,
+                      program.nPosParams,
+                      optimize
+                  )
+                : this.lib.IRProgram.new(ir, purpose, optimize)
+
+        const cborHex = bytesToHex(irProgram.toUplc().toCbor())
+
+        return {
+            prettyIR: irProgram.program.annotate(),
+            cborHex
+        }
+    }
+
+    /**
      * @param {string[]} validators
      * @param {string[]} modules
      * @returns {TypeCheckOutput}
@@ -200,6 +258,7 @@ export class CompilerLib_v0_16 {
             const purpose = v.purpose
             const sourceCode = v.mainModule.name.site.src.raw
             const hashDependencies = dag[name]
+            const allTypes = this.getProgramTypes(v, validatorTypes)
 
             const allModules = v.mainImportedModules
             const moduleDepedencies = v.mainModule
@@ -212,7 +271,14 @@ export class CompilerLib_v0_16 {
                 sourceCode: sourceCode,
                 hashDependencies: hashDependencies,
                 moduleDepedencies: moduleDepedencies,
-                types: {},
+                types: Object.fromEntries(
+                    Object.entries(allTypes[name]).map(
+                        ([typeName, typeDetails]) => [
+                            typeName,
+                            this.getInternalTypeDetails(typeDetails)
+                        ]
+                    )
+                ),
                 Redeemer: this.getInternalTypeDetails(
                     v.mainArgTypes[purpose == "spending" ? 1 : 0]
                 ),
@@ -238,7 +304,14 @@ export class CompilerLib_v0_16 {
                     moduleDepedencies: m
                         .filterDependencies(allModules)
                         .map((m) => m.name.value),
-                    types: {}
+                    types: Object.fromEntries(
+                        Object.entries(allTypes[name]).map(
+                            ([typeName, typeDetails]) => [
+                                typeName,
+                                this.getInternalTypeDetails(typeDetails)
+                            ]
+                        )
+                    )
                 }
             }
         }
@@ -313,53 +386,6 @@ export class CompilerLib_v0_16 {
         )
 
         return extra
-    }
-
-    /**
-     * @param {string} main
-     * @param {string[]} modules
-     * @param {CompileOptions} options
-     * @returns {CompileOutput}
-     */
-    compile(main, modules, options) {
-        const [purpose, name] = readHeader(main)
-
-        // use `Program.newInternal()` instead of `Program.new()` so we can inject custom IR before finally compiling to a UplcProgram
-        const program = this.lib.Program.newInternal(
-            main,
-            modules,
-            options.allValidatorHashTypes,
-            {
-                allowPosParams: false,
-                invertEntryPoint: true
-            }
-        )
-
-        const extra = this.generateExtraIRDefinitions(
-            name,
-            purpose,
-            program.nPosParams,
-            options
-        )
-        const optimize = options.optimize
-        const ir = program.toIR(new this.lib.ToIRContext(optimize), extra)
-
-        const irProgram =
-            program.nPosParams > 0
-                ? this.lib.IRParametricProgram.new(
-                      ir,
-                      purpose,
-                      program.nPosParams,
-                      optimize
-                  )
-                : this.lib.IRProgram.new(ir, purpose, optimize)
-
-        const cborHex = bytesToHex(irProgram.toUplc().toCbor())
-
-        return {
-            prettyIR: irProgram.program.annotate(),
-            cborHex
-        }
     }
 
     /**
@@ -472,9 +498,72 @@ export class CompilerLib_v0_16 {
         } catch (e) {
             if (e.message.includes("Data")) {
                 return { primitiveType: "Data" }
+            } else if (e.message.includes("DCert")) {
+                return { primitiveType: "DCert" }
+            } else if (e.message.includes("Credential")) {
+                return { primitiveType: "SpendingCredential" }
+            } else if (e.message.includes("OutputDatum")) {
+                return { primitiveType: "TxOutputDatum" }
+            } else if (e.message.includes("PubKey")) {
+                return { primitiveType: "PubKey" }
+            } else if (e.message.includes("ScriptHash")) {
+                return { primitiveType: "ScriptHash" }
             } else {
                 throw e
             }
         }
+    }
+
+    /**
+     * @private
+     * @param {Program} program
+     * @param {{[name: string]: ScriptHashType}} validatorTypes
+     * @returns {Record<string, Record<string, DataType>>}}
+     */
+    getProgramTypes(program, validatorTypes) {
+        const topScope = program.evalTypes(validatorTypes)
+
+        program.throwErrors()
+
+        /**
+         * @type {Record<string, Record<string, DataType>>}
+         */
+        const result = {}
+
+        if (program.purpose != "endpoint") {
+            const moduleNames = [program.mainModule.name].concat(
+                program.mainImportedModules.map((m) => m.name)
+            )
+
+            for (let moduleName of moduleNames) {
+                const module_ =
+                    moduleName.value == program.name
+                        ? program.mainModule
+                        : expectSome(
+                              program.mainImportedModules.find(
+                                  (m) => m.name.value == moduleName.value
+                              )
+                          )
+
+                /**
+                 * @type {Record<string, DataType>}
+                 */
+                const moduleTypes = {}
+
+                const moduleScope = topScope.getModuleScope(moduleName)
+
+                moduleScope.loopTypes((name, type) => {
+                    if (module_.statements.some((s) => s.name.value == name)) {
+                        if (type?.asDataType) {
+                            moduleTypes[name] = type.asDataType
+                        }
+                    }
+                })
+
+                result[moduleName.value] = moduleTypes
+            }
+        }
+
+        return result
     }
 }
