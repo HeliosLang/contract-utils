@@ -62,11 +62,11 @@ export function genTypes(schema) {
                     "MintingPolicyHash | string | number[]"
                 ]
             case "PubKey":
-                return ["string", "string | number[]"]
+                return ["PubKey", "PubKey | string | number[]"]
             case "PubKeyHash":
                 return ["PubKeyHash", "PubKeyHash | string | number[]"]
             case "Real":
-                return ["number", "numer"]
+                return ["number", "number"]
             case "StakingCredential":
                 return [
                     "StakingCredential",

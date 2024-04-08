@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
-import { promises, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, fstat, promises, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
-import { readHeader, translateImportPaths } from "@helios-lang/compiler-utils"
+import { Cli, Command, EnumOpt, StringOpt } from "@helios-lang/cli-utils"
 import { LoadedScriptsWriter } from "./codegen/index.js"
 import { loadCompilerLib } from "./compiler/index.js"
 import { typeCheckFiles, typeCheckScripts } from "./compiler/ops.js"
+import { None } from "@helios-lang/type-utils"
 
 /**
  * @typedef {import("./compiler/CompilerLib.js").CompilerLib} CompilerLib
@@ -21,10 +22,50 @@ import { typeCheckFiles, typeCheckScripts } from "./compiler/ops.js"
  * }} SourceDetails
  */
 
-async function main() {
-    const lib = loadCompilerLib()
+   /**
+     * @typedef {"javascript" | "typescript"} FormatKind
+     */
 
-    const { outDir } = parseArgs(process.argv)
+async function main() {
+ 
+
+    const cli = new Cli({
+        minArgs: 0,
+        maxArgs: 0,
+        options: {
+            outDir: new StringOpt({
+                long: "--out-dir",
+                short: "-o",
+                default: () => process.cwd()
+            }),
+            format: new EnumOpt({
+                long: "--format",
+                short: "-f",
+                variants: /** @type {FormatKind[]} */ (["javascript", "typescript"]),
+                default: () => {
+                    const path = findPackageJson()
+
+                    if (path && existsSync(join(dirname(path), "tsconfig.json"))) {
+                        return "typescript"
+                    } else {
+                        return "javascript"
+                    }
+                }
+            })
+        },
+        action: mainInternal
+    })
+
+    await cli.run()
+}
+
+/**
+ * @param {string[]} _args
+ * @param {{outDir: string, format: FormatKind}} options
+ * @returns {Promise<void>}
+ */
+async function mainInternal(_args, {outDir, format}) {
+    const lib = loadCompilerLib()
 
     const filePaths = await listFiles(process.cwd(), ".hl")
     const files = readFiles(filePaths)
@@ -37,38 +78,49 @@ async function main() {
         resolve(join(dirname(current), rel))
     )
 
-    const [js, dts] = LoadedScriptsWriter.new()
+    const [js, dts, ts] = LoadedScriptsWriter.new()
         .writeModules(modules)
         .writeValidators(validators)
         .finalize()
 
-    const jsPath = join(outDir, "index.js")
-    const dtsPath = join(outDir, "index.d.ts")
+    if (format == "typescript") {
+        const tsPath = join(outDir, "index.ts")
 
-    writeFileSync(jsPath, js)
-    writeFileSync(dtsPath, dts)
+        writeFileSync(tsPath, ts)
 
-    console.log(`  Output:`)
-    console.log(`    ${jsPath}`)
-    console.log(`    ${dtsPath}`)
+        console.log(`  Output:`)
+        console.log(`    ${tsPath}`)
+    } else {
+        const jsPath = join(outDir, "index.js")
+        const dtsPath = join(outDir, "index.d.ts")
+
+        writeFileSync(jsPath, js)
+        writeFileSync(dtsPath, dts)
+
+        console.log(`  Output:`)
+        console.log(`    ${jsPath}`)
+        console.log(`    ${dtsPath}`)
+    }
 }
 
 main()
 
 /**
  * @param {string[]} args
- * @returns {{outDir: string}}
+ * @returns {{outDir: string, isTypescript: boolean}}
  */
 function parseArgs(args) {
+    const isTypescript = args.indexOf("--ts") != -1
+
     let i = args.indexOf("-o")
     if (i != -1) {
-        if (i == args.length - 1) {
+        if (i == args.length - 1 || args[i+1].startsWith("-")) {
             throw new Error("expected argument after -o")
         }
 
-        return { outDir: resolve(args[i + 1]) }
+        return { outDir: resolve(args[i + 1]), isTypescript }
     } else {
-        return { outDir: process.cwd() }
+        return { outDir: process.cwd(), isTypescript }
     }
 }
 
@@ -112,46 +164,24 @@ function readFiles(filePaths) {
 }
 
 /**
- *
- * @param {{[path: string]: string}} files
- * @returns {string[]}
+ * @param {string} fileName
+ * @returns {Option<string>}
  */
-function preparseFiles(files) {
-    const partialSources = {}
+function findPackageJson(fileName = "package.json") {
+    let dir = process.cwd()
 
-    for (let path in files) {
-        const [purpose, name] = readHeader(files[path])
+    let path = join(dir, fileName)
+    let found = existsSync(path)
 
-        partialSources[path] = {
-            name: name,
-            purpose: purpose,
-            sourceCode: files[path]
-        }
+    while(!found) {
+        dir = dirname(dir)
+        path = join(dir, fileName)
+        found = existsSync(path)
     }
 
-    /**
-     * @type {{[name: string]: SourceDetails}}
-     */
-    const sources = {}
-
-    for (let path in files) {
-        const sourceCode = translateImportPaths(files[path], (relPath) => {
-            const absPath = resolve(join(dirname(path), relPath))
-
-            const d = partialSources[absPath] ?? partialSources[absPath + ".hl"]
-
-            if (!d) {
-                throw new Error(`'${relPath}' not found`)
-            }
-
-            return d.name
-        })
-
-        sources[partialSources[path].name] = {
-            ...partialSources[path],
-            sourceCode: sourceCode
-        }
+    if (found) {
+        return path
+    } else {
+        return None
     }
-
-    return Object.values(sources).map((s) => s.sourceCode)
 }

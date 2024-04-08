@@ -1,5 +1,9 @@
 module utils
 
+const my_assetclass: AssetClass = AssetClass::new(Scripts::match_string_policy, #)
+
+const my_hash: ValidatorHash = Scripts::match_string
+
 func compare(a: String, b: String) -> Bool {
     a == b
 }

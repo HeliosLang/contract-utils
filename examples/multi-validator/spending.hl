@@ -1,6 +1,6 @@
 spending match_string
 
-import { compare } from "./utils.hl"
+import { compare, my_assetclass } from "./utils.hl"
 
 enum Datum {
 	One {
@@ -14,5 +14,5 @@ enum Datum {
 
 func main(datum: Datum, redeemer: String, ctx: ScriptContext) -> Bool {
 	compare(datum.switch{d: One => d.message, d: Two => d.code.show()}, redeemer) && 
-	  ctx.tx.minted.get(AssetClass::new(Scripts::match_string_policy, #)) > 0
+	  ctx.tx.minted.get(my_assetclass) > 0
 }

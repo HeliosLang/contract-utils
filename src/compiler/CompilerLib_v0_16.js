@@ -4,7 +4,6 @@ import { readHeader } from "@helios-lang/compiler-utils"
 /**
  * @typedef {import("../codegen/index.js").TypeCheckedModule} TypeCheckedModule
  * @typedef {import("../codegen/index.js").TypeCheckedValidator} TypeCheckedValidator
- 
  * @typedef {import("../codegen/index.js").TypeSchema} InternalTypeDetails
  * @typedef {import("./CompilerLib.js").CompileOptions} CompileOptions
  * @typedef {import("./CompilerLib.js").CompileOutput} CompileOutput
@@ -239,7 +238,7 @@ export class CompilerLib_v0_16 {
                     moduleDepedencies: m
                         .filterDependencies(allModules)
                         .map((m) => m.name.value),
-                    types: {} // not yet exported
+                    types: {}
                 }
             }
         }
@@ -459,6 +458,8 @@ export class CompilerLib_v0_16 {
     }
 
     /**
+     * Tries to convert a compiler type into TypeSchema
+     * TODO: make sure it works for all structs and enums
      * @private
      * @param {DataType} dt
      * @returns {InternalTypeDetails}
