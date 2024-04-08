@@ -48,8 +48,11 @@ export function genTypes(schema) {
                 return ["boolean", "boolean"]
             case "ByteArray":
                 return ["number[]", "number[]"]
-            case "Credential":
-                return ["Credential", "Credential | PubKeyHash | ValidatorHash"]
+            case "SpendingCredential":
+                return [
+                    "SpendingCredential",
+                    "SpendingCredential | PubKeyHash | ValidatorHash"
+                ]
             case "Data":
                 return ["UplcData", "UplcData"]
             case "Duration":
