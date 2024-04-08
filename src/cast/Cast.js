@@ -1,6 +1,4 @@
 import { decodeUtf8, encodeUtf8 } from "@helios-lang/codec-utils"
-import { REAL_PRECISION } from "@helios-lang/compiler-utils"
-import { None } from "@helios-lang/type-utils"
 import {
     Address,
     AssetClass,
@@ -19,6 +17,7 @@ import {
     ValidatorHash,
     Value
 } from "@helios-lang/ledger"
+import { None } from "@helios-lang/type-utils"
 import {
     ByteArrayData,
     ConstrData,
@@ -27,8 +26,10 @@ import {
     MapData,
     decodeBoolData,
     decodeOptionData,
+    decodeRealData,
     encodeBoolData,
-    encodeOptionData
+    encodeOptionData,
+    encodeRealData
 } from "@helios-lang/uplc"
 
 /**
@@ -103,7 +104,7 @@ function schemaToUplc(schema, x) {
             case "PubKeyHash":
                 return PubKeyHash.fromAlike(x).toUplcData()
             case "Real":
-                return new IntData(Math.round(x * Math.pow(10, REAL_PRECISION)))
+                return encodeRealData(x)
             case "ScriptHash":
                 return ScriptHash.fromAlike(x).toUplcData()
             case "StakingCredential":
@@ -217,10 +218,7 @@ function uplcToSchema(schema, data) {
             case "PubKeyHash":
                 return PubKeyHash.fromUplcData(data)
             case "Real":
-                return (
-                    Number(IntData.expect(data).value) /
-                    Math.pow(10, REAL_PRECISION)
-                )
+                return decodeRealData(data)
             case "ScriptHash":
                 return ScriptHash.fromUplcData(data)
             case "StakingCredential":
