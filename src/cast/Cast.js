@@ -133,7 +133,9 @@ function schemaToUplc(schema, x) {
             case "Value":
                 return Value.fromAlike(x).toUplcData()
             default:
-                throw new Error("not yet implemented")
+                throw new Error(
+                    `not yet implemented for ${schema.primitiveType}`
+                )
         }
     } else if ("listItemType" in schema) {
         return new ListData(x.map((x) => schemaToUplc(schema.listItemType, x)))
@@ -183,7 +185,9 @@ function schemaToUplc(schema, x) {
             )
         )
     } else {
-        throw new Error("not yet implemented")
+        throw new Error(
+            `not yet implemented for ${JSON.stringify(schema, undefined, 4)}`
+        )
     }
 }
 
@@ -242,7 +246,9 @@ function uplcToSchema(schema, data) {
             case "Value":
                 return Value.fromUplcData(data)
             default:
-                throw new Error("not yet implemented")
+                throw new Error(
+                    `not yet implemented for ${schema.primitiveType}`
+                )
         }
     } else if ("listItemType" in schema) {
         return ListData.expect(data).items.map((x) =>
@@ -312,6 +318,8 @@ function uplcToSchema(schema, data) {
             )
         }
     } else {
-        throw new Error("not yet implemented")
+        throw new Error(
+            `not yet implemented for ${JSON.stringify(schema, undefined, 4)}`
+        )
     }
 }
