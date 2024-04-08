@@ -2,11 +2,11 @@ import { decodeUtf8, encodeUtf8 } from "@helios-lang/codec-utils"
 import {
     Address,
     AssetClass,
-    Credential,
     DatumHash,
     MintingPolicyHash,
     PubKeyHash,
     ScriptHash,
+    SpendingCredential,
     StakingCredential,
     StakingHash,
     StakingValidatorHash,
@@ -92,7 +92,7 @@ function schemaToUplc(schema, x) {
                 return new ByteArrayData(x)
             case "Credential":
             case "PaymentCredential":
-                return Credential.fromAlike(x).toUplcData()
+                return SpendingCredential.fromAlike(x).toUplcData()
             case "Data":
                 return x
             case "DatumHash":
@@ -206,7 +206,7 @@ function uplcToSchema(schema, data) {
             case "ByteArray":
                 return ByteArrayData.expect(data).bytes
             case "Credential":
-                return Credential.fromUplcData(data)
+                return SpendingCredential.fromUplcData(data)
             case "Data":
                 return data
             case "DCert":
