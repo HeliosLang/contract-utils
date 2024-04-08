@@ -133,7 +133,6 @@ export class LoadedScriptsWriter {
         this.definition.writeLine(
             'import { Cast } from "@helios-lang/contract-utils";'
         )
-
         ;[this.declaration, this.combined].forEach((w) => {
             w.writeLine('import type {UplcData} from "@helios-lang/ledger";')
             w.writeLine(
@@ -170,8 +169,8 @@ export class LoadedScriptsWriter {
 
         this.combined.write(
             `export const ${m.name} = {
-    $name: "${m.name}",
-    $purpose: "${m.purpose}",
+    $name: "${m.name}" as "${m.name}",
+    $purpose: "${m.purpose}" as "${m.purpose}",
     $sourceCode: ${JSON.stringify(m.sourceCode)} as string,
     $dependencies: [${m.moduleDepedencies.join(", ")}],
 }
@@ -219,8 +218,8 @@ export class LoadedScriptsWriter {
 
         this.combined.write(
             `export const ${v.name} = {
-    $name: "${v.name}",
-    $purpose: "${v.purpose}",
+    $name: "${v.name}" as "${v.name}",
+    $purpose: "${v.purpose}" as "${v.purpose}",
     $sourceCode: ${JSON.stringify(v.sourceCode)} as string,
     $dependencies: [${v.moduleDepedencies.join(", ")}],
     $hashDependencies: [${v.hashDependencies.filter((d) => d != v.name).join(", ")}],
