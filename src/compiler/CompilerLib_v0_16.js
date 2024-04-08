@@ -542,7 +542,8 @@ export class CompilerLib_v0_16 {
                         : expectSome(
                               program.mainImportedModules.find(
                                   (m) => m.name.value == moduleName.value
-                              )
+                              ),
+                              `module ${moduleName.value} not found`
                           )
 
                 /**
