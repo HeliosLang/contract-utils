@@ -146,6 +146,21 @@ export class CompilerLib_v0_16 {
      */
     constructor(lib) {
         this.lib = lib
+
+        this.applyPatches()
+    }
+
+    /**
+     * @private
+     */
+    applyPatches() {
+        Object.defineProperty(this.lib.RawDataType, "typeDetails", {
+            get: () => ({
+                inputType: "UplcData",
+                outputType:   "UplcData",
+                internalType: {type: "Data"}
+            })
+        })
     }
 
     /**
