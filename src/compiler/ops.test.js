@@ -1,9 +1,9 @@
-import { describe, it } from "node:test";
-import { deepEqual } from "node:assert";
-import { Cast } from "../cast/index.js";
-import { loadCompilerLib, typeCheckScripts } from "./ops.js";
-import { expectSome } from "@helios-lang/type-utils";
-import { ByteArrayData, IntData } from "@helios-lang/uplc";
+import { describe, it } from "node:test"
+import { deepEqual } from "node:assert"
+import { Cast } from "../cast/index.js"
+import { loadCompilerLib, typeCheckScripts } from "./ops.js"
+import { expectSome } from "@helios-lang/type-utils"
+import { ByteArrayData, IntData } from "@helios-lang/uplc"
 
 /**
  * @typedef {import("../codegen/index.js").TypeSchema} TypeSchema
@@ -33,20 +33,23 @@ describe(typeCheckScripts.name, () => {
          */
         const expectedTypeSchema = {
             enumVariantTypes: [
-                {name: "Foo", fieldTypes: []},
-                {name: "Bar", fieldTypes: [
-                    {
-                        name: "data",
-                        type: {
-                            mapKeyType: {
-                                primitiveType: "String"
-                            },
-                            mapValueType: {
-                                primitiveType: "Data"
+                { name: "Foo", fieldTypes: [] },
+                {
+                    name: "Bar",
+                    fieldTypes: [
+                        {
+                            name: "data",
+                            type: {
+                                mapKeyType: {
+                                    primitiveType: "String"
+                                },
+                                mapValueType: {
+                                    primitiveType: "Data"
+                                }
                             }
                         }
-                    }
-                ]}
+                    ]
+                }
             ]
         }
 
@@ -54,14 +57,21 @@ describe(typeCheckScripts.name, () => {
 
         const cast = new Cast(datumTypeSchema)
 
-        cast.fromUplcData(cast.toUplcData({
-            Foo: {}
-        }))
+        cast.fromUplcData(
+            cast.toUplcData({
+                Foo: {}
+            })
+        )
 
-        cast.fromUplcData(cast.toUplcData({
-            Bar: {
-                data: [["hello", new IntData(0)], ["world", new ByteArrayData([])]]
-            }
-        }))
+        cast.fromUplcData(
+            cast.toUplcData({
+                Bar: {
+                    data: [
+                        ["hello", new IntData(0)],
+                        ["world", new ByteArrayData([])]
+                    ]
+                }
+            })
+        )
     })
 })

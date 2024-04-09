@@ -157,8 +157,8 @@ export class CompilerLib_v0_16 {
         Object.defineProperty(this.lib.RawDataType, "typeDetails", {
             get: () => ({
                 inputType: "UplcData",
-                outputType:   "UplcData",
-                internalType: {type: "Data"}
+                outputType: "UplcData",
+                internalType: { type: "Data" }
             })
         })
     }
