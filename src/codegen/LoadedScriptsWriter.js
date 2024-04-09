@@ -177,16 +177,16 @@ export class LoadedScriptsWriter {
 
         this.declaration.write(
             `export const ${m.name}: {
-    $name: string
-    $purpose: string
+    $name: "${m.name}"
+    $purpose: "${m.purpose}"
     $sourceCode: string
     $dependencies: [${m.moduleDepedencies.map((d) => `typeof ${d}`).join(", ")}],\n`
         )
 
         this.combined.write(
             `export const ${m.name} = {
-    $name: "${m.name}" as "${m.name}",
-    $purpose: "${m.purpose}" as "${m.purpose}",
+    $name: "${m.name}" as const,
+    $purpose: "${m.purpose}" as const,
     $sourceCode: ${JSON.stringify(m.sourceCode)} as string,
     $dependencies: [${m.moduleDepedencies.join(", ")}],\n`
         )
@@ -235,8 +235,8 @@ ${datumTypes ? `    $Datum: Cast<${datumTypes[0]}, ${datumTypes[1]}>,\n` : ""}`
 
         this.combined.write(
             `export const ${v.name} = {
-    $name: "${v.name}" as "${v.name}",
-    $purpose: "${v.purpose}" as "${v.purpose}",
+    $name: "${v.name}" as const,
+    $purpose: "${v.purpose}" as const,
     $sourceCode: ${JSON.stringify(v.sourceCode)} as string,
     $dependencies: [${v.moduleDepedencies.join(", ")}],
     $hashDependencies: [${v.hashDependencies.filter((d) => d != v.name).join(", ")}],

@@ -63,7 +63,7 @@ import { Cast } from "../cast/index.js"
  *         PermissiveType<V["$Redeemer"]>
  *       >
  *     > :
- *     V extends {"$purpose": ("certifying" | "rewarding")} ? StakingValidatorHash<
+ *     V extends {"$purpose": ("certifying" | "rewarding" | "staking")} ? StakingValidatorHash<
  *       StakingContext<
  *         StrictType<V["$Redeemer"]>,
  *         PermissiveType<V["$Redeemer"]>
