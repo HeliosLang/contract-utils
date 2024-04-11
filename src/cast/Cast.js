@@ -117,9 +117,7 @@ function schemaToUplc(schema, x) {
             case "String":
                 return new ByteArrayData(encodeUtf8(x))
             case "Time":
-                // milliseconds since 1 jan 1970
-                const ms = x instanceof Date ? x.getTime() : x
-                return new IntData(ms)
+                return new IntData(x)
             case "TimeRange":
                 return TimeRange.new(x).toUplcData()
             case "TxId":
@@ -241,7 +239,7 @@ function uplcToSchema(schema, data) {
             case "String":
                 return decodeUtf8(ByteArrayData.expect(data).bytes)
             case "Time":
-                return new Date(Number(IntData.expect(data).value))
+                return Number(IntData.expect(data).value) // a number has enough precision to represent ms since 1970 for another 142000 years
             case "TimeRange":
                 return TimeRange.fromUplcData(data)
             case "TxId":

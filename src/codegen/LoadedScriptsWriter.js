@@ -135,11 +135,16 @@ export class LoadedScriptsWriter {
             'import { Cast } from "@helios-lang/contract-utils";'
         )
         ;[this.declaration, this.combined].forEach((w) => {
-            w.writeLine('import type {UplcData} from "@helios-lang/ledger";')
+            w.writeLine(
+                'import type { IntLike } from "@helios-lang/codec-utils";'
+            )
+            w.writeLine('import { Cast } from "@helios-lang/contract-utils";')
+            w.writeLine(
+                'import type { TimeLike, UplcData } from "@helios-lang/ledger";'
+            )
             w.writeLine(
                 'import { Address, AssetClass, DatumHash, MintingPolicyHash, PubKey, PubKeyHash, SpendingCredential, StakingCredential, StakingHash, StakingValidatorHash, TimeRange, TxId, TxOutputDatum, ValidatorHash, Value } from "@helios-lang/ledger";'
             )
-            w.writeLine('import { Cast } from "@helios-lang/contract-utils";')
         })
     }
 

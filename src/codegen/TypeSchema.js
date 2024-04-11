@@ -56,9 +56,9 @@ export function genTypes(schema) {
             case "Data":
                 return ["UplcData", "UplcData"]
             case "Duration":
-                return ["bigint", "bigint | number"]
+                return ["bigint", "IntLike"]
             case "Int":
-                return ["bigint", "bigint | number | string"]
+                return ["bigint", "IntLike"]
             case "MintingPolicyHash":
                 return [
                     "MintingPolicyHash",
@@ -88,11 +88,11 @@ export function genTypes(schema) {
             case "String":
                 return ["string", "string"]
             case "Time":
-                return ["Date", "Date | bigint | number"]
+                return ["number", "TimeLike"]
             case "TimeRange":
                 return [
                     "TimeRange",
-                    "TimeRange | [Date | number | bigint, Date | number | bigint] | {start?: Date | number | bigint, excludeStart?: boolean, end?: Date | number | bigint, excludeEnd?: boolean}"
+                    "TimeRange | [TimeLike, TimeLike] | {start?: TimeLike, excludeStart?: boolean, end?: TimeLike, excludeEnd?: boolean}"
                 ]
             case "TxId":
                 return ["TxId", "TxId | string | number[]"]
@@ -108,7 +108,7 @@ export function genTypes(schema) {
             case "Value":
                 return [
                     "Value",
-                    "Value | [MintingPolicyHash | string | number[], [number[] | string, bigint | number | string][]][] | {mph: MintingPolicyHash | string | number[], tokens: {name: number[] | string, qty: bigint | number | string}[]}[]"
+                    "Value | [MintingPolicyHash | string | number[], [number[] | string, IntLike][]][] | {mph: MintingPolicyHash | string | number[], tokens: {name: number[] | string, qty: IntLike}[]}[]"
                 ]
             default:
                 throw new Error(
