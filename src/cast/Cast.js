@@ -81,39 +81,39 @@ function schemaToUplc(schema, x) {
     if ("primitiveType" in schema) {
         switch (schema.primitiveType) {
             case "Address":
-                return Address.fromAlike(x).toUplcData()
+                return Address.new(x).toUplcData()
             case "Any":
                 return new IntData(0n)
             case "AssetClass":
-                return AssetClass.fromAlike(x).toUplcData()
+                return AssetClass.new(x).toUplcData()
             case "Bool":
                 return encodeBoolData(x)
             case "ByteArray":
                 return new ByteArrayData(x)
             case "Credential":
             case "PaymentCredential":
-                return SpendingCredential.fromAlike(x).toUplcData()
+                return SpendingCredential.new(x).toUplcData()
             case "Data":
                 return x
             case "DatumHash":
-                return DatumHash.fromAlike(x).toUplcData()
+                return DatumHash.new(x).toUplcData()
             case "DCert":
                 return x.toUplcData()
             case "Duration":
             case "Int":
                 return new IntData(x)
             case "MintingPolicyHash":
-                return MintingPolicyHash.fromAlike(x).toUplcData()
+                return MintingPolicyHash.new(x).toUplcData()
             case "PubKeyHash":
-                return PubKeyHash.fromAlike(x).toUplcData()
+                return PubKeyHash.new(x).toUplcData()
             case "Real":
                 return encodeRealData(x)
             case "ScriptHash":
-                return ScriptHash.fromAlike(x).toUplcData()
+                return ScriptHash.new(x).toUplcData()
             case "StakingCredential":
-                return StakingCredential.fromAlike(x).toUplcData()
+                return StakingCredential.new(x).toUplcData()
             case "StakingHash":
-                return StakingHash.fromAlike(x).toUplcData()
+                return StakingHash.new(x).toUplcData()
             case "String":
                 return new ByteArrayData(encodeUtf8(x))
             case "Time":
@@ -121,20 +121,20 @@ function schemaToUplc(schema, x) {
                 const ms = x instanceof Date ? x.getTime() : x
                 return new IntData(ms)
             case "TimeRange":
-                return TimeRange.fromAlike(x).toUplcData()
+                return TimeRange.new(x).toUplcData()
             case "TxId":
-                return TxId.fromAlike(x).toUplcData()
+                return TxId.new(x).toUplcData()
             case "TxOutputDatum":
                 return x
-                    ? TxOutputDatum.fromAlike(x)?.toUplcData() ??
+                    ? TxOutputDatum.new(x)?.toUplcData() ??
                           new ConstrData(0, [])
                     : new ConstrData(0, [])
             case "TxOutputId":
-                return TxOutputId.fromAlike(x).toUplcData()
+                return TxOutputId.new(x).toUplcData()
             case "ValidatorHash":
-                return ValidatorHash.fromAlike(x).toUplcData()
+                return ValidatorHash.new(x).toUplcData()
             case "Value":
-                return Value.fromAlike(x).toUplcData()
+                return Value.new(x).toUplcData()
             default:
                 throw new Error(
                     `not yet implemented for ${schema.primitiveType}`
