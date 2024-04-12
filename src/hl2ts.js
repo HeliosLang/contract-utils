@@ -32,8 +32,10 @@ import { None } from "@helios-lang/type-utils"
  * @typedef {"javascript" | "typescript"} FormatKind
  */
 
+const NAME = "hl2ts"
+
 async function main() {
-    const cli = new Cli({
+    const cli = new Cli(NAME, {
         minArgs: 0,
         maxArgs: 0,
         options: {
@@ -80,7 +82,7 @@ async function mainInternal(_args, { outDir, format }) {
     const filePaths = await listFiles(process.cwd(), ".hl")
     const files = readFiles(filePaths)
 
-    console.log(`hl2ts using Helios compiler v${lib.version}`)
+    console.log(`${NAME} using Helios compiler v${lib.version}`)
     console.log(`  Transpiling ${Object.keys(files).length} inputs:`)
     filePaths.forEach((p) => console.log(`    ${p}`))
 

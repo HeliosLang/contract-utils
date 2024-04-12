@@ -35,7 +35,7 @@
         "@helios-lang/compiler": "*"
     },
     "dependencies": {
-        "@helios-lang/cli-utils": "^0.1.2",
+        "@helios-lang/cli-utils": "^0.1.3",
         "@helios-lang/codec-utils": "^0.1.29",
         "@helios-lang/compiler-utils": "^0.1.21",
         "@helios-lang/ledger": "^0.1.44",
