@@ -3,6 +3,7 @@
 import {
     existsSync,
     fstat,
+    mkdirSync,
     promises,
     readFileSync,
     writeFileSync
@@ -103,8 +104,12 @@ async function mainInternal(_args, { outDir, format }) {
         console.log(`  Output:`)
         console.log(`    ${tsPath}`)
     } else {
-        const jsPath = join(outDir, "index.js")
-        const dtsPath = join(outDir, "index.d.ts")
+        const resolvedOutDir = resolve(outDir)
+
+        mkdirIfNotExists(resolvedOutDir)
+
+        const jsPath = join(resolvedOutDir, "index.js")
+        const dtsPath = join(resolvedOutDir, "index.d.ts")
 
         writeFileSync(jsPath, js)
         writeFileSync(dtsPath, dts)
@@ -116,25 +121,6 @@ async function mainInternal(_args, { outDir, format }) {
 }
 
 main()
-
-/**
- * @param {string[]} args
- * @returns {{outDir: string, isTypescript: boolean}}
- */
-function parseArgs(args) {
-    const isTypescript = args.indexOf("--ts") != -1
-
-    let i = args.indexOf("-o")
-    if (i != -1) {
-        if (i == args.length - 1 || args[i + 1].startsWith("-")) {
-            throw new Error("expected argument after -o")
-        }
-
-        return { outDir: resolve(args[i + 1]), isTypescript }
-    } else {
-        return { outDir: process.cwd(), isTypescript }
-    }
-}
 
 /**
  * @param {string} dir
@@ -195,5 +181,14 @@ function findPackageJson(fileName = "package.json") {
         return path
     } else {
         return None
+    }
+}
+
+/**
+ * @param {string} dir
+ */
+function mkdirIfNotExists(dir) {
+    if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true })
     }
 }
