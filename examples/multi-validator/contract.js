@@ -7,15 +7,13 @@ export function createApp() {
     const context = ContractContextBuilder.new()
         .with(match_string)
         .with(match_string_policy)
-        .build(
-            {
-                isMainnet: false
-            },
-            {
+        .build({
+            isMainnet: false,
+            expectedHashes: {
                 match_string_policy:
                     "f7c8a87011f1aec5967dd3cd68b7a2c26135d750867bfd957b4d8967" // expected hash for match_string_policy
             }
-        )
+        })
 
     console.log(context.match_string_policy.$hash.toHex())
 

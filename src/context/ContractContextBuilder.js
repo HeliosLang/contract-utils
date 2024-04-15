@@ -22,6 +22,13 @@ import { configureCast } from "../cast/Cast.js"
  */
 
 /**
+ * @typedef {{
+ *   isMainnet: boolean
+ *   expectedHashes?: {[name: string]: string}
+ * }} ContractContextBuildProps
+ */
+
+/**
  * @template {{[name: string]: LoadedValidator}} Vs
  * @template {{[name: string]: LoadedModule}} Ms
  */
@@ -98,11 +105,11 @@ export class ContractContextBuilder {
     }
 
     /**
-     * @param {CastConfig} castConfig
-     * @param {Option<{[name: string]: string}>} expectedHashes
+     * @param {ContractContextBuildProps} props
      * @returns {ContractContext<Vs, Ms>}
      */
-    build(castConfig, expectedHashes = None) {
+    build(props) {
+        const castConfig = { isMainnet: props.isMainnet }
         const lib = loadCompilerLib()
 
         const dagCompiler = new DagCompiler(lib, castConfig)
@@ -112,7 +119,7 @@ export class ContractContextBuilder {
          */
         const hashes = dagCompiler.build(
             Object.values(this.validators),
-            expectedHashes
+            props.expectedHashes
         )
 
         /**
