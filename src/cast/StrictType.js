@@ -1,6 +1,18 @@
-import { Cast } from "./Cast.js"
+export {}
 
 /**
- * @template {Cast} C
- * @typedef {C extends Cast<infer TStrict, any> ? TStrict : never} StrictType
+ * @template TStrict
+ * @template TPermissive
+ * @typedef {import("./Cast.js").ConfigurableCast<TStrict, TPermissive>} ConfigurableCast
+ */
+
+/**
+ * @template TStrict
+ * @template TPermissive
+ * @typedef {import("./Cast.js").CastLike<TStrict, TPermissive>} CastLike
+ */
+
+/**
+ * @template {CastLike<any, any>} C
+ * @typedef {C extends CastLike<infer TStrict, any> ? TStrict : never} StrictType
  */

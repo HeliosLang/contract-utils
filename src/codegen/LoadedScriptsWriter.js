@@ -128,24 +128,75 @@ export class LoadedScriptsWriter {
     }
 
     /**
+     * @param {string} path
+     * @param {string} typeName
+     * @param {string[]} typeParams
+     * @returns {LoadedScriptsWriter}
+     */
+    writeImportType(path, typeName, typeParams = []) {
+        this.definition.writeLine("/**")
+
+        for (let tp of typeParams) {
+            this.definition.writeLine(` * @template ${tp}`)
+        }
+
+        this.definition
+            .writeLine(
+                ` * @typedef {import("${path}").${typeName}${typeParams.length > 0 ? `<${typeParams.join(", ")}>` : ""}} ${typeName}`
+            )
+            .writeLine(" */")
+        ;[this.declaration, this.combined].forEach((w) => {
+            w.writeLine(`import type { ${typeName} } from "${path}";`)
+        })
+
+        return this
+    }
+
+    /**
+     * @param {string} path
+     * @param {string[]} objectNames
+     * @returns {LoadedScriptsWriter}
+     */
+    writeImport(path, ...objectNames) {
+        ;[this.definition, this.declaration, this.combined].forEach((w) => {
+            w.writeLine(`import { ${objectNames.join(", ")} } from "${path}";`)
+        })
+
+        return this
+    }
+
+    /**
      * @private
      */
     writeHeaders() {
-        this.definition.writeLine(
-            'import { Cast } from "@helios-lang/contract-utils";'
+        this.writeImport("@helios-lang/contract-utils", "Cast")
+        this.writeImport(
+            "@helios-lang/ledger",
+            "Address",
+            "AssetClass",
+            "DatumHash",
+            "MintingPolicyHash",
+            "PubKey",
+            "PubKeyHash",
+            "SpendingCredential",
+            "StakingCredential",
+            "StakingHash",
+            "StakingValidatorHash",
+            "TimeRange",
+            "TxId",
+            "TxOutputDatum",
+            "ValidatorHash",
+            "Value"
         )
-        ;[this.declaration, this.combined].forEach((w) => {
-            w.writeLine(
-                'import type { IntLike } from "@helios-lang/codec-utils";'
-            )
-            w.writeLine('import { Cast } from "@helios-lang/contract-utils";')
-            w.writeLine(
-                'import type { TimeLike, UplcData } from "@helios-lang/ledger";'
-            )
-            w.writeLine(
-                'import { Address, AssetClass, DatumHash, MintingPolicyHash, PubKey, PubKeyHash, SpendingCredential, StakingCredential, StakingHash, StakingValidatorHash, TimeRange, TxId, TxOutputDatum, ValidatorHash, Value } from "@helios-lang/ledger";'
-            )
-        })
+        this.writeImportType("@helios-lang/codec-utils", "IntLike")
+        this.writeImportType("@helios-lang/contract-utils", "CastConfig")
+        this.writeImportType(
+            "@helios-lang/contract-utils",
+            "ConfigurableCast",
+            ["TStrict", "TPermissive"]
+        )
+        this.writeImportType("@helios-lang/ledger", "TimeLike")
+        this.writeImportType("@helios-lang/ledger", "UplcData")
     }
 
     /**
@@ -153,20 +204,28 @@ export class LoadedScriptsWriter {
      * @param {Record<string, TypeSchema>} types
      */
     writeTypes(types) {
+        ;[this.definition, this.declaration, this.combined].forEach((w) =>
+            w.write("    $types: {\n")
+        )
+
         for (let key in types) {
             const t = types[key]
             const tsTypes = genTypes(t)
 
             this.definition.write(
-                `    ${key}: new Cast(${JSON.stringify(t)}),\n`
+                `        ${key}: (config) => /** @type {Cast<${tsTypes[0]}, ${tsTypes[1]}>} */ (new Cast(${JSON.stringify(t)}, config)),\n`
             )
             this.declaration.write(
-                `    ${key}: Cast<${tsTypes[0]}, ${tsTypes[1]}>,\n`
+                `        ${key}: ConfigurableCast<${tsTypes[0]}, ${tsTypes[1]}>,\n`
             )
             this.combined.write(
-                `    ${key}: new Cast<${tsTypes[0]}, ${tsTypes[1]}>(${JSON.stringify(t)}),\n`
+                `        ${key}: (config: CastConfig) => new Cast<${tsTypes[0]}, ${tsTypes[1]}>(${JSON.stringify(t)}, config),\n`
             )
         }
+
+        ;[this.definition, this.declaration, this.combined].forEach((w) =>
+            w.write("    },\n")
+        )
     }
 
     /**
@@ -175,10 +234,10 @@ export class LoadedScriptsWriter {
      */
     writeModule(m) {
         this.definition.write(`export const ${m.name} = {
-    $name: "${m.name}",
-    $purpose: "${m.purpose}",
+    $name: /** @type {const} */ ("${m.name}"),
+    $purpose: /** @type {const} */ ("${m.purpose}"),
     $sourceCode: ${JSON.stringify(m.sourceCode)},
-    $dependencies: [${m.moduleDepedencies.join(", ")}],\n`)
+    $dependencies: /** @type {const} */ ([${m.moduleDepedencies.join(", ")}]),\n`)
 
         this.declaration.write(
             `export const ${m.name}: {
@@ -193,7 +252,7 @@ export class LoadedScriptsWriter {
     $name: "${m.name}" as const,
     $purpose: "${m.purpose}" as const,
     $sourceCode: ${JSON.stringify(m.sourceCode)} as string,
-    $dependencies: [${m.moduleDepedencies.join(", ")}],\n`
+    $dependencies: [${m.moduleDepedencies.join(", ")}] as const,\n`
         )
 
         this.writeTypes(m.types)
@@ -213,14 +272,14 @@ export class LoadedScriptsWriter {
 
         this.definition.write(
             `export const ${v.name} = {
-    $name: "${v.name}",
-    $purpose: "${v.purpose}",
+    $name: /** @type {const} */ ("${v.name}"),
+    $purpose: /** @type {const} */ ("${v.purpose}"),
     $sourceCode: ${JSON.stringify(v.sourceCode)},
-    $dependencies: [${v.moduleDepedencies.join(", ")}],
+    $dependencies: /** @type {const} */ ([${v.moduleDepedencies.join(", ")}]),
     $hashDependencies: [${v.hashDependencies.filter((d) => d != v.name).join(", ")}],
     $dependsOnOwnHash: ${v.hashDependencies.some((d) => d == v.name)},
-    $Redeemer: new Cast(${JSON.stringify(v.Redeemer)}),
-${datumTypes ? `    $Datum: new Cast(${JSON.stringify(v.Datum)}),\n` : ""}`
+    $Redeemer: (config) => /** @type {Cast<${redeemerTypes[0]}, ${redeemerTypes[1]}>} */ (new Cast(${JSON.stringify(v.Redeemer)}, config)),
+${datumTypes ? `    $Datum: (config) => /** @type {Cast<${datumTypes[0]}, ${datumTypes[1]}>} */ (new Cast(${JSON.stringify(v.Datum)}, config)),\n` : ""}`
         )
 
         this.declaration.write(
@@ -234,8 +293,8 @@ ${datumTypes ? `    $Datum: new Cast(${JSON.stringify(v.Datum)}),\n` : ""}`
         .map((d) => `typeof ${d}`)
         .join(", ")}]
     $dependsOnOwnHash: boolean
-    $Redeemer: Cast<${redeemerTypes[0]}, ${redeemerTypes[1]}>
-${datumTypes ? `    $Datum: Cast<${datumTypes[0]}, ${datumTypes[1]}>,\n` : ""}`
+    $Redeemer: ConfigurableCast<${redeemerTypes[0]}, ${redeemerTypes[1]}>
+${datumTypes ? `    $Datum: ConfigurableCast<${datumTypes[0]}, ${datumTypes[1]}>,\n` : ""}`
         )
 
         this.combined.write(
@@ -243,11 +302,11 @@ ${datumTypes ? `    $Datum: Cast<${datumTypes[0]}, ${datumTypes[1]}>,\n` : ""}`
     $name: "${v.name}" as const,
     $purpose: "${v.purpose}" as const,
     $sourceCode: ${JSON.stringify(v.sourceCode)} as string,
-    $dependencies: [${v.moduleDepedencies.join(", ")}],
+    $dependencies: [${v.moduleDepedencies.join(", ")}] as const,
     $hashDependencies: [${v.hashDependencies.filter((d) => d != v.name).join(", ")}],
     $dependsOnOwnHash: ${v.hashDependencies.some((d) => d == v.name)} as boolean,
-    $Redeemer: new Cast<${redeemerTypes[0]}, ${redeemerTypes[1]}>(${JSON.stringify(v.Redeemer)}),
-${datumTypes ? `    $Datum: new Cast<${datumTypes[0]}, ${datumTypes[1]}>(${JSON.stringify(v.Datum)}),\n` : ""}`
+    $Redeemer: (config: CastConfig) => new Cast<${redeemerTypes[0]}, ${redeemerTypes[1]}>(${JSON.stringify(v.Redeemer)}, config),
+${datumTypes ? `    $Datum: (config: CastConfig) => new Cast<${datumTypes[0]}, ${datumTypes[1]}>(${JSON.stringify(v.Datum)}, config),\n` : ""}`
         )
 
         this.writeTypes(v.types)

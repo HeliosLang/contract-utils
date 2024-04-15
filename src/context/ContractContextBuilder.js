@@ -1,69 +1,150 @@
 import { None } from "@helios-lang/type-utils"
 import { loadCompilerLib } from "../compiler/index.js"
 import { DagCompiler } from "./DagCompiler.js"
+import { configureCast } from "../cast/Cast.js"
 
 /**
+ * @typedef {import("../cast/index.js").CastConfig} CastConfig
  * @typedef {import("../codegen/LoadedModule.js").LoadedModule} LoadedModule
  * @typedef {import("../codegen/LoadedValidator.js").LoadedValidator} LoadedValidator
  * @typedef {import("../compiler/index.js").CompilerLib} CompilerLib
  */
 
 /**
- * @template {{[name: string]: LoadedValidator}} T
- * @typedef {import("./ContractContext.js").ContractContext<T>} ContractContext
+ * @template {LoadedValidator} V
+ * @typedef {import("../codegen/LoadedValidator.js").ExtractDependencies<V>} ExtractDependencies
  */
 
 /**
- * @template {{[name: string]: LoadedValidator}} T
+ * @template {{[name: string]: LoadedValidator}} Vs
+ * @template {{[name: string]: LoadedModule}} Ms
+ * @typedef {import("./ContractContext.js").ContractContext<Vs, Ms>} ContractContext
+ */
+
+/**
+ * @template {{[name: string]: LoadedValidator}} Vs
+ * @template {{[name: string]: LoadedModule}} Ms
  */
 export class ContractContextBuilder {
     /**
      * @private
      * @readonly
-     * @type {T}
+     * @type {Vs}
      */
     validators
 
     /**
-     * @private
-     * @param {T} validators
+     * @readonly
+     * @type {Ms}
      */
-    constructor(validators) {
+    modules
+
+    /**
+     * @private
+     * @param {Vs} validators
+     * @param {Ms} modules
+     */
+    constructor(validators, modules) {
         this.validators = validators
+        this.modules = modules
     }
 
     /**
-     * @returns {ContractContextBuilder<{}>}
+     * @returns {ContractContextBuilder<{}, {}>}
      */
     static new() {
-        return new ContractContextBuilder({})
+        return new ContractContextBuilder({}, {})
     }
 
     /**
      * @template {LoadedValidator} V
      * @param {V} validator
-     * @returns {ContractContextBuilder<T & {
-     *   [K in V["$name"]]: V
-     * }>}
+     * @returns {ContractContextBuilder<
+     *   Vs & {[K in V["$name"]]: V},
+     *   Ms & ExtractDependencies<V>
+     * >}
      */
     with(validator) {
-        return new ContractContextBuilder({
-            ...this.validators,
-            [validator.$name]: validator
-        })
+        return new ContractContextBuilder(
+            /** @type {any} */ ({
+                ...this.validators,
+                [validator.$name]: validator
+            }),
+            /** @type {any} */ ({
+                ...this.modules,
+                ...Object.fromEntries(
+                    validator.$dependencies.map((d) => [d.$name, d])
+                )
+            })
+        )
     }
 
     /**
-     * @param {Option<{[name: string]: string}>} expectedHashes
-     * @returns {ContractContext<T>}
+     * @template {LoadedModule} M
+     * @param {M} m
+     * @returns {ContractContextBuilder<
+     *   Vs,
+     *   Ms & {[K in M["$name"]]: M}
+     * >}
      */
-    build(expectedHashes = None) {
+    withModule(m) {
+        return new ContractContextBuilder(
+            this.validators,
+            /** @type {any} */ ({
+                ...this.modules,
+                [m.$name]: m
+            })
+        )
+    }
+
+    /**
+     * @param {CastConfig} castConfig
+     * @param {Option<{[name: string]: string}>} expectedHashes
+     * @returns {ContractContext<Vs, Ms>}
+     */
+    build(castConfig, expectedHashes = None) {
         const lib = loadCompilerLib()
 
-        const dagCompiler = new DagCompiler(lib)
+        const dagCompiler = new DagCompiler(lib, castConfig)
 
-        return /** @type {any} */ (
-            dagCompiler.build(Object.values(this.validators), expectedHashes)
+        /**
+         * @type {any}
+         */
+        const hashes = dagCompiler.build(
+            Object.values(this.validators),
+            expectedHashes
         )
+
+        /**
+         * @type {any}
+         */
+        const res = {}
+
+        for (let name in this.modules) {
+            res[name] = Object.fromEntries(
+                Object.entries(this.modules[name].$types).map(
+                    ([typeName, castLike]) => [
+                        typeName,
+                        configureCast(castLike, castConfig)
+                    ]
+                )
+            )
+        }
+
+        for (let name in this.validators) {
+            res[name] = {
+                ...Object.fromEntries(
+                    Object.entries(this.validators[name].$types).map(
+                        ([typeName, castLike]) => [
+                            typeName,
+                            configureCast(castLike, castConfig)
+                        ]
+                    )
+                ),
+                $hash: hashes[name]
+            }
+        }
+
+        return res
     }
 }

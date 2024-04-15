@@ -38,8 +38,27 @@ import {
  */
 
 /**
- * @template [TStrict=any]
- * @template [TPermissive=any]
+ * @typedef {{
+ *   isMainnet: boolean
+ * }} CastConfig
+ */
+
+/**
+ * @template TStrict
+ * @template TPermissive
+ * @typedef {(config: CastConfig) => Cast<TStrict, TPermissive>} ConfigurableCast
+ */
+
+/**
+ * StrictType and PermissiveType work for both Cast and ConfigurableCast
+ * @template TStrict
+ * @template TPermissive
+ * @typedef {Cast<TStrict, TPermissive> | ConfigurableCast<TStrict, TPermissive>} CastLike
+ */
+
+/**
+ * @template TStrict
+ * @template TPermissive
  */
 export class Cast {
     /**
@@ -49,10 +68,18 @@ export class Cast {
     schema
 
     /**
-     * @param {TypeSchema} schema
+     * @readonly
+     * @type {CastConfig}
      */
-    constructor(schema) {
+    config
+
+    /**
+     * @param {TypeSchema} schema
+     * @param {CastConfig} config
+     */
+    constructor(schema, config) {
         this.schema = schema
+        this.config = config
     }
 
     /**
@@ -60,7 +87,7 @@ export class Cast {
      * @returns {TStrict}
      */
     fromUplcData(data) {
-        return uplcToSchema(this.schema, data)
+        return uplcToSchema(this.schema, data, this.config)
     }
 
     /**
@@ -196,13 +223,14 @@ function schemaToUplc(schema, x) {
  * This should fail when deviating
  * @param {TypeSchema} schema
  * @param {UplcData} data
+ * @param {CastConfig} config
  * @returns {any}
  */
-function uplcToSchema(schema, data) {
+function uplcToSchema(schema, data, config) {
     if ("primitiveType" in schema) {
         switch (schema.primitiveType) {
             case "Address":
-                return Address.fromUplcData(data)
+                return Address.fromUplcData(config.isMainnet, data)
             case "Any":
                 // TODO: should this throw an error?
                 return null
@@ -257,19 +285,19 @@ function uplcToSchema(schema, data) {
         }
     } else if ("listItemType" in schema) {
         return ListData.expect(data).items.map((x) =>
-            uplcToSchema(schema.listItemType, x)
+            uplcToSchema(schema.listItemType, x, config)
         )
     } else if ("mapKeyType" in schema) {
         return new Map(
             MapData.expect(data).items.map(([k, v]) => [
-                uplcToSchema(schema.mapKeyType, k),
-                uplcToSchema(schema.mapValueType, v)
+                uplcToSchema(schema.mapKeyType, k, config),
+                uplcToSchema(schema.mapValueType, v, config)
             ])
         )
     } else if ("optionSomeType" in schema) {
         const optionData = decodeOptionData(data)
         return optionData
-            ? uplcToSchema(schema.optionSomeType, optionData)
+            ? uplcToSchema(schema.optionSomeType, optionData, config)
             : None
     } else if ("structFieldTypes" in schema) {
         const nExpected = schema.structFieldTypes.length
@@ -278,7 +306,8 @@ function uplcToSchema(schema, data) {
             return {
                 [schema.structFieldTypes[0].name]: uplcToSchema(
                     schema.structFieldTypes[0].type,
-                    data
+                    data,
+                    config
                 )
             }
         } else {
@@ -293,7 +322,7 @@ function uplcToSchema(schema, data) {
             return Object.fromEntries(
                 fields.map((field, i) => [
                     schema.structFieldTypes[i].name,
-                    uplcToSchema(schema.structFieldTypes[i].type, field)
+                    uplcToSchema(schema.structFieldTypes[i].type, field, config)
                 ])
             )
         }
@@ -318,7 +347,7 @@ function uplcToSchema(schema, data) {
             [variantSchema.name]: Object.fromEntries(
                 fields.map((f, i) => [
                     variantSchema.fieldTypes[i].name,
-                    uplcToSchema(variantSchema.fieldTypes[i].type, f)
+                    uplcToSchema(variantSchema.fieldTypes[i].type, f, config)
                 ])
             )
         }
@@ -326,5 +355,20 @@ function uplcToSchema(schema, data) {
         throw new Error(
             `not yet implemented for ${JSON.stringify(schema, undefined, 4)}`
         )
+    }
+}
+
+/**
+ * @template TStrict
+ * @template TPermissive
+ * @param {CastLike<TStrict, TPermissive>} cast
+ * @param {CastConfig} config
+ * @returns {Cast<TStrict, TPermissive>}
+ */
+export function configureCast(cast, config) {
+    if (cast instanceof Cast) {
+        return cast
+    } else {
+        return cast(config)
     }
 }

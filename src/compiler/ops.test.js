@@ -6,8 +6,14 @@ import { expectSome } from "@helios-lang/type-utils"
 import { ByteArrayData, IntData } from "@helios-lang/uplc"
 
 /**
+ * @typedef {import("../cast/index.js").CastConfig} CastConfig
  * @typedef {import("../codegen/index.js").TypeSchema} TypeSchema
  */
+
+/**
+ * @typedef {CastConfig}
+ */
+const castConfig = { isMainnet: false }
 
 describe(typeCheckScripts.name, () => {
     it("correctly generates typeschema for enum containing a map", () => {
@@ -55,7 +61,7 @@ describe(typeCheckScripts.name, () => {
 
         deepEqual(datumTypeSchema, expectedTypeSchema)
 
-        const cast = new Cast(datumTypeSchema)
+        const cast = new Cast(datumTypeSchema, castConfig)
 
         cast.fromUplcData(
             cast.toUplcData({

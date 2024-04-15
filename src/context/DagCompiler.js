@@ -6,11 +6,13 @@ import {
 } from "@helios-lang/ledger"
 import { None } from "@helios-lang/type-utils"
 import { UplcProgramV2 } from "@helios-lang/uplc"
+import { configureCast } from "../cast/index.js"
 
 /**
+ * @typedef {import("../cast/index.js").CastConfig} CastConfig
  * @typedef {import("../codegen/LoadedValidator.js").LoadedValidator} LoadedValidator
  * @typedef {import("../compiler/index.js").CompilerLib} CompilerLib
- * @typedef {import("./ContractContext.js").AnyContractValidatorHash} AnyContractValidatorHash
+ * @typedef {import("./ContractContext.js").AnyContractValidatorContext} AnyContractValidatorContext
  */
 
 /**
@@ -27,24 +29,33 @@ export class DagCompiler {
     /**
      * @private
      * @readonly
-     * @type {{[name: string]: AnyContractValidatorHash}}
+     * @type {CastConfig}
+     */
+    config
+
+    /**
+     * @private
+     * @readonly
+     * @type {{[name: string]: AnyContractValidatorContext}}
      */
     cache
 
     /**
      * @param {CompilerLib} lib
+     * @param {CastConfig} castConfig
      */
-    constructor(lib) {
+    constructor(lib, castConfig) {
         this.lib = lib
+        this.castConfig = castConfig
         this.cache = {}
     }
 
     /**
      * @param {LoadedValidator[]} validators
      * @param {Option<{[name: string]: string}>} expectedHashes
-     * @returns {{[name: string]: AnyContractValidatorHash}}
+     * @returns {{[name: string]: AnyContractValidatorContext}}
      */
-    build(validators, expectedHashes = None) {
+    build(validators, castConfig, expectedHashes = None) {
         const hashTypes = this.getHashTypes(validators)
 
         /**
@@ -132,14 +143,14 @@ export class DagCompiler {
      */
     addToCache(validator, program, hash) {
         const name = validator.$name
-        const redeemer = validator.$Redeemer
+        const redeemer = configureCast(validator.$Redeemer, this.castConfig)
 
         switch (validator.$purpose) {
             case "spending":
                 this.cache[name] = new ValidatorHash(hash, {
                     program,
                     redeemer,
-                    datum: validator.$Datum
+                    datum: configureCast(validator.$Datum, this.castConfig)
                 })
                 break
             case "minting":
