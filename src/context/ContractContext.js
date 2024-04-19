@@ -59,7 +59,7 @@ import { Cast } from "../cast/index.js"
  * @typedef {V extends {"$purpose": "spending", "$Datum": CastLike<any, any>, "$Redeemer": CastLike<any, any>} ? {
  *       $hash: ValidatorHash<
  *         SpendingContext<
- *           V["$Datum"],
+ *           StrictType<V["$Datum"]>,
  *           PermissiveType<V["$Datum"]>,
  *           StrictType<V["$Redeemer"]>,
  *           PermissiveType<V["$Redeemer"]>

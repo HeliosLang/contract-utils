@@ -1,7 +1,7 @@
-import { None } from "@helios-lang/type-utils"
 import { loadCompilerLib } from "../compiler/index.js"
 import { DagCompiler } from "./DagCompiler.js"
 import { configureCast } from "../cast/Cast.js"
+import { contractContextCache } from "./ContractContextCache.js"
 
 /**
  * @typedef {import("../cast/index.js").CastConfig} CastConfig
@@ -114,13 +114,16 @@ export class ContractContextBuilder {
 
         const dagCompiler = new DagCompiler(lib, castConfig)
 
-        /**
-         * @type {any}
-         */
-        const hashes = dagCompiler.build(
-            Object.values(this.validators),
-            props.expectedHashes
-        )
+        const cached = contractContextCache.shift()
+
+        const hashes = cached
+            ? cached
+            : dagCompiler.build(
+                  Object.values(this.validators),
+                  props.expectedHashes
+              )
+
+        contractContextCache.push(hashes)
 
         /**
          * @type {any}

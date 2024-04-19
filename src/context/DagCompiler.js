@@ -55,7 +55,7 @@ export class DagCompiler {
      * @param {Option<{[name: string]: string}>} expectedHashes
      * @returns {{[name: string]: AnyContractValidatorContext}}
      */
-    build(validators, castConfig, expectedHashes = None) {
+    build(validators, expectedHashes = None) {
         const hashTypes = this.getHashTypes(validators)
 
         /**
