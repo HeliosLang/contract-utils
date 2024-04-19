@@ -104,18 +104,21 @@ class ContractContextCache {
                             redeemer: redeemer,
                             program: program
                         })
+                        break
                     }
                     case "minting": {
                         res[name] = new MintingPolicyHash(props.bytes, {
                             redeemer: redeemer,
                             program: program
                         })
+                        break
                     }
                     case "staking": {
                         res[name] = new StakingValidatorHash(props.bytes, {
                             redeemer: redeemer,
                             program: program
                         })
+                        break
                     }
                     default:
                         throw new Error("unhandled purpose")
