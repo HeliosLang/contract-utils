@@ -8,10 +8,11 @@ export {}
 
 /**
  * @typedef {{
- *   allValidatorHashTypes: {[name: string]: any},
- *   hashDependencies: {[name: string]: string},
- *   dependsOnOwnHash?: boolean,
- *   ownHash?: string,
+ *   allValidatorHashTypes: {[name: string]: any}
+ *   hashDependencies: {[name: string]: string}
+ *   dependsOnOwnHash?: boolean
+ *   ownHash?: string
+ *   parameters?: Record<string, any>
  *   optimize: boolean
  * }} CompileOptions
  */

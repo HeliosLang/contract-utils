@@ -25,6 +25,7 @@ import { contractContextCache } from "./ContractContextCache.js"
  * @typedef {{
  *   isMainnet: boolean
  *   expectedHashes?: {[name: string]: string}
+ *   parameters?: Record<string, any>
  * }} ContractContextBuildProps
  */
 
@@ -120,6 +121,7 @@ export class ContractContextBuilder {
             ? cached
             : dagCompiler.build(
                   Object.values(this.validators),
+                  props.parameters ?? {},
                   props.expectedHashes
               )
 

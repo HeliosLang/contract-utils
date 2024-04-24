@@ -52,10 +52,11 @@ export class DagCompiler {
 
     /**
      * @param {LoadedValidator[]} validators
+     * @param {Record<string, any>} parameters
      * @param {Option<{[name: string]: string}>} expectedHashes
      * @returns {{[name: string]: AnyContractValidatorContext}}
      */
-    build(validators, expectedHashes = None) {
+    build(validators, parameters, expectedHashes = None) {
         const hashTypes = this.getHashTypes(validators)
 
         /**
@@ -87,7 +88,8 @@ export class DagCompiler {
                     optimize: true,
                     hashDependencies: hashDeps,
                     allValidatorHashTypes: hashTypes,
-                    dependsOnOwnHash: validator.$dependsOnOwnHash
+                    dependsOnOwnHash: validator.$dependsOnOwnHash,
+                    parameters: parameters
                 }
             )
 
@@ -115,7 +117,8 @@ export class DagCompiler {
                     optimize: false,
                     hashDependencies: hashDeps,
                     allValidatorHashTypes: hashTypes,
-                    ownHash: validator.$dependsOnOwnHash ? ownHash : undefined
+                    ownHash: validator.$dependsOnOwnHash ? ownHash : undefined,
+                    parameters: parameters
                 }
             )
 

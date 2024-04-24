@@ -207,6 +207,10 @@ export class CompilerLib_v0_16 {
             }
         )
 
+        if (options.parameters && Object.keys(options.parameters).length > 0) {
+            program.parameters = options.parameters
+        }
+
         const extra = this.generateExtraIRDefinitions(
             name,
             purpose,
