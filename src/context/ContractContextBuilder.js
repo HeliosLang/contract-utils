@@ -26,6 +26,7 @@ import { contractContextCache } from "./ContractContextCache.js"
  *   isMainnet: boolean
  *   expectedHashes?: {[name: string]: string}
  *   parameters?: Record<string, any>
+ *   dumpHashes?: boolean
  * }} ContractContextBuildProps
  */
 
@@ -126,6 +127,12 @@ export class ContractContextBuilder {
               )
 
         contractContextCache.push(hashes)
+
+        if (props.dumpHashes) {
+            for (let name in hashes) {
+                console.log(`${name}: ${hashes[name].toHex()},`)
+            }
+        }
 
         /**
          * @type {any}
