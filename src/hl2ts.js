@@ -2,17 +2,16 @@
 
 import {
     existsSync,
-    fstat,
     mkdirSync,
     promises,
     readFileSync,
     writeFileSync
 } from "node:fs"
 import { dirname, join, resolve } from "node:path"
-import { Cli, Command, EnumOpt, StringOpt } from "@helios-lang/cli-utils"
+import { Cli, EnumOpt, StringOpt } from "@helios-lang/cli-utils"
 import { LoadedScriptsWriter } from "./codegen/index.js"
 import { loadCompilerLib } from "./compiler/index.js"
-import { typeCheckFiles, typeCheckScripts } from "./compiler/ops.js"
+import { typeCheckFiles } from "./compiler/ops.js"
 import { None } from "@helios-lang/type-utils"
 
 /**
