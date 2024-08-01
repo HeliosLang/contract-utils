@@ -82,16 +82,17 @@ export function genTypes(schema) {
                 case "TxOutputId":
                     return ["TxOutputId", "TxOutputId | string"]
                 case "ValidatorHash":
-                    return ["ValidatorHash", "ValidatorHash | string | number[]"]
+                    return [
+                        "ValidatorHash",
+                        "ValidatorHash | string | number[]"
+                    ]
                 case "Value":
                     return [
                         "Value",
                         "Value | [MintingPolicyHash | string | number[], [number[] | string, IntLike][]][] | {mph: MintingPolicyHash | string | number[], tokens: {name: number[] | string, qty: IntLike}[]}[]"
                     ]
                 default:
-                    throw new Error(
-                        `unhandled primitive '${name}' in hl2ts`
-                    )
+                    throw new Error(`unhandled primitive '${name}' in hl2ts`)
             }
         case "list": {
             const [c, p] = genTypes(schema.itemType)
@@ -112,16 +113,17 @@ export function genTypes(schema) {
                 name: name,
                 types: genTypes(type)
             }))
-    
+
             return [
                 `{${fieldTypes.map(({ name, types: [c, p] }) => `${name}: ${c}`).join(", ")}}`,
                 `{${fieldTypes.map(({ name, types: [c, p] }) => `${name}: ${p}`).join(", ")}}`
             ]
         }
         case "enum": {
-            const variantTypes = schema.variantTypes.map(
-                (variant) => ({name: variant.name, types: genTypes(variant)})
-            )
+            const variantTypes = schema.variantTypes.map((variant) => ({
+                name: variant.name,
+                types: genTypes(variant)
+            }))
 
             return [
                 variantTypes
@@ -138,7 +140,7 @@ export function genTypes(schema) {
                 name: name,
                 types: genTypes(type)
             }))
-    
+
             return [
                 `{${fieldTypes.map(({ name, types: [c, p] }) => `${name}: ${c}`).join(", ")}}`,
                 `{${fieldTypes.map(({ name, types: [c, p] }) => `${name}: ${p}`).join(", ")}}`

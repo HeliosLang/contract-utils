@@ -108,7 +108,7 @@ export class Cast {
 function schemaToUplc(schema, x, defs = {}) {
     const kind = schema.kind
 
-    switch(kind) {
+    switch (kind) {
         case "reference": {
             const def = expectSome(defs[schema.id])
             return schemaToUplc(def, x, defs)
@@ -162,7 +162,7 @@ function schemaToUplc(schema, x, defs = {}) {
                 case "TxOutputDatum":
                     return x
                         ? TxOutputDatum.new(x)?.toUplcData() ??
-                            new ConstrData(0, [])
+                              new ConstrData(0, [])
                         : new ConstrData(0, [])
                 case "TxOutputId":
                     return TxOutputId.new(x).toUplcData()
@@ -171,13 +171,13 @@ function schemaToUplc(schema, x, defs = {}) {
                 case "Value":
                     return Value.new(x).toUplcData()
                 default:
-                    throw new Error(
-                        `not yet implemented for ${name}`
-                    )
+                    throw new Error(`not yet implemented for ${name}`)
             }
         }
         case "list":
-            return new ListData(x.map((x) => schemaToUplc(schema.itemType, x, defs)))
+            return new ListData(
+                x.map((x) => schemaToUplc(schema.itemType, x, defs))
+            )
         case "map": {
             const entries = x instanceof Map ? x.entries() : x
             return new MapData(
@@ -194,7 +194,7 @@ function schemaToUplc(schema, x, defs = {}) {
         case "struct": {
             defs[schema.id] = schema
             switch (schema.format) {
-                case "singleton": 
+                case "singleton":
                     return schemaToUplc(
                         schema.fieldTypes[0].type,
                         x[schema.fieldTypes[0].name],
@@ -207,9 +207,16 @@ function schemaToUplc(schema, x, defs = {}) {
                         )
                     )
                 case "map":
-                    return new MapData(schema.fieldTypes.map(({name, type}) => [new ByteArrayData(encodeUtf8(name)), schemaToUplc(type, x[name], defs)]))
+                    return new MapData(
+                        schema.fieldTypes.map(({ name, type }) => [
+                            new ByteArrayData(encodeUtf8(name)),
+                            schemaToUplc(type, x[name], defs)
+                        ])
+                    )
                 default:
-                    throw new Error(`unhandled struct format '${schema.format}'`)
+                    throw new Error(
+                        `unhandled struct format '${schema.format}'`
+                    )
             }
         }
         case "enum": {
@@ -219,13 +226,13 @@ function schemaToUplc(schema, x, defs = {}) {
             const tag = schema.variantTypes.findIndex(
                 (v) => v.name == variantName
             )
-    
+
             if (tag == -1) {
                 throw new Error(
                     `invalid variant ${variantName} (expected: ${schema.variantTypes.map((v) => v.name).join(", ")})`
                 )
             }
-    
+
             return new ConstrData(
                 tag,
                 schema.variantTypes[tag].fieldTypes.map((f) =>
@@ -312,9 +319,7 @@ function uplcToSchema(schema, data, config, defs = {}) {
                 case "Value":
                     return Value.fromUplcData(data)
                 default:
-                    throw new Error(
-                        `not yet implemented for ${name}`
-                    )
+                    throw new Error(`not yet implemented for ${name}`)
             }
         }
         case "list":
@@ -334,10 +339,10 @@ function uplcToSchema(schema, data, config, defs = {}) {
                 ? uplcToSchema(schema.someType, optionData, config, defs)
                 : None
         }
-        case "struct":{
+        case "struct": {
             defs[schema.id] = schema
             switch (schema.format) {
-                case "singleton": 
+                case "singleton":
                     return {
                         [schema.fieldTypes[0].name]: uplcToSchema(
                             schema.fieldTypes[0].type,
@@ -354,11 +359,16 @@ function uplcToSchema(schema, data, config, defs = {}) {
                             `expected ${schema.fieldTypes.length} fields in struct, got ${fields.length} fields`
                         )
                     }
-        
+
                     return Object.fromEntries(
                         fields.map((field, i) => [
                             schema.fieldTypes[i].name,
-                            uplcToSchema(schema.fieldTypes[i].type, field, config, defs)
+                            uplcToSchema(
+                                schema.fieldTypes[i].type,
+                                field,
+                                config,
+                                defs
+                            )
                         ])
                     )
                 }
@@ -371,14 +381,28 @@ function uplcToSchema(schema, data, config, defs = {}) {
                         )
                     }
 
-                    return new Map(schema.fieldTypes.map(({name, type}) => {
-                        const pair = expectSome(entries.find(([key, _]) => decodeUtf8(ByteArrayData.expect(key).bytes) == name))
+                    return new Map(
+                        schema.fieldTypes.map(({ name, type }) => {
+                            const pair = expectSome(
+                                entries.find(
+                                    ([key, _]) =>
+                                        decodeUtf8(
+                                            ByteArrayData.expect(key).bytes
+                                        ) == name
+                                )
+                            )
 
-                        return [name, uplcToSchema(type, pair[1], config, defs)]
-                    }))
+                            return [
+                                name,
+                                uplcToSchema(type, pair[1], config, defs)
+                            ]
+                        })
+                    )
                 }
                 default:
-                    throw new Error(`unhandled struct format '${schema.format}'`)
+                    throw new Error(
+                        `unhandled struct format '${schema.format}'`
+                    )
             }
         }
         case "enum": {
@@ -403,7 +427,12 @@ function uplcToSchema(schema, data, config, defs = {}) {
                 [variantSchema.name]: Object.fromEntries(
                     fields.map((f, i) => [
                         variantSchema.fieldTypes[i].name,
-                        uplcToSchema(variantSchema.fieldTypes[i].type, f, config, defs)
+                        uplcToSchema(
+                            variantSchema.fieldTypes[i].type,
+                            f,
+                            config,
+                            defs
+                        )
                     ])
                 )
             }
@@ -419,7 +448,7 @@ function uplcToSchema(schema, data, config, defs = {}) {
                 ])
             )
         }
-        default: 
+        default:
             throw new Error(`unhandled schema kind '${kind}'`)
     }
 }

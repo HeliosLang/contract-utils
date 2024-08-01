@@ -39,7 +39,10 @@ const utils = {
                         name: "MyUtilType",
                         format: "singleton",
                         fieldTypes: [
-                            { name: "hello", type: { kind: "internal", name: "Int" } }
+                            {
+                                name: "hello",
+                                type: { kind: "internal", name: "Int" }
+                            }
                         ]
                     },
                     config
@@ -101,7 +104,10 @@ const match_string = {
                             tag: 1,
                             id: "",
                             fieldTypes: [
-                                { name: "code", type: { kind: "internal", name: "Int" } }
+                                {
+                                    name: "code",
+                                    type: { kind: "internal", name: "Int" }
+                                }
                             ]
                         }
                     ]
@@ -126,7 +132,10 @@ const match_string = {
                                 fieldTypes: [
                                     {
                                         name: "message",
-                                        type: { kind: "internal", name: "String" }
+                                        type: {
+                                            kind: "internal",
+                                            name: "String"
+                                        }
                                     }
                                 ]
                             },

@@ -176,7 +176,9 @@ export class CompilerLib_v0_16 {
             case "staking":
                 return this.lib.StakingValidatorHashType
             default:
-                throw new Error(`Helios v${this.version} doesn't support validator purpose '${purpose}' (hint: supported purposes are 'spending', 'minting' and 'staking')`)
+                throw new Error(
+                    `Helios v${this.version} doesn't support validator purpose '${purpose}' (hint: supported purposes are 'spending', 'minting' and 'staking')`
+                )
         }
     }
 
@@ -458,14 +460,14 @@ export class CompilerLib_v0_16 {
      */
     convertInternalType(it) {
         if ("itemType" in it) {
-            return { 
+            return {
                 kind: "list",
-                itemType: this.convertInternalType(it.itemType) 
+                itemType: this.convertInternalType(it.itemType)
             }
         } else if ("someType" in it) {
-            return { 
+            return {
                 kind: "option",
-                someType: this.convertInternalType(it.someType) 
+                someType: this.convertInternalType(it.someType)
             }
         } else if ("fieldTypes" in it) {
             return {
@@ -592,8 +594,8 @@ export class CompilerLib_v0_16 {
 
     /**
      * @private
-     * @param {any} program 
-     * @param {Option<Record<string, UplcData>>} parameters 
+     * @param {any} program
+     * @param {Option<Record<string, UplcData>>} parameters
      */
     setParameters(program, parameters) {
         if (!parameters) {

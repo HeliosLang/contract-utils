@@ -64,11 +64,11 @@ export {}
 
 /**
  * @param {CompilerLib} lib
- * @param {string[]} validators 
+ * @param {string[]} validators
  * @returns {{[name: string]: ScriptHashType}}
  */
 export function getValidatorTypes(lib, validators) {
-   return Object.fromEntries(
+    return Object.fromEntries(
         validators.map((src) => {
             const [purpose, name] = readHeader(src)
             return [name, lib.getScriptHashType(purpose)]

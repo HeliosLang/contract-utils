@@ -43,7 +43,7 @@ export class CompilerLib_v0_17 {
     }
 
     /**
-     * @param {string} purpose 
+     * @param {string} purpose
      * @returns {ScriptHashType}
      */
     getScriptHashType(purpose) {
@@ -53,9 +53,9 @@ export class CompilerLib_v0_17 {
     }
 
     /**
-     * @param {string} mainSource 
-     * @param {string[]} moduleSources 
-     * @param {CompileOptions} options 
+     * @param {string} mainSource
+     * @param {string[]} moduleSources
+     * @param {CompileOptions} options
      * @returns {CompileOutput}
      */
     compile(mainSource, moduleSources, options) {
@@ -64,15 +64,12 @@ export class CompilerLib_v0_17 {
         /**
          * @type {Program}
          */
-        const program = new Program(
-            mainSource,
-            {
-                moduleSources: moduleSources,
-                validatorTypes: options.allValidatorHashTypes,
-                isTestnet: options.isTestnet,
-                throwCompilerErrors: true
-            }
-        )
+        const program = new Program(mainSource, {
+            moduleSources: moduleSources,
+            validatorTypes: options.allValidatorHashTypes,
+            isTestnet: options.isTestnet,
+            throwCompilerErrors: true
+        })
 
         if (options.parameters) {
             Object.entries(options.parameters).forEach(([key, value]) => {
@@ -86,7 +83,10 @@ export class CompilerLib_v0_17 {
         const uplc = program.compile({
             optimize: options.optimize,
             dependsOnOwnHash: options.dependsOnOwnHash ?? false,
-            hashDependencies: {...options.hashDependencies, ...(options.ownHash ? {[program.name]: options.ownHash} : {})}
+            hashDependencies: {
+                ...options.hashDependencies,
+                ...(options.ownHash ? { [program.name]: options.ownHash } : {})
+            }
         })
 
         return {
@@ -95,8 +95,8 @@ export class CompilerLib_v0_17 {
     }
 
     /**
-     * @param {string[]} validatorSources 
-     * @param {string[]} moduleSources 
+     * @param {string[]} validatorSources
+     * @param {string[]} moduleSources
      * @returns {TypeCheckOutput}
      */
     typeCheck(validatorSources, moduleSources) {

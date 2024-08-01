@@ -42,12 +42,12 @@ describe(typeCheckScripts.name, () => {
             id: "__module__test__Datum[]",
             name: "Datum",
             variantTypes: [
-                { 
-                    kind: "variant", 
-                    tag: 0, 
-                    id: "__module__test__Datum[]__Foo", 
-                    name: "Foo", 
-                    fieldTypes: [] 
+                {
+                    kind: "variant",
+                    tag: 0,
+                    id: "__module__test__Datum[]__Foo",
+                    name: "Foo",
+                    fieldTypes: []
                 },
                 {
                     kind: "variant",
@@ -60,10 +60,12 @@ describe(typeCheckScripts.name, () => {
                             type: {
                                 kind: "map",
                                 keyType: {
-                                    kind: "internal", name: "String"
+                                    kind: "internal",
+                                    name: "String"
                                 },
                                 valueType: {
-                                    kind: "internal", name: "Data"
+                                    kind: "internal",
+                                    name: "Data"
                                 }
                             }
                         }
