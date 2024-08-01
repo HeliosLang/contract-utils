@@ -123,6 +123,7 @@ export class ContractContextBuilder {
             : dagCompiler.build(
                   Object.values(this.validators),
                   props.parameters ?? {},
+                  !props.isMainnet,
                   props.expectedHashes
               )
 

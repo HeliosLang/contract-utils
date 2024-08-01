@@ -14,7 +14,7 @@ describe(Cast.name, () => {
         /**
          * @type {Cast<string, string>}
          */
-        const cast = new Cast({ primitiveType: "String" }, { isMainnet: false })
+        const cast = new Cast({ kind: "internal", name: "String" }, { isMainnet: false })
 
         const data = new ByteArrayData(encodeUtf8("hello world"))
 
@@ -30,7 +30,7 @@ describe(Cast.name, () => {
         /**
          * @type {Cast<string, string>}
          */
-        const cast = new Cast({ primitiveType: "String" }, { isMainnet: false })
+        const cast = new Cast({ kind: "internal", name: "String" }, { isMainnet: false })
 
         const data = new IntData(0)
 

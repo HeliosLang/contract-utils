@@ -34,8 +34,12 @@ const utils = {
             /** @type {Cast<{hello: bigint}, {hello: IntLike}>} */ (
                 new Cast(
                     {
-                        structFieldTypes: [
-                            { name: "hello", type: { primitiveType: "Int" } }
+                        kind: "struct",
+                        id: "",
+                        name: "MyUtilType",
+                        format: "singleton",
+                        fieldTypes: [
+                            { name: "hello", type: { kind: "internal", name: "Int" } }
                         ]
                     },
                     config
@@ -48,13 +52,13 @@ const match_string_policy = {
     $name: /** @type {const} */ ("match_string_policy"),
     $purpose: /** @type {const} */ ("minting"),
     $sourceCode:
-        "minting match_string_policy\n\nfunc main(redeemer: Bool, _) -> Bool {\n    redeemer\n}",
+        "minting match_string_policy\n\nfunc main(redeemer: Bool) -> Bool {\n    redeemer\n}",
     $dependencies: /** @type {const} */ ([]),
     $hashDependencies: [],
     $dependsOnOwnHash: false,
     $Redeemer: (config) =>
         /** @type {Cast<boolean, boolean>} */ (
-            new Cast({ primitiveType: "Bool" }, config)
+            new Cast({ kind: "internal", name: "Bool" }, config)
         ),
     $types: {}
 }
@@ -63,32 +67,41 @@ const match_string = {
     $name: /** @type {const} */ ("match_string"),
     $purpose: /** @type {const} */ ("spending"),
     $sourceCode:
-        "spending match_string\n\nimport { compare, my_assetclass } from utils\n\nenum Datum {\n One {\n  message: String\n }\n\n Two {\n  code: Int\n }\n}\n\nfunc main(datum: Datum, redeemer: String, ctx: ScriptContext) -> Bool {\n compare(datum.switch{d: One => d.message, d: Two => d.code.show()}, redeemer) &&\n   ctx.tx.minted.get(my_assetclass) > 0\n}",
+        "spending match_string\n\nimport { compare, my_assetclass } from utils\n\nimport { tx } from ScriptContext\n\nenum Datum {\n One {\n  message: String\n }\n\n Two {\n  code: Int\n }\n}\n\nfunc main(datum: Datum, redeemer: String) -> Bool {\n compare(datum.switch{d: One => d.message, d: Two => d.code.show()}, redeemer) &&\n   tx.minted.get(my_assetclass) > 0\n}",
     $dependencies: /** @type {const} */ ([utils]),
     $hashDependencies: [match_string_policy],
     $dependsOnOwnHash: true,
     $Redeemer: (config) =>
         /** @type {Cast<string, string>} */ (
-            new Cast({ primitiveType: "String" }, config)
+            new Cast({ kind: "internal", name: "String" }, config)
         ),
     $Datum: (config) =>
         /** @type {Cast<{One: {message: string}} | {Two: {code: bigint}}, {One: {message: string}} | {Two: {code: IntLike}}>} */ (
             new Cast(
                 {
-                    enumVariantTypes: [
+                    kind: "enum",
+                    id: "",
+                    name: "Datum",
+                    variantTypes: [
                         {
+                            kind: "variant",
                             name: "One",
+                            tag: 0,
+                            id: "",
                             fieldTypes: [
                                 {
                                     name: "message",
-                                    type: { primitiveType: "String" }
+                                    type: { kind: "internal", name: "String" }
                                 }
                             ]
                         },
                         {
+                            kind: "variant",
                             name: "Two",
+                            tag: 1,
+                            id: "",
                             fieldTypes: [
-                                { name: "code", type: { primitiveType: "Int" } }
+                                { name: "code", type: { kind: "internal", name: "Int" } }
                             ]
                         }
                     ]
@@ -101,22 +114,31 @@ const match_string = {
             /** @type {Cast<{One: {message: string}} | {Two: {code: bigint}}, {One: {message: string}} | {Two: {code: IntLike}}>} */ (
                 new Cast(
                     {
-                        enumVariantTypes: [
+                        kind: "enum",
+                        id: "",
+                        name: "Datum",
+                        variantTypes: [
                             {
+                                kind: "variant",
+                                tag: 0,
+                                id: "",
                                 name: "One",
                                 fieldTypes: [
                                     {
                                         name: "message",
-                                        type: { primitiveType: "String" }
+                                        type: { kind: "internal", name: "String" }
                                     }
                                 ]
                             },
                             {
+                                kind: "variant",
                                 name: "Two",
+                                id: "",
+                                tag: 1,
                                 fieldTypes: [
                                     {
                                         name: "code",
-                                        type: { primitiveType: "Int" }
+                                        type: { kind: "internal", name: "Int" }
                                     }
                                 ]
                             }

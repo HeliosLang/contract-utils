@@ -9,10 +9,10 @@ import {
 } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { Cli, EnumOpt, StringOpt } from "@helios-lang/cli-utils"
+import { None } from "@helios-lang/type-utils"
 import { LoadedScriptsWriter } from "./codegen/index.js"
 import { loadCompilerLib } from "./compiler/index.js"
 import { typeCheckFiles } from "./compiler/ops.js"
-import { None } from "@helios-lang/type-utils"
 
 /**
  * @typedef {import("./compiler/CompilerLib.js").CompilerLib} CompilerLib

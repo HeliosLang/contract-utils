@@ -53,10 +53,11 @@ export class DagCompiler {
     /**
      * @param {LoadedValidator[]} validators
      * @param {Record<string, any>} parameters
+     * @param {boolean} isTestnet
      * @param {Option<{[name: string]: string}>} expectedHashes
      * @returns {{[name: string]: AnyContractValidatorContext}}
      */
-    build(validators, parameters, expectedHashes = None) {
+    build(validators, parameters, isTestnet, expectedHashes = None) {
         const hashTypes = this.getHashTypes(validators)
 
         /**
@@ -81,15 +82,16 @@ export class DagCompiler {
             const moduleDeps = getModuleDependencies(validator)
 
             // optimized compilation
-            const { cborHex: optimizedCborHex, prettyIR } = this.lib.compile(
+            const { cborHex: optimizedCborHex } = this.lib.compile(
                 sourceCode,
                 moduleDeps,
                 {
-                    optimize: true,
+                    optimize: false,
                     hashDependencies: hashDeps,
                     allValidatorHashTypes: hashTypes,
                     dependsOnOwnHash: validator.$dependsOnOwnHash,
-                    parameters: parameters
+                    parameters: parameters,
+                    isTestnet: isTestnet
                 }
             )
 
@@ -101,8 +103,6 @@ export class DagCompiler {
             // optionally assert the own hash is equal to a given hash
             if (expectedHashes && name in expectedHashes) {
                 if (expectedHashes[name] != ownHash) {
-                    console.log(prettyIR)
-
                     throw new Error(
                         `expected hash ${expectedHashes[name]} for validator ${name}, got ${ownHash}`
                     )
@@ -114,11 +114,12 @@ export class DagCompiler {
                 validator.$sourceCode,
                 Array.from(moduleDeps.values()),
                 {
-                    optimize: false,
+                    optimize: true,
                     hashDependencies: hashDeps,
                     allValidatorHashTypes: hashTypes,
                     ownHash: validator.$dependsOnOwnHash ? ownHash : undefined,
-                    parameters: parameters
+                    parameters: parameters,
+                    isTestnet: isTestnet
                 }
             )
 

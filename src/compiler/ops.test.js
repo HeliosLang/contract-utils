@@ -25,7 +25,7 @@ describe(typeCheckScripts.name, () => {
             Bar { data: Map[String]Data } 
         }
         
-        func main(datum: Datum, _, _) -> Bool {
+        func main(datum: Datum, _) -> Bool {
             datum == datum
         }
         `
@@ -38,19 +38,32 @@ describe(typeCheckScripts.name, () => {
          * @type {TypeSchema}
          */
         const expectedTypeSchema = {
-            enumVariantTypes: [
-                { name: "Foo", fieldTypes: [] },
+            kind: "enum",
+            id: "__module__test__Datum[]",
+            name: "Datum",
+            variantTypes: [
+                { 
+                    kind: "variant", 
+                    tag: 0, 
+                    id: "__module__test__Datum[]__Foo", 
+                    name: "Foo", 
+                    fieldTypes: [] 
+                },
                 {
+                    kind: "variant",
+                    tag: 1,
                     name: "Bar",
+                    id: "__module__test__Datum[]__Bar",
                     fieldTypes: [
                         {
                             name: "data",
                             type: {
-                                mapKeyType: {
-                                    primitiveType: "String"
+                                kind: "map",
+                                keyType: {
+                                    kind: "internal", name: "String"
                                 },
-                                mapValueType: {
-                                    primitiveType: "Data"
+                                valueType: {
+                                    kind: "internal", name: "Data"
                                 }
                             }
                         }

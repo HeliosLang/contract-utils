@@ -4,9 +4,11 @@ import {
     readHeader
 } from "@helios-lang/compiler-utils"
 import { CompilerLib_v0_16 } from "./CompilerLib_v0_16.js"
+import { CompilerLib_v0_17 } from "./CompilerLib_v0_17.js"
 
 /**
  * @typedef {import("./CompilerLib.js").CompilerLib} CompilerLib
+ * @typedef {import("./CompilerLib.js")}
  * @typedef {import("./CompilerLib.js").TypeCheckOutput} TypeCheckOutput
  */
 
@@ -30,6 +32,8 @@ export function loadCompilerLib() {
             switch (minor) {
                 case 16:
                     return new CompilerLib_v0_16(unsafeLib)
+                case 17:
+                    return new CompilerLib_v0_17(unsafeLib)
             }
         default:
             throw new Error(
@@ -85,6 +89,7 @@ function splitValidatorsAndModules(scripts) {
             case "module":
                 modules.set(name, s)
                 break
+            case "mixed":
             case "minting":
             case "spending":
             case "certifying":

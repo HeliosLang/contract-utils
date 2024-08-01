@@ -1,27 +1,20 @@
-import { bytesToHex } from "@helios-lang/compiler"
+import { bytesToHex } from "@helios-lang/codec-utils"
 import { readHeader } from "@helios-lang/compiler-utils"
 import { expectSome } from "@helios-lang/type-utils"
+import { getValidatorTypes } from "./CompilerLib.js"
 
 /**
+ * @typedef {import("@helios-lang/uplc").UplcData} UplcData
  * @typedef {import("../codegen/index.js").TypeCheckedModule} TypeCheckedModule
  * @typedef {import("../codegen/index.js").TypeCheckedValidator} TypeCheckedValidator
- * @typedef {import("../codegen/index.js").TypeSchema} InternalTypeDetails
+ * @typedef {import("../codegen/index.js").TypeSchema} TypeSchema
  * @typedef {import("./CompilerLib.js").CompileOptions} CompileOptions
  * @typedef {import("./CompilerLib.js").CompileOutput} CompileOutput
  * @typedef {import("./CompilerLib.js").CompilerLib} CompilerLib
+ * @typedef {import("./CompilerLib.js").DagDependencies} DagDependencies
+ * @typedef {import("./CompilerLib.js").ScriptHashType} ScriptHashType
  * @typedef {import("./CompilerLib.js").SourceDetails} SourceDetails
  * @typedef {import("./CompilerLib.js").TypeCheckOutput} TypeCheckOutput
- */
-
-/**
- * @typedef {{
- *   [name: string]: string[]
- * }} DagDependencies
- */
-
-/**
- * @typedef {{
- * }} ScriptHashType
  */
 
 /**
@@ -101,34 +94,34 @@ import { expectSome } from "@helios-lang/type-utils"
  *   type:  string
  * } | {
  *   type:     "List"
- *   itemType: TypeSchema
+ *   itemType: TypeSchema16
  * } | {
  *   type:      "Map"
- *   keyType:   TypeSchema
- *   valueType: TypeSchema
+ *   keyType:   TypeSchema16
+ *   valueType: TypeSchema16
  * } | {
  *   type:     "Option"
- *   someType: TypeSchema
+ *   someType: TypeSchema16
  * } | {
  *   type:       "Struct"
- *   fieldTypes: NamedTypeSchema[]
+ *   fieldTypes: NamedTypeSchema16[]
  * } | {
  *   type:         "Enum"
- *   variantTypes: {name: string, fieldTypes: NamedTypeSchema[]}[]
- * }} TypeSchema
+ *   variantTypes: {name: string, fieldTypes: NamedTypeSchema16[]}[]
+ * }} TypeSchema16
  */
 
 /**
  * @typedef {{
  * 	 name: string
- * } & TypeSchema} NamedTypeSchema
+ * } & TypeSchema16} NamedTypeSchema16
  */
 
 /**
  * @typedef {{
  *   inputType: string
  *   outputType: string
- *   internalType: TypeSchema
+ *   internalType: TypeSchema16
  * }} TypeDetails
  */
 
@@ -183,7 +176,7 @@ export class CompilerLib_v0_16 {
             case "staking":
                 return this.lib.StakingValidatorHashType
             default:
-                throw new Error("unhandled validator type")
+                throw new Error(`Helios v${this.version} doesn't support validator purpose '${purpose}' (hint: supported purposes are 'spending', 'minting' and 'staking')`)
         }
     }
 
@@ -207,16 +200,15 @@ export class CompilerLib_v0_16 {
             }
         )
 
-        if (options.parameters && Object.keys(options.parameters).length > 0) {
-            program.parameters = options.parameters
-        }
+        this.setParameters(program, options.parameters)
 
-        const extra = this.generateExtraIRDefinitions(
+        const extra = this.genExtraIRDefs(
             name,
             purpose,
             program.nPosParams,
             options
         )
+
         const optimize = options.optimize
         const ir = program.toIR(new this.lib.ToIRContext(optimize), extra)
 
@@ -233,7 +225,6 @@ export class CompilerLib_v0_16 {
         const cborHex = bytesToHex(irProgram.toUplc().toCbor())
 
         return {
-            prettyIR: irProgram.program.annotate(),
             cborHex
         }
     }
@@ -244,12 +235,7 @@ export class CompilerLib_v0_16 {
      * @returns {TypeCheckOutput}
      */
     typeCheck(validators, modules) {
-        const validatorTypes = Object.fromEntries(
-            validators.map((v) => {
-                const [purpose, name] = readHeader(v)
-                return [name, this.getScriptHashType(purpose)]
-            })
-        )
+        const validatorTypes = getValidatorTypes(this, validators)
 
         // create validator programs
         let validatorPrograms = this.createPrograms(
@@ -353,7 +339,7 @@ export class CompilerLib_v0_16 {
      * @param {CompileOptions} options
      * @returns {Map<string, IR>}
      */
-    generateExtraIRDefinitions(name, purpose, nPosParams, options) {
+    genExtraIRDefs(name, purpose, nPosParams, options) {
         /**
          * @type {Map<string, IR>}
          */
@@ -467,30 +453,47 @@ export class CompilerLib_v0_16 {
 
     /**
      * @private
-     * @param {TypeSchema} it
-     * @returns {InternalTypeDetails}
+     * @param {TypeSchema16} it
+     * @returns {TypeSchema}
      */
     convertInternalType(it) {
         if ("itemType" in it) {
-            return { listItemType: this.convertInternalType(it.itemType) }
+            return { 
+                kind: "list",
+                itemType: this.convertInternalType(it.itemType) 
+            }
         } else if ("someType" in it) {
-            return { optionSomeType: this.convertInternalType(it.someType) }
+            return { 
+                kind: "option",
+                someType: this.convertInternalType(it.someType) 
+            }
         } else if ("fieldTypes" in it) {
             return {
-                structFieldTypes: it.fieldTypes.map((ft) => ({
+                kind: "struct",
+                id: "",
+                name: "",
+                format: it.fieldTypes.length == 1 ? "singleton" : "list",
+                fieldTypes: it.fieldTypes.map((ft) => ({
                     name: ft.name,
                     type: this.convertInternalType(ft)
                 }))
             }
         } else if ("keyType" in it) {
             return {
-                mapKeyType: this.convertInternalType(it.keyType),
-                mapValueType: this.convertInternalType(it.valueType)
+                kind: "map",
+                keyType: this.convertInternalType(it.keyType),
+                valueType: this.convertInternalType(it.valueType)
             }
         } else if ("variantTypes" in it) {
             return {
-                enumVariantTypes: it.variantTypes.map((vt) => ({
+                kind: "enum",
+                id: "",
+                name: "",
+                variantTypes: it.variantTypes.map((vt, i) => ({
+                    kind: "variant",
                     name: vt.name,
+                    tag: i,
+                    id: "",
                     fieldTypes: vt.fieldTypes.map((ft) => ({
                         name: ft.name,
                         type: this.convertInternalType(ft)
@@ -498,7 +501,7 @@ export class CompilerLib_v0_16 {
                 }))
             }
         } else {
-            return { primitiveType: it.type }
+            return { kind: "internal", name: it.type }
         }
     }
 
@@ -507,7 +510,7 @@ export class CompilerLib_v0_16 {
      * TODO: make sure it works for all structs and enums
      * @private
      * @param {DataType} dt
-     * @returns {InternalTypeDetails}
+     * @returns {TypeSchema}
      */
     getInternalTypeDetails(dt) {
         try {
@@ -516,17 +519,17 @@ export class CompilerLib_v0_16 {
             return this.convertInternalType(it)
         } catch (e) {
             if (e.message.includes("Data")) {
-                return { primitiveType: "Data" }
+                return { kind: "internal", name: "Data" }
             } else if (e.message.includes("DCert")) {
-                return { primitiveType: "DCert" }
+                return { kind: "internal", name: "DCert" }
             } else if (e.message.includes("Credential")) {
-                return { primitiveType: "SpendingCredential" }
+                return { kind: "internal", name: "SpendingCredential" }
             } else if (e.message.includes("OutputDatum")) {
-                return { primitiveType: "TxOutputDatum" }
+                return { kind: "internal", name: "TxOutputDatum" }
             } else if (e.message.includes("PubKey")) {
-                return { primitiveType: "PubKey" }
+                return { kind: "internal", name: "PubKey" }
             } else if (e.message.includes("ScriptHash")) {
-                return { primitiveType: "ScriptHash" }
+                return { kind: "internal", name: "ScriptHash" }
             } else {
                 throw e
             }
@@ -585,5 +588,24 @@ export class CompilerLib_v0_16 {
         }
 
         return result
+    }
+
+    /**
+     * @private
+     * @param {any} program 
+     * @param {Option<Record<string, UplcData>>} parameters 
+     */
+    setParameters(program, parameters) {
+        if (!parameters) {
+            return
+        }
+
+        const paramTypes = program.paramTypes
+
+        Object.entries(parameters).forEach(([key, value]) => {
+            if (key in paramTypes) {
+                program.changeParamSafe(key, value)
+            }
+        })
     }
 }
