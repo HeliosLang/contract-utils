@@ -40,6 +40,8 @@ export function genTypes(schema) {
                     return ["PubKey", "PubKey | string | number[]"]
                 case "PubKeyHash":
                     return ["PubKeyHash", "PubKeyHash | string | number[]"]
+                case "Ratio":
+                    return ["[bigint, bigint]", "[IntLike, IntLike]"]
                 case "Real":
                     return ["number", "number"]
                 case "SpendingCredential":

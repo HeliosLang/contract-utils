@@ -145,6 +145,8 @@ function schemaToUplc(schema, x, defs = {}) {
                     return PubKeyHash.new(x).toUplcData()
                 case "Real":
                     return encodeRealData(x)
+                case "Ratio":
+                    return new ListData([new IntData(x[0]), new IntData(x[1])])
                 case "ScriptHash":
                     return ScriptHash.new(x).toUplcData()
                 case "StakingCredential":
@@ -294,6 +296,13 @@ function uplcToSchema(schema, data, config, defs = {}) {
                     return MintingPolicyHash.fromUplcData(data)
                 case "PubKeyHash":
                     return PubKeyHash.fromUplcData(data)
+                case "Ratio": {
+                    const [top, bottom] = ListData.expect(data).items
+                    return [
+                        IntData.expect(top).value,
+                        IntData.expect(bottom).value
+                    ]
+                }
                 case "Real":
                     return decodeRealData(data)
                 case "ScriptHash":
