@@ -170,7 +170,7 @@ export class LoadedScriptsWriter {
      * @private
      */
     writeHeaders() {
-        this.writeImport("@helios-lang/contract-utils", "Cast")
+        this.writeImport("@helios-lang/contract-utils", "Cast", "UserFunc")
         this.writeImport(
             "@helios-lang/ledger",
             "Address",
