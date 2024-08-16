@@ -1,7 +1,8 @@
 import {
     StakingValidatorHash,
     ValidatorHash,
-    MintingPolicyHash
+    MintingPolicyHash,
+    ScriptHash
 } from "@helios-lang/ledger"
 import { Cast } from "../cast/index.js"
 
@@ -50,7 +51,8 @@ import { Cast } from "../cast/index.js"
  * @typedef {(
  *   ValidatorHash<SpendingContext<any, any, any, any>> |
  *   MintingPolicyHash<MintingContext<any, any>> |
- *   StakingValidatorHash<StakingContext<any, any>>
+ *   StakingValidatorHash<StakingContext<any, any>> |
+ *   ScriptHash
  * )} AnyContractValidatorContext
  */
 

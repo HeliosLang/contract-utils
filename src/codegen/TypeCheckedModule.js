@@ -6,10 +6,23 @@ export {}
 
 /**
  * @typedef {{
+ *   requiresScriptContext: boolean
+ *   requiresCurrentScript: boolean
+ *   arguments: {
+ *     name: string
+ *     type: TypeSchema
+ *   }[]
+ *   returns: TypeSchema
+ * }} TypeCheckedUserFunc
+ */
+
+/**
+ * @typedef {{
  *   name: string
  *   purpose: string
  *   sourceCode: string
  *   moduleDepedencies: string[]
- *   types: {[name: string]: TypeSchema}
+ *   types: Record<string, TypeSchema>
+ *   functions?: Record<string, TypeCheckedUserFunc>
  * }} TypeCheckedModule
  */

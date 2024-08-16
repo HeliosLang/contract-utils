@@ -3,6 +3,7 @@ import { genTypes } from "./TypeSchema.js"
 
 /**
  * @typedef {import("./TypeCheckedModule.js").TypeCheckedModule} TypeCheckedModule
+ * @typedef {import("./TypeCheckedModule.js").TypeCheckedUserFunc} TypeCheckedUserFunc
  * @typedef {import("./TypeCheckedValidator.js").TypeCheckedValidator} TypeCheckedValidator
  * @typedef {import("./TypeSchema.js").TypeSchema} TypeSchema
  */
@@ -200,7 +201,6 @@ export class LoadedScriptsWriter {
     }
 
     /**
-     *
      * @param {Record<string, TypeSchema>} types
      */
     writeTypes(types) {
@@ -220,6 +220,32 @@ export class LoadedScriptsWriter {
             )
             this.combined.write(
                 `        ${key}: (config: CastConfig) => new Cast<${tsTypes[0]}, ${tsTypes[1]}>(${JSON.stringify(t)}, config),\n`
+            )
+        }
+
+        ;[this.definition, this.declaration, this.combined].forEach((w) =>
+            w.write("    },\n")
+        )
+    }
+
+    /**
+     * @param {Record<string, TypeCheckedUserFunc>} functions
+     */
+    writeFunctions(functions) {
+        ;[this.definition, this.declaration, this.combined].forEach((w) =>
+            w.write("    $functions: {\n")
+        )
+
+        for (let key in functions) {
+            const fn = functions[key]
+            const t = genFuncType(fn)
+
+            this.definition.write(
+                `        ${key}: /** @type {UserFunc<${t}>} */ (new UserFunc(${JSON.stringify(fn)})),\n`
+            )
+            this.declaration.write(`        ${key}: UserFunc<${t}>,\n`)
+            this.combined.write(
+                `        ${key}: new UserFunc<${t}>(${JSON.stringify(fn)}),\n`
             )
         }
 
@@ -310,9 +336,37 @@ ${datumTypes ? `    $Datum: (config: CastConfig) => new Cast<${datumTypes[0]}, $
         )
 
         this.writeTypes(v.types)
+        if (v.functions) {
+            this.writeFunctions(v.functions)
+        }
 
         this.definition.write(`}\n`)
         this.declaration.write(`}\n`)
         this.combined.write(`}\n`)
     }
+}
+
+/**
+ * @param {TypeCheckedUserFunc} fn
+ * @returns {string}
+ */
+function genFuncType(fn) {
+    /**
+     * @type {string[]}
+     */
+    const fields = []
+
+    if (fn.requiresScriptContext) {
+        fields.push("$scriptContext: UplcData")
+    }
+
+    if (fn.requiresCurrentScript) {
+        fields.push("$currentScript: string")
+    }
+
+    fn.arguments.forEach(({ name, type: _type }) => {
+        fields.push(`${name}: UplcData`)
+    })
+
+    return `({${fields.join(", ")}}) => UplcData`
 }

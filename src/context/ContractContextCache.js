@@ -1,6 +1,7 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
 import {
     MintingPolicyHash,
+    ScriptHash,
     StakingValidatorHash,
     ValidatorHash
 } from "@helios-lang/ledger"
@@ -22,7 +23,7 @@ import { UplcProgramV2 } from "@helios-lang/uplc"
 
 /**
  * @typedef {{[name: string]: {
- *   purpose: "minting" | "spending" | "staking"
+ *   purpose: "minting" | "spending" | "staking" | "mixed"
  *   bytes: number[]
  *   unoptimizedCborHex?: string
  *   optimizedCborHex: string
@@ -173,7 +174,9 @@ class ContractContextCache {
                           ? "minting"
                           : hash instanceof StakingValidatorHash
                             ? "staking"
-                            : "unknown"
+                            : hash instanceof ScriptHash
+                              ? "mixed"
+                              : "unknown"
                 if (purpose == "unknown") {
                     throw new Error("unhandled hash type")
                 }

@@ -21,7 +21,7 @@ import { Cast } from "../cast/Cast.js"
  *   $Redeemer: CastLike<any, any>
  * } & (
  *   {
- *     $purpose: "spending"
+ *     $purpose: "spending" | "mixed"
  *     $Datum: CastLike<any, any>
  *   } | {
  *     $purpose: "minting" | "certifying" | "rewarding" | "staking"

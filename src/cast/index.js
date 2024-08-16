@@ -1,6 +1,7 @@
 import { Cast } from "./Cast.js"
 export { Cast }
 export { configureCast } from "./Cast.js"
+export { UserFunc } from "./UserFunc.js"
 
 /**
  * @typedef {import("./Cast.js").CastConfig} CastConfig
