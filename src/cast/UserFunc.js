@@ -18,7 +18,11 @@ export {}
  */
 
 /**
- * @template {((args: Record<string, UplcData>) => UplcData)} T
+ * @template {((args: {
+ *   $currentScript? : string
+ * } & {
+ *   [key: string]: UplcData
+ * }) => UplcData)} T
  */
 export class UserFunc {
     /**
