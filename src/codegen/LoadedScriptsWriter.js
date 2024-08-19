@@ -364,9 +364,11 @@ function genFuncType(fn) {
         fields.push("$currentScript: string")
     }
 
-    fn.arguments.forEach(({ name, type: _type }) => {
-        fields.push(`${name}: UplcData`)
+    fn.arguments.forEach(({ name, type: _type }, i) => {
+        if (!name.startsWith("_")) {
+            fields.push(`${name}: UplcData`)
+        }
     })
 
-    return `({${fields.join(", ")}}) => UplcData`
+    return `(args: {${fields.join(", ")}}) => UplcData`
 }
