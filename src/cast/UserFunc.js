@@ -18,11 +18,7 @@ export {}
  */
 
 /**
- * @template {((args: {
- *   $currentScript? : string
- * } & {
- *   [key: string]: UplcData
- * }) => UplcData)} T
+ * @template T
  */
 export class UserFunc {
     /**
