@@ -282,6 +282,9 @@ export class LoadedScriptsWriter {
         )
 
         this.writeTypes(m.types)
+        if (m.functions) {
+            this.writeFunctions(m.functions)
+        }
 
         this.definition.write(`}\n`)
         this.declaration.write(`}\n`)
