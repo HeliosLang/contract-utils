@@ -4,9 +4,10 @@ import {
     MintingPolicyHash,
     ScriptHash
 } from "@helios-lang/ledger"
-import { Cast } from "../cast/index.js"
+import { Cast, UserFunc } from "../cast/index.js"
 
 /**
+ * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
  * @typedef {import("../codegen/index.js").LoadedModule} LoadedModule
  * @typedef {import("../codegen/index.js").LoadedValidator} LoadedValidator
  */
@@ -67,7 +68,7 @@ import { Cast } from "../cast/index.js"
  *           PermissiveType<V["$Redeemer"]>
  *         >
  *       >
- *     } & ContractTypesContext<V["$types"]> :
+ *     } & ContractTypesContext<V["$types"]> & ContractUserFuncsContext<V["$functions"]> :
  *     V extends {"$purpose": "minting", "$Redeemer": CastLike<any, any>} ? {
  *       $hash: MintingPolicyHash<
  *         MintingContext<
@@ -75,7 +76,7 @@ import { Cast } from "../cast/index.js"
  *           PermissiveType<V["$Redeemer"]>
  *         >
  *       >
- *     } & ContractTypesContext<V["$types"]> :
+ *     } & ContractTypesContext<V["$types"]> & ContractUserFuncsContext<V["$functions"]> :
  *     V extends {"$purpose": ("certifying" | "rewarding" | "staking"), "$Redeemer": CastLike<any, any>} ? {
  *       $hash: StakingValidatorHash<
  *         StakingContext<
@@ -83,21 +84,38 @@ import { Cast } from "../cast/index.js"
  *           PermissiveType<V["$Redeemer"]>
  *         >
  *       >
- *     } & ContractTypesContext<V["$types"]> :
+ *     } & ContractTypesContext<V["$types"]> & ContractUserFuncsContext<V["$functions"]> :
+ *     V extends {"$purpose": "mixed", "$Datum": CastLike<any, any>, "$Redeemer": CastLike<any, any>} ? {
+ *       $hash: ScriptHash<
+ *         SpendingContext<
+ *            StrictType<V["$Datum"]>,
+ *            PermissiveType<V["$Datum"]>,
+ *            StrictType<V["$Redeemer"]>,
+ *            PermissiveType<V["$Redeemer"]>
+ *          >
+ *       >
+ *     } & ContractTypesContext<V["$types"]> & ContractUserFuncsContext<V["$functions"]> :
  *     never
  * } ContractValidatorContexts
  */
 
 /**
  * @template {LoadedModule} V
- * @typedef {ContractTypesContext<V["$types"]>} ContractModuleContexts
+ * @typedef {ContractTypesContext<V["$types"]> & ContractUserFuncsContext<V["$functions"]>} ContractModuleContexts
  */
 
 /**
- * @template {{[typeName:string]: CastLike<any, any>}} T
+ * @template {{[typeName: string]: CastLike<any, any>}} T
  * @typedef {{
  *   [K in keyof T]: Cast<StrictType<T[K]>, PermissiveType<T[K]>>
  * }} ContractTypesContext
+ */
+
+/**
+ * @template {{[funcName: string]: (uplc: UplcProgram) => UserFunc<any>}} T
+ * @typedef {{
+ *   [K in keyof T]: UserFunc<T[K]>
+ * }} ContractUserFuncsContext
  */
 
 /**

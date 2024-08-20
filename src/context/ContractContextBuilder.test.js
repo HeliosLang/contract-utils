@@ -48,7 +48,8 @@ const utils = {
                     config
                 )
             )
-    }
+    },
+    $functions: {}
 }
 
 const match_string_policy = {
@@ -63,7 +64,8 @@ const match_string_policy = {
         /** @type {Cast<boolean, boolean>} */ (
             new Cast({ kind: "internal", name: "Bool" }, config)
         ),
-    $types: {}
+    $types: {},
+    $functions: {}
 }
 
 const match_string = {
@@ -156,7 +158,8 @@ const match_string = {
                     config
                 )
             )
-    }
+    },
+    $functions: {}
 }
 
 describe(`${ContractContextBuilder.name} typechecks`, () => {

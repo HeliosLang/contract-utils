@@ -14,7 +14,13 @@ import { UplcProgramV2 } from "@helios-lang/uplc"
  * @typedef {{
  *   name: string
  *   changeParam(key: string, value: UplcData): void
- *   compile(options: {optimize?: boolean, dependsOnOwnHash?: boolean, hashDependencies?: Record<string, string>}): UplcProgramV2
+ *   compile(options: {
+ *     optimize?: boolean,
+ *     dependsOnOwnHash?: boolean,
+ *     hashDependencies?: Record<string, string>
+ *     excludeUserFuncs?: Set<string>
+ *     onCompileUserFunc?: (name: string, uplc: UplcProgramV2) => void
+ *   }): UplcProgramV2
  * }} Program
  */
 
@@ -77,6 +83,8 @@ export class CompilerLib_v0_17 {
             })
         }
 
+        const onCompileUserFunc = options.onCompileUserFunc
+
         /**
          * @type {UplcProgramV2}
          */
@@ -86,7 +94,23 @@ export class CompilerLib_v0_17 {
             hashDependencies: {
                 ...options.hashDependencies,
                 ...(options.ownHash ? { [program.name]: options.ownHash } : {})
-            }
+            },
+            ...(options.excludeUserFuncs
+                ? {
+                      excludeUserFuncs: options.excludeUserFuncs
+                  }
+                : {}),
+            ...(onCompileUserFunc
+                ? {
+                      onCompileUserFunc: (name, uplc) => {
+                          onCompileUserFunc(
+                              name,
+                              bytesToHex(uplc.toCbor()),
+                              "PlutusScriptV2"
+                          )
+                      }
+                  }
+                : {})
         })
 
         return {

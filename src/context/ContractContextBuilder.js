@@ -1,6 +1,7 @@
+import { expectSome } from "@helios-lang/type-utils"
+import { configureCast } from "../cast/Cast.js"
 import { loadCompilerLib } from "../compiler/index.js"
 import { DagCompiler } from "./DagCompiler.js"
-import { configureCast } from "../cast/Cast.js"
 import { contractContextCache } from "./ContractContextCache.js"
 
 /**
@@ -118,7 +119,7 @@ export class ContractContextBuilder {
 
         const cached = contractContextCache.shift()
 
-        const hashes = cached
+        const compiled = cached
             ? cached
             : dagCompiler.build(
                   Object.values(this.validators),
@@ -127,11 +128,11 @@ export class ContractContextBuilder {
                   props.expectedHashes
               )
 
-        contractContextCache.push(hashes)
+        contractContextCache.push(compiled)
 
         if (props.dumpHashes) {
-            for (let name in hashes) {
-                console.log(`${name}: ${hashes[name].toHex()},`)
+            for (let name in compiled.validators) {
+                console.log(`${name}: ${compiled.validators[name].toHex()},`)
             }
         }
 
@@ -141,27 +142,55 @@ export class ContractContextBuilder {
         const res = {}
 
         for (let name in this.modules) {
-            res[name] = Object.fromEntries(
-                Object.entries(this.modules[name].$types).map(
-                    ([typeName, castLike]) => [
+            const mod = this.modules[name]
+
+            res[name] = {
+                ...Object.fromEntries(
+                    Object.entries(mod.$types).map(([typeName, castLike]) => [
                         typeName,
                         configureCast(castLike, castConfig)
-                    ]
+                    ])
+                ),
+                ...Object.fromEntries(
+                    Object.entries(mod.$functions).map(
+                        ([funcKey, userFunc]) => [
+                            funcKey,
+                            userFunc(
+                                expectSome(
+                                    compiled.userFuncs[`${name}::${funcKey}`]
+                                )
+                            )
+                        ]
+                    )
                 )
-            )
+            }
         }
 
         for (let name in this.validators) {
+            const validator = this.validators[name]
+
             res[name] = {
                 ...Object.fromEntries(
-                    Object.entries(this.validators[name].$types).map(
+                    Object.entries(validator.$types).map(
                         ([typeName, castLike]) => [
                             typeName,
                             configureCast(castLike, castConfig)
                         ]
                     )
                 ),
-                $hash: hashes[name]
+                ...Object.fromEntries(
+                    Object.entries(validator.$functions).map(
+                        ([funcKey, userFunc]) => [
+                            funcKey,
+                            userFunc(
+                                expectSome(
+                                    compiled.userFuncs[`${name}::${funcKey}`]
+                                )
+                            )
+                        ]
+                    )
+                ),
+                $hash: compiled.validators[name]
             }
         }
 

@@ -241,11 +241,13 @@ export class LoadedScriptsWriter {
             const t = genFuncType(fn)
 
             this.definition.write(
-                `        ${key}: /** @type {UserFunc<${t}>} */ (new UserFunc(${JSON.stringify(fn)})),\n`
+                `        "${key}": (uplc) => /** @type {UserFunc<${t}>} */ (new UserFunc(uplc, ${JSON.stringify(fn)})),\n`
             )
-            this.declaration.write(`        ${key}: UserFunc<${t}>,\n`)
+            this.declaration.write(
+                `        "${key}": (uplc) => UserFunc<${t}>,\n`
+            )
             this.combined.write(
-                `        ${key}: new UserFunc<${t}>(${JSON.stringify(fn)}),\n`
+                `        "${key}": (uplc) => new UserFunc<${t}>(uplc, ${JSON.stringify(fn)}),\n`
             )
         }
 
@@ -282,9 +284,7 @@ export class LoadedScriptsWriter {
         )
 
         this.writeTypes(m.types)
-        if (m.functions) {
-            this.writeFunctions(m.functions)
-        }
+        this.writeFunctions(m.functions ?? {})
 
         this.definition.write(`}\n`)
         this.declaration.write(`}\n`)
@@ -339,9 +339,7 @@ ${datumTypes ? `    $Datum: (config: CastConfig) => new Cast<${datumTypes[0]}, $
         )
 
         this.writeTypes(v.types)
-        if (v.functions) {
-            this.writeFunctions(v.functions)
-        }
+        this.writeFunctions(v.functions ?? {})
 
         this.definition.write(`}\n`)
         this.declaration.write(`}\n`)

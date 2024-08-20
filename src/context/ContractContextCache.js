@@ -12,26 +12,45 @@ import { UplcProgramV2 } from "@helios-lang/uplc"
 
 /**
  * @typedef {import("@helios-lang/uplc").PlutusVersion} PlutusVersion
+ * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
  * @typedef {import("../cast/index.js").CastConfig} CastConfig
  * @typedef {import("../codegen/index.js").TypeSchema} TypeSchema
  * @typedef {import("./ContractContext.js").AnyContractValidatorContext} AnyContractValidatorContext
  */
 
 /**
- * @typedef {{[name: string]: AnyContractValidatorContext}} CacheEntry
+ * @typedef {{
+ *   validators: {[name: string]: AnyContractValidatorContext}
+ *   userFuncs: {[name: string]: UplcProgram}
+ * }} CacheEntry
  */
 
 /**
  * @typedef {{[name: string]: {
- *   purpose: "minting" | "spending" | "staking" | "mixed"
- *   bytes: number[]
+ *     purpose: "minting" | "spending" | "staking" | "mixed"
+ *     bytes: number[]
+ *     unoptimizedCborHex?: string
+ *     optimizedCborHex: string
+ *     plutusVersion: PlutusVersion
+ *     castConfig: CastConfig
+ *     datum?: TypeSchema
+ *     redeemer: TypeSchema
+ *   }}} CacheEntryValidatorsJson
+ */
+
+/**
+ * @typedef {{[name: string]: {
  *   unoptimizedCborHex?: string
  *   optimizedCborHex: string
  *   plutusVersion: PlutusVersion
- *   castConfig: CastConfig
- *   datum?: TypeSchema
- *   redeemer: TypeSchema
- * }}} CacheEntryJson
+ * }}} CacheEntryUserFuncsJson
+ */
+
+/**
+ * @typedef {{
+ *   validators: CacheEntryValidatorsJson
+ *   userFuncs: CacheEntryUserFuncsJson
+ * }} CacheEntryJson
  */
 
 class ContractContextCache {
@@ -69,10 +88,13 @@ class ContractContextCache {
             /**
              * @type {CacheEntry}
              */
-            const res = {}
+            const res = {
+                validators: {},
+                userFuncs: {}
+            }
 
-            for (let name in entry) {
-                const props = entry[name]
+            for (let name in entry.validators) {
+                const props = entry.validators[name]
 
                 let program =
                     props.plutusVersion == "PlutusScriptV1"
@@ -97,7 +119,7 @@ class ContractContextCache {
 
                 switch (props.purpose) {
                     case "spending": {
-                        res[name] = new ValidatorHash(props.bytes, {
+                        res.validators[name] = new ValidatorHash(props.bytes, {
                             datum: new Cast(
                                 expectSome(props.datum),
                                 props.castConfig
@@ -108,22 +130,63 @@ class ContractContextCache {
                         break
                     }
                     case "minting": {
-                        res[name] = new MintingPolicyHash(props.bytes, {
-                            redeemer: redeemer,
-                            program: program
-                        })
+                        res.validators[name] = new MintingPolicyHash(
+                            props.bytes,
+                            {
+                                redeemer: redeemer,
+                                program: program
+                            }
+                        )
                         break
                     }
                     case "staking": {
-                        res[name] = new StakingValidatorHash(props.bytes, {
+                        res.validators[name] = new StakingValidatorHash(
+                            props.bytes,
+                            {
+                                redeemer: redeemer,
+                                program: program
+                            }
+                        )
+                        break
+                    }
+                    case "mixed": {
+                        res.validators[name] = new ScriptHash(props.bytes, {
+                            datum: new Cast(
+                                expectSome(props.datum),
+                                props.castConfig
+                            ),
                             redeemer: redeemer,
                             program: program
                         })
-                        break
                     }
                     default:
                         throw new Error("unhandled purpose")
                 }
+            }
+
+            for (let name in entry.userFuncs) {
+                const props = entry.userFuncs[name]
+
+                let program =
+                    props.plutusVersion == "PlutusScriptV1"
+                        ? UplcProgramV1.fromCbor(props.optimizedCborHex)
+                        : UplcProgramV2.fromCbor(props.optimizedCborHex)
+
+                if (props.unoptimizedCborHex) {
+                    if (program instanceof UplcProgramV1) {
+                        program = program.withAlt(
+                            UplcProgramV1.fromCbor(props.unoptimizedCborHex)
+                        )
+                    } else if (program instanceof UplcProgramV2) {
+                        program = program.withAlt(
+                            UplcProgramV2.fromCbor(props.unoptimizedCborHex)
+                        )
+                    } else {
+                        throw new Error("unhandled Plutus version")
+                    }
+                }
+
+                res.userFuncs[name] = program
             }
 
             return res
@@ -160,12 +223,17 @@ class ContractContextCache {
     toJson() {
         return this.cache.map((entry) => {
             /**
-             * @type {CacheEntryJson}
+             * @type {CacheEntryValidatorsJson}
              */
-            const res = {}
+            const resValidators = {}
 
-            for (let name in entry) {
-                const hash = entry[name]
+            /**
+             * @type {CacheEntryUserFuncsJson}
+             */
+            const resUserFuncs = {}
+
+            for (let name in entry.validators) {
+                const hash = entry.validators[name]
 
                 const purpose =
                     hash instanceof ValidatorHash
@@ -206,7 +274,7 @@ class ContractContextCache {
                     }
                 }
 
-                res[name] = {
+                resValidators[name] = {
                     purpose: purpose,
                     bytes: hash.bytes,
                     optimizedCborHex: bytesToHex(hash.context.program.toCbor()),
@@ -220,7 +288,27 @@ class ContractContextCache {
                 }
             }
 
-            return res
+            for (let name in entry.userFuncs) {
+                const userFunc = entry.userFuncs[name]
+
+                resUserFuncs[name] = {
+                    optimizedCborHex: bytesToHex(userFunc.toCbor()),
+                    unoptimizedCborHex: /** @type {UplcProgramV2} */ (userFunc)
+                        .alt
+                        ? bytesToHex(
+                              /** @type {UplcProgramV2} */ (
+                                  userFunc
+                              ).alt.toCbor()
+                          )
+                        : undefined,
+                    plutusVersion: userFunc.plutusVersion
+                }
+            }
+
+            return {
+                validators: resValidators,
+                userFuncs: resUserFuncs
+            }
         })
     }
 }

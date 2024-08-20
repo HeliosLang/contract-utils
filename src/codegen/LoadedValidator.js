@@ -1,4 +1,4 @@
-import { Cast } from "../cast/Cast.js"
+import { UserFunc } from "../cast/UserFunc.js"
 
 /**
  * @template TStrict
@@ -7,6 +7,7 @@ import { Cast } from "../cast/Cast.js"
  */
 
 /**
+ * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
  * @typedef {import("./LoadedModule.js").LoadedModule} LoadedModule
  */
 
@@ -18,6 +19,7 @@ import { Cast } from "../cast/Cast.js"
  *   $hashDependencies: ReadonlyArray<LoadedValidator>
  *   $dependsOnOwnHash: boolean
  *   $types: {[name: string]: CastLike<any, any>}
+ *   $functions: {[name: string]: (uplc: UplcProgram) => UserFunc<any>}
  *   $Redeemer: CastLike<any, any>
  * } & (
  *   {

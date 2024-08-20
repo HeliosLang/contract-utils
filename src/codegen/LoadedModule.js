@@ -1,4 +1,8 @@
-export {}
+import { UserFunc } from "../cast/UserFunc.js"
+
+/**
+ * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
+ */
 
 /**
  * @template TStrict
@@ -13,5 +17,6 @@ export {}
  *   $sourceCode: string
  *   $dependencies: ReadonlyArray<LoadedModule>
  *   $types: {[name: string]: CastLike<any, any>}
+ *   $functions: {[name: string]: (uplc: UplcProgram) => UserFunc<any>}
  * }} LoadedModule
  */

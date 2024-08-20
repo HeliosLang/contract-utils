@@ -3,6 +3,7 @@ import { readHeader } from "@helios-lang/compiler-utils"
 export {}
 
 /**
+ * @typedef {import("@helios-lang/uplc").PlutusVersion} PlutusVersion
  * @typedef {import("@helios-lang/uplc").UplcData} UplcData
  * @typedef {import("../codegen/index.js").TypeSchema} InternalTypeDetails
  * @typedef {import("../codegen/index.js").TypeCheckedModule} TypeCheckedModule
@@ -22,6 +23,8 @@ export {}
  *   parameters?: Record<string, UplcData>
  *   isTestnet: boolean
  *   optimize: boolean
+ *   excludeUserFuncs?: Set<string>
+ *   onCompileUserFunc?: (name: string, cborHex: string, plutusVersion: PlutusVersion) => void
  * }} CompileOptions
  */
 
