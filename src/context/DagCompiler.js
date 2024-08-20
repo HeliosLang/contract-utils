@@ -94,7 +94,10 @@ export class DagCompiler {
             validator.$hashDependencies.forEach((v) => buildValidator(v))
 
             // get the dependencies
-            const hashDeps = this.getHashDependencies(validator)
+            const hashDepHashes = this.getHashDepHashes(
+                validator,
+                Object.keys(hashTypes)
+            )
             const moduleDeps = getModuleDependencies(validator)
 
             const excludeUserFuncs = new Set(Object.keys(this.cachedUserFuncs))
@@ -105,7 +108,7 @@ export class DagCompiler {
                 moduleDeps,
                 {
                     optimize: true,
-                    hashDependencies: hashDeps,
+                    hashDependencies: hashDepHashes,
                     allValidatorHashTypes: hashTypes,
                     dependsOnOwnHash: validator.$dependsOnOwnHash,
                     parameters: parameters,
@@ -140,7 +143,7 @@ export class DagCompiler {
                 Array.from(moduleDeps.values()),
                 {
                     optimize: false,
-                    hashDependencies: hashDeps,
+                    hashDependencies: hashDepHashes,
                     allValidatorHashTypes: hashTypes,
                     ownHash: validator.$dependsOnOwnHash ? ownHash : undefined,
                     parameters: parameters,
@@ -236,13 +239,14 @@ export class DagCompiler {
     /**
      * @private
      * @param {LoadedValidator} validator
+     * @param {string[]} allValidators - add a dummy `#` for all validators that aren't hash dependencies (the optimizer will remove them, but the IR name resolution will fail if we don't have them)
      * @returns {{[name: string]: string}} - TODO: do we really need the purpose?
      */
-    getHashDependencies(validator) {
+    getHashDepHashes(validator, allValidators) {
         /**
          * @type {{[name: string]: string}}
          */
-        const deps = {}
+        const hashes = {}
 
         validator.$hashDependencies.forEach((dep) => {
             const k = dep.$name
@@ -254,10 +258,16 @@ export class DagCompiler {
                 )
             }
 
-            deps[k] = v.toHex()
+            hashes[k] = v.toHex()
         })
 
-        return deps
+        allValidators.forEach((v) => {
+            if (!(v in hashes)) {
+                hashes[v] = "#"
+            }
+        })
+
+        return hashes
     }
 
     /**
