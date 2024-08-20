@@ -114,7 +114,7 @@ import { Cast, UserFunc } from "../cast/index.js"
 /**
  * @template {{[funcName: string]: (uplc: UplcProgram) => UserFunc<any>}} T
  * @typedef {{
- *   [K in keyof T]: UserFunc<T[K]>
+ *   [K in keyof T]: ReturnType<T[K]>
  * }} ContractUserFuncsContext
  */
 
