@@ -261,16 +261,26 @@ export class DagCompiler {
     }
 
     /**
+     * Also returns the hash types of any hash-dependencies
      * @private
      * @param {LoadedValidator[]} validators
-     * @returns {{[name: string]: any}}
+     * @returns {Record<string, any>}
      */
     getHashTypes(validators) {
-        return Object.fromEntries(
-            validators.map((v) => {
-                return [v.$name, this.lib.getScriptHashType(v.$purpose)]
+        /**
+         * @type {Record<string, any>}
+         */
+        const res = {}
+
+        validators.forEach((v) => {
+            res[v.$name] = this.lib.getScriptHashType(v.$purpose)
+
+            v.$hashDependencies.forEach((d) => {
+                res[d.$name] = this.lib.getScriptHashType(d.$purpose)
             })
-        )
+        })
+
+        return res
     }
 }
 
