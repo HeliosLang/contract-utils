@@ -272,13 +272,18 @@ export class DagCompiler {
          */
         const res = {}
 
-        validators.forEach((v) => {
-            res[v.$name] = this.lib.getScriptHashType(v.$purpose)
+        /**
+         * @param {ReadonlyArray<LoadedValidator>} vs
+         */
+        const addHashes = (vs) => {
+            vs.forEach((v) => {
+                res[v.$name] = this.lib.getScriptHashType(v.$purpose)
 
-            v.$hashDependencies.forEach((d) => {
-                res[d.$name] = this.lib.getScriptHashType(d.$purpose)
+                addHashes(v.$hashDependencies)
             })
-        })
+        }
+
+        addHashes(validators)
 
         return res
     }
