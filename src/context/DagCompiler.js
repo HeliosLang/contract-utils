@@ -1,6 +1,7 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
 import {
     MintingPolicyHash,
+    ScriptHash,
     StakingValidatorHash,
     ValidatorHash
 } from "@helios-lang/ledger"
@@ -219,6 +220,13 @@ export class DagCompiler {
                     datum: configureCast(validator.$Datum, this.castConfig)
                 })
                 break
+            case "mixed":
+                this.cachedValidators[name] = new ScriptHash(hash, {
+                    program,
+                    redeemer,
+                    datum: configureCast(validator.$Datum, this.castConfig)
+                })
+                break
             case "minting":
                 this.cachedValidators[name] = new MintingPolicyHash(hash, {
                     program,
@@ -234,7 +242,9 @@ export class DagCompiler {
                 })
                 break
             default:
-                throw new Error("unhandled purpose")
+                throw new Error(
+                    `unhandled purpose '${/** @type {any} */ (validator).$purpose}'`
+                )
         }
     }
 
