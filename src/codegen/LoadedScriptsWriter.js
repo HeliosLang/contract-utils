@@ -312,7 +312,7 @@ export class LoadedScriptsWriter {
             `export const ${v.name} = {
     $name: /** @type {const} */ ("${v.name}"),
     $purpose: /** @type {const} */ ("${v.purpose}"),
-${isSome(currentScriptIndex) ? `    $currentScriptIndex: /** @type {const} */ (${currentScriptIndex}),\n` : ""}
+${isSome(currentScriptIndex) ? `    $currentScriptIndex: /** @type {const} */ (${currentScriptIndex}),` : ""}
     $sourceCode: ${JSON.stringify(v.sourceCode)},
     $dependencies: /** @type {const} */ ([${v.moduleDepedencies.join(", ")}]),
     $hashDependencies: [${v.hashDependencies.filter((d) => d != v.name).join(", ")}],
@@ -325,7 +325,7 @@ ${datumTypes ? `    $Datum: (config) => /** @type {Cast<${datumTypes[0]}, ${datu
             `export const ${v.name}: {
     $name: "${v.name}"
     $purpose: "${v.purpose}"
-${isSome(currentScriptIndex) ? `    $currentScriptIndex: ${currentScriptIndex},\n` : ""}
+${isSome(currentScriptIndex) ? `    $currentScriptIndex: ${currentScriptIndex}` : ""}
     $sourceCode: string
     $dependencies: [${v.moduleDepedencies.map((d) => `typeof ${d}`).join(", ")}]
     $hashDependencies: [${v.hashDependencies
@@ -341,7 +341,7 @@ ${datumTypes ? `    $Datum: ConfigurableCast<${datumTypes[0]}, ${datumTypes[1]}>
             `export const ${v.name} = {
     $name: "${v.name}" as const,
     $purpose: "${v.purpose}" as const,
-${isSome(currentScriptIndex) ? `    $currentScriptIndex: ${currentScriptIndex} as const,\n` : ""}
+${isSome(currentScriptIndex) ? `    $currentScriptIndex: ${currentScriptIndex} as const,` : ""}
     $sourceCode: ${JSON.stringify(v.sourceCode)} as string,
     $dependencies: [${v.moduleDepedencies.join(", ")}] as const,
     $hashDependencies: [${v.hashDependencies.filter((d) => d != v.name).join(", ")}],
@@ -403,10 +403,8 @@ function genFuncType(fn) {
         fields.push("$currentScript: string")
     }
 
-    fn.arguments.forEach(({ name, type: _type }, i) => {
-        if (!name.startsWith("_")) {
-            fields.push(`${name}: UplcData`)
-        }
+    fn.arguments.forEach(({ name, type: _type, isOptional }, i) => {
+        fields.push(`${name}${isOptional ? "?" : ""}: UplcData`)
     })
 
     return `(args: {${fields.join(", ")}}) => UplcData`

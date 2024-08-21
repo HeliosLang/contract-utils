@@ -14,6 +14,7 @@ import { ConstrData, UplcDataValue } from "@helios-lang/uplc"
  *   arguments: {
  *     name: string
  *     type: TypeSchema
+ *     isOptional: boolean
  *   }[]
  *   returns: TypeSchema
  *   validatorIndices?: Record<string, number>
@@ -56,12 +57,22 @@ export class UserFunc {
                 /**
                  * @type {UplcData[]}
                  */
-                const args = this.props.arguments.map(({ name, type }) => {
-                    const rawArg = expectSome(namedArgs[name])
+                const args = this.props.arguments.map(
+                    ({ name, type, isOptional }) => {
+                        if (isOptional) {
+                            if (name in namedArgs) {
+                                return new ConstrData(0, [namedArgs[name]])
+                            } else {
+                                return new ConstrData(1, [])
+                            }
+                        } else {
+                            const rawArg = expectSome(namedArgs[name])
 
-                    // TODO: apply type conversion
-                    return rawArg
-                })
+                            // TODO: apply type conversion
+                            return rawArg
+                        }
+                    }
+                )
 
                 if (this.props.requiresScriptContext) {
                     args.push(expectSome(namedArgs["$scriptContext"]))

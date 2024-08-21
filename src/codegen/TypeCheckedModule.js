@@ -11,6 +11,7 @@ export {}
  *   arguments: {
  *     name: string
  *     type: TypeSchema
+ *     isOptional: boolean
  *   }[]
  *   returns: TypeSchema
  * }} TypeCheckedUserFunc
