@@ -1,4 +1,5 @@
 import { StringWriter } from "@helios-lang/codec-utils"
+import { isSome } from "@helios-lang/type-utils"
 import { genTypes } from "./TypeSchema.js"
 
 /**
@@ -100,6 +101,8 @@ export class LoadedScriptsWriter {
 
             todo = todoNext
         }
+
+        this.writeValidatorIndices(validators)
 
         return this
     }
@@ -240,14 +243,19 @@ export class LoadedScriptsWriter {
             const fn = functions[key]
             const t = genFuncType(fn)
 
+            let propsStr = JSON.stringify(fn)
+            if (fn.requiresCurrentScript) {
+                propsStr = `{...(${propsStr}), validatorIndices: __validatorIndices}`
+            }
+
             this.definition.write(
-                `        "${key}": (uplc) => /** @type {UserFunc<${t}>} */ (new UserFunc(uplc, ${JSON.stringify(fn)})),\n`
+                `        "${key}": (uplc) => /** @type {UserFunc<${t}>} */ (new UserFunc(uplc, ${propsStr})),\n`
             )
             this.declaration.write(
                 `        "${key}": (uplc) => UserFunc<${t}>,\n`
             )
             this.combined.write(
-                `        "${key}": (uplc) => new UserFunc<${t}>(uplc, ${JSON.stringify(fn)}),\n`
+                `        "${key}": (uplc) => new UserFunc<${t}>(uplc, ${propsStr}),\n`
             )
         }
 
@@ -298,11 +306,13 @@ export class LoadedScriptsWriter {
     writeValidator(v) {
         const redeemerTypes = genTypes(v.Redeemer)
         const datumTypes = v.Datum ? genTypes(v.Datum) : undefined
+        const currentScriptIndex = v.currentScriptIndex
 
         this.definition.write(
             `export const ${v.name} = {
     $name: /** @type {const} */ ("${v.name}"),
     $purpose: /** @type {const} */ ("${v.purpose}"),
+${isSome(currentScriptIndex) ? `    $currentScriptIndex: /** @type {const} */ (${currentScriptIndex}),\n` : ""}
     $sourceCode: ${JSON.stringify(v.sourceCode)},
     $dependencies: /** @type {const} */ ([${v.moduleDepedencies.join(", ")}]),
     $hashDependencies: [${v.hashDependencies.filter((d) => d != v.name).join(", ")}],
@@ -315,6 +325,7 @@ ${datumTypes ? `    $Datum: (config) => /** @type {Cast<${datumTypes[0]}, ${datu
             `export const ${v.name}: {
     $name: "${v.name}"
     $purpose: "${v.purpose}"
+${isSome(currentScriptIndex) ? `    $currentScriptIndex: ${currentScriptIndex},\n` : ""}
     $sourceCode: string
     $dependencies: [${v.moduleDepedencies.map((d) => `typeof ${d}`).join(", ")}]
     $hashDependencies: [${v.hashDependencies
@@ -330,6 +341,7 @@ ${datumTypes ? `    $Datum: ConfigurableCast<${datumTypes[0]}, ${datumTypes[1]}>
             `export const ${v.name} = {
     $name: "${v.name}" as const,
     $purpose: "${v.purpose}" as const,
+${isSome(currentScriptIndex) ? `    $currentScriptIndex: ${currentScriptIndex} as const,\n` : ""}
     $sourceCode: ${JSON.stringify(v.sourceCode)} as string,
     $dependencies: [${v.moduleDepedencies.join(", ")}] as const,
     $hashDependencies: [${v.hashDependencies.filter((d) => d != v.name).join(", ")}],
@@ -344,6 +356,32 @@ ${datumTypes ? `    $Datum: (config: CastConfig) => new Cast<${datumTypes[0]}, $
         this.definition.write(`}\n`)
         this.declaration.write(`}\n`)
         this.combined.write(`}\n`)
+    }
+
+    /**
+     * @param {Record<string, TypeCheckedValidator>} validators
+     */
+    writeValidatorIndices(validators) {
+        /**
+         * @type {Record<string, number>}
+         */
+        const indices = {}
+
+        for (let name in validators) {
+            const v = validators[name]
+            if (isSome(v.currentScriptIndex)) {
+                indices[name] = v.currentScriptIndex
+            } else {
+                return
+            }
+        }
+
+        this.definition.write(
+            `const __validatorIndices = ${JSON.stringify(indices)};`
+        )
+        this.combined.write(
+            `const __validatorIndices: Record<string, number> = ${JSON.stringify(indices)};`
+        )
     }
 }
 

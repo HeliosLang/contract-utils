@@ -18,6 +18,7 @@ import { UserFunc } from "../cast/UserFunc.js"
  *   $sourceCode: string
  *   $dependencies: ReadonlyArray<LoadedModule>
  *   $hashDependencies: ReadonlyArray<LoadedValidator>
+ *   $currentScriptIndex?: number
  *   $dependsOnOwnHash: boolean
  *   $types: {[name: string]: CastLike<any, any>}
  *   $functions: {[name: string]: (uplc: UplcProgram) => UserFunc<any>}

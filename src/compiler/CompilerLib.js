@@ -16,8 +16,9 @@ export {}
 
 /**
  * @typedef {{
- *   allValidatorHashTypes: {[name: string]: ScriptHashType}
- *   hashDependencies: {[name: string]: string}
+ *   allValidatorHashTypes: Record<string, ScriptHashType>
+ *   allValidatorIndices?: Record<string, number>
+ *   hashDependencies: Record<string, string>
  *   dependsOnOwnHash?: boolean
  *   ownHash?: string
  *   parameters?: Record<string, UplcData>

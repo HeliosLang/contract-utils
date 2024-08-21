@@ -8,6 +8,7 @@ export {}
 /**
  * @typedef {TypeCheckedModule & {
  *   hashDependencies: string[]
+ *   currentScriptIndex?: number
  *   Redeemer: TypeSchema
  *   Datum?: TypeSchema
  * }} TypeCheckedValidator

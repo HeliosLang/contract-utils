@@ -13,11 +13,13 @@ import { UplcProgramV2 } from "@helios-lang/uplc"
 /**
  * @typedef {{
  *   name: string
+ *   currentScriptIndex: Option<number>
  *   changeParam(key: string, value: UplcData): void
  *   compile(options: {
  *     optimize?: boolean,
  *     dependsOnOwnHash?: boolean,
  *     hashDependencies?: Record<string, string>
+ *     validatorIndices?: Record<string, number>
  *     excludeUserFuncs?: Set<string>
  *     onCompileUserFunc?: (name: string, uplc: UplcProgramV2) => void
  *   }): UplcProgramV2
@@ -91,6 +93,7 @@ export class CompilerLib_v0_17 {
         const uplc = program.compile({
             optimize: options.optimize,
             dependsOnOwnHash: options.dependsOnOwnHash ?? false,
+            validatorIndices: options.allValidatorIndices,
             hashDependencies: {
                 ...options.hashDependencies,
                 ...(options.ownHash ? { [program.name]: options.ownHash } : {})

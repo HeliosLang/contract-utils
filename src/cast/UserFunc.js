@@ -16,6 +16,7 @@ import { ConstrData, UplcDataValue } from "@helios-lang/uplc"
  *     type: TypeSchema
  *   }[]
  *   returns: TypeSchema
+ *   validatorIndices?: Record<string, number>
  * }} UserFuncProps
  */
 
@@ -71,11 +72,12 @@ export class UserFunc {
                         namedArgs["$currentScript"]
                     )
 
-                    console.error(
-                        `TODO: convert ${currentScriptName} to correct ConstrData`
+                    const index = expectSome(
+                        expectSome(this.props.validatorIndices)[
+                            currentScriptName
+                        ]
                     )
-
-                    args.push(new ConstrData(0, []))
+                    args.push(new ConstrData(index, []))
                 }
 
                 const result = this.uplc.eval(

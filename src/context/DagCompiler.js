@@ -4,7 +4,7 @@ import {
     StakingValidatorHash,
     ValidatorHash
 } from "@helios-lang/ledger"
-import { None, expectSome } from "@helios-lang/type-utils"
+import { None, expectSome, isSome } from "@helios-lang/type-utils"
 import { UplcProgramV1, UplcProgramV2 } from "@helios-lang/uplc"
 import { configureCast } from "../cast/index.js"
 
@@ -75,6 +75,7 @@ export class DagCompiler {
      */
     build(validators, parameters, isTestnet, expectedHashes = None) {
         const hashTypes = this.getHashTypes(validators)
+        const validatorIndices = this.getValidatorIndices(validators)
 
         /**
          * `buildValidator()` is a closure instead of a member method of DagCompiler
@@ -110,6 +111,7 @@ export class DagCompiler {
                     optimize: true,
                     hashDependencies: hashDepHashes,
                     allValidatorHashTypes: hashTypes,
+                    allValidatorIndices: validatorIndices ?? undefined,
                     dependsOnOwnHash: validator.$dependsOnOwnHash,
                     parameters: parameters,
                     isTestnet: isTestnet,
@@ -294,6 +296,29 @@ export class DagCompiler {
         }
 
         addHashes(validators)
+
+        return res
+    }
+
+    /**
+     * If any $currentScriptIndex is missing, None is returned
+     * @private
+     * @param {LoadedValidator[]} validators
+     * @returns {Option<Record<string, number>>}
+     */
+    getValidatorIndices(validators) {
+        /**
+         * @type {Record<string, number>}
+         */
+        const res = {}
+
+        for (let v of validators) {
+            if (isSome(v.$currentScriptIndex)) {
+                res[v.$name] = v.$currentScriptIndex
+            } else {
+                return None
+            }
+        }
 
         return res
     }
