@@ -118,6 +118,7 @@ export class DagCompiler {
                     isTestnet: isTestnet,
                     excludeUserFuncs: excludeUserFuncs,
                     onCompileUserFunc: (name, cborHex, plutusVersion) => {
+                        console.log(`Compiled user function ${name}`)
                         this.cachedUserFuncs[name] =
                             plutusVersion == "PlutusScriptV1"
                                 ? UplcProgramV1.fromCbor(cborHex)
