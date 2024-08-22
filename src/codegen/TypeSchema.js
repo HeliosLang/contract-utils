@@ -76,6 +76,10 @@ export function genTypes(schema) {
                     ]
                 case "TxId":
                     return ["TxId", "TxId | string | number[]"]
+                case "TxInput":
+                    return ["TxInput", "TxInput"]
+                case "TxOutput":
+                    return ["TxOutput", "TxOutput"]
                 case "TxOutputDatum":
                     return [
                         "TxOutputDatum | null",

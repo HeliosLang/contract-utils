@@ -12,6 +12,8 @@ import {
     StakingValidatorHash,
     TimeRange,
     TxId,
+    TxInput,
+    TxOutput,
     TxOutputDatum,
     TxOutputId,
     ValidatorHash,
@@ -161,6 +163,10 @@ function schemaToUplc(schema, x, defs = {}) {
                     return TimeRange.new(x).toUplcData()
                 case "TxId":
                     return TxId.new(x).toUplcData()
+                case "TxInput":
+                    return /** @type {TxInput} */ (x).toUplcData()
+                case "TxOutput":
+                    return /** @type {TxOutput} */ (x).toUplcData()
                 case "TxOutputDatum":
                     return x
                         ? TxOutputDatum.new(x)?.toUplcData() ??
@@ -325,6 +331,10 @@ function uplcToSchema(schema, data, config, defs = {}) {
                     return TimeRange.fromUplcData(data)
                 case "TxId":
                     return TxId.fromUplcData(data)
+                case "TxInput":
+                    return TxInput.fromUplcData(config.isMainnet, data)
+                case "TxOutput":
+                    return TxOutput.fromUplcData(config.isMainnet, data)
                 case "TxOutputId":
                     return TxOutputId.fromUplcData(data)
                 case "ValidatorHash":

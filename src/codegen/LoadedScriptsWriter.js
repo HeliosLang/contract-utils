@@ -188,6 +188,8 @@ export class LoadedScriptsWriter {
             "StakingValidatorHash",
             "TimeRange",
             "TxId",
+            "TxInput",
+            "TxOutput",
             "TxOutputDatum",
             "ValidatorHash",
             "Value"
