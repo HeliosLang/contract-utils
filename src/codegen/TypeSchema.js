@@ -5,7 +5,7 @@
 /**
  * TODO: handle recursive data structures
  * @param {TypeSchema} schema
- * @returns {[string, string]} - the first entry is the canonical type, the second is the permissive type
+ * @returns {[string, string]} - the first entry is the strict canonical type, the second is the permissive type
  */
 export function genTypes(schema) {
     const kind = schema.kind

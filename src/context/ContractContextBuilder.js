@@ -128,6 +128,7 @@ export class ContractContextBuilder {
                   props.expectedHashes
               )
 
+        // TODO: adapt to use generic cache interface
         contractContextCache.push(compiled)
 
         if (props.dumpHashes) {
@@ -158,7 +159,8 @@ export class ContractContextBuilder {
                             userFunc(
                                 expectSome(
                                     compiled.userFuncs[`${name}::${funcKey}`]
-                                )
+                                ),
+                                castConfig
                             )
                         ]
                     )
@@ -185,7 +187,8 @@ export class ContractContextBuilder {
                             userFunc(
                                 expectSome(
                                     compiled.userFuncs[`${name}::${funcKey}`]
-                                )
+                                ),
+                                castConfig
                             )
                         ]
                     )

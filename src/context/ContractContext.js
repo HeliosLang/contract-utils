@@ -8,6 +8,7 @@ import { Cast, UserFunc } from "../cast/index.js"
 
 /**
  * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
+ * @typedef {import("../cast/Cast.js").CastConfig} CastConfig
  * @typedef {import("../codegen/index.js").LoadedModule} LoadedModule
  * @typedef {import("../codegen/index.js").LoadedValidator} LoadedValidator
  */
@@ -112,7 +113,7 @@ import { Cast, UserFunc } from "../cast/index.js"
  */
 
 /**
- * @template {{[funcName: string]: (uplc: UplcProgram) => UserFunc<any>}} T
+ * @template {{[funcName: string]: (uplc: UplcProgram, config: CastConfig) => UserFunc<any>}} T
  * @typedef {{
  *   [K in keyof T]: ReturnType<T[K]>
  * }} ContractUserFuncsContext

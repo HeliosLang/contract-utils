@@ -201,6 +201,7 @@ export class LoadedScriptsWriter {
         )
         this.writeImportType("@helios-lang/ledger", "TimeLike")
         this.writeImportType("@helios-lang/ledger", "UplcData")
+        this.writeImportType("@helios-lang/uplc", "UplcProgram")
     }
 
     /**
@@ -241,21 +242,18 @@ export class LoadedScriptsWriter {
 
         for (let key in functions) {
             const fn = functions[key]
-            const t = genFuncType(fn)
+            const [argsType, retType] = genFuncType(fn)
 
-            let propsStr = JSON.stringify(fn)
-            if (fn.requiresCurrentScript) {
-                propsStr = `{...(${propsStr}), validatorIndices: __validatorIndices}`
-            }
+            const propsStr = `{...(${JSON.stringify(fn)}), castConfig: config, validatorIndices: __validatorIndices}`
 
             this.definition.write(
-                `        "${key}": (uplc) => /** @type {UserFunc<${t}>} */ (new UserFunc(uplc, ${propsStr})),\n`
+                `        "${key}": (uplc, config) => /** @type {UserFunc<${argsType}, ${retType}>} */ (new UserFunc(uplc, ${propsStr})),\n`
             )
             this.declaration.write(
-                `        "${key}": (uplc) => UserFunc<${t}>,\n`
+                `        "${key}": (uplc: UplcProgram, config: CastConfig) => UserFunc<${argsType}, ${retType}>,\n`
             )
             this.combined.write(
-                `        "${key}": (uplc) => new UserFunc<${t}>(uplc, ${propsStr}),\n`
+                `        "${key}": (uplc: UplcProgram, config: CastConfig) => new UserFunc<${argsType}, ${retType}>(uplc, ${propsStr}),\n`
             )
         }
 
@@ -387,7 +385,7 @@ ${datumTypes ? `    $Datum: (config: CastConfig) => new Cast<${datumTypes[0]}, $
 
 /**
  * @param {TypeCheckedUserFunc} fn
- * @returns {string}
+ * @returns {[string, string]}
  */
 function genFuncType(fn) {
     /**
@@ -403,9 +401,12 @@ function genFuncType(fn) {
         fields.push("$currentScript: string")
     }
 
-    fn.arguments.forEach(({ name, type: _type, isOptional }, i) => {
-        fields.push(`${name}${isOptional ? "?" : ""}: UplcData`)
+    fn.arguments.forEach(({ name, type, isOptional }, i) => {
+        fields.push(`${name}${isOptional ? "?" : ""}: ${genTypes(type)[1]}`)
     })
 
-    return `(args: {${fields.join(", ")}}) => UplcData`
+    const argsTypeStr = `{${fields.join(", ")}}`
+    const retTypeStr = genTypes(fn.returns)[0]
+
+    return [argsTypeStr, retTypeStr]
 }

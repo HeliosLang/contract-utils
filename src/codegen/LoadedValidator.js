@@ -8,6 +8,7 @@ import { UserFunc } from "../cast/UserFunc.js"
 
 /**
  * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
+ * @typedef {import("../cast/Cast.js").CastConfig} CastConfig
  * @typedef {import("./LoadedModule.js").LoadedModule} LoadedModule
  */
 
@@ -21,7 +22,7 @@ import { UserFunc } from "../cast/UserFunc.js"
  *   $currentScriptIndex?: number
  *   $dependsOnOwnHash: boolean
  *   $types: {[name: string]: CastLike<any, any>}
- *   $functions: {[name: string]: (uplc: UplcProgram) => UserFunc<any>}
+ *   $functions: {[name: string]: (uplc: UplcProgram, config: CastConfig) => UserFunc<any>}
  *   $Redeemer: CastLike<any, any>
  * } & (
  *   {
