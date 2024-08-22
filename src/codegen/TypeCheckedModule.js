@@ -6,6 +6,7 @@ export {}
 
 /**
  * @typedef {{
+ *   name: string
  *   requiresScriptContext: boolean
  *   requiresCurrentScript: boolean
  *   arguments: {

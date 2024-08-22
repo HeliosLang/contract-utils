@@ -4,6 +4,7 @@ import { Cast } from "./Cast.js"
 
 /**
  * @typedef {import("@helios-lang/type-utils").TypeSchema} TypeSchema
+ * @typedef {import("@helios-lang/uplc").CekResult} CekResult
  * @typedef {import("@helios-lang/uplc").UplcData} UplcData
  * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
  * @typedef {import("@helios-lang/uplc").UplcValue} UplcValue
@@ -102,6 +103,22 @@ export class UserFunc {
      * @returns {UplcData}
      */
     evalUnsafe(namedArgs) {
+        const result = this.profile(namedArgs).result
+
+        if (isLeft(result)) {
+            throw new Error(result.left.error)
+        } else if (result.right instanceof UplcDataValue) {
+            return result.right.value
+        } else {
+            throw new Error(`${result.right.toString()} isn't a UplcDataValue`)
+        }
+    }
+
+    /**
+     * @param {UnsafeArgsT<ArgsT>} namedArgs
+     * @returns {CekResult}
+     */
+    profile(namedArgs) {
         /**
          * @type {UplcData[]}
          */
@@ -113,10 +130,7 @@ export class UserFunc {
                     return new ConstrData(1, [])
                 }
             } else {
-                const rawArg = expectSome(namedArgs[name])
-
-                // TODO: apply type conversion
-                return rawArg
+                return expectSome(namedArgs[name])
             }
         })
 
@@ -132,32 +146,50 @@ export class UserFunc {
             const index = expectSome(
                 expectSome(this.props.validatorIndices)[currentScriptName]
             )
+
             args.push(new ConstrData(index, []))
         }
 
         const argValues = args.map((a) => new UplcDataValue(a))
 
-        const result = this.uplc.eval(argValues).result
+        const cekResult = this.uplc.eval(argValues)
 
         if ("alt" in this.uplc && this.uplc.alt instanceof UplcProgramV2) {
-            const resultUnoptim = this.uplc.alt.eval(argValues).result
+            const cekResultUnoptim = this.uplc.alt.eval(argValues)
+            const resultUnoptim = cekResultUnoptim.result
             const resultUnoptimStr = evalResultToString(resultUnoptim)
-            const resultStr = evalResultToString(result)
+            const resultStr = evalResultToString(cekResult.result)
 
             if (resultStr != resultUnoptimStr) {
                 throw new Error(
                     `Critical error: contact Helios maintainers, expected ${resultUnoptimStr}, got ${resultStr}`
                 )
             }
+
+            // also make sure the cost is an improvement
+            if (cekResult.cost.mem > cekResultUnoptim.cost.mem) {
+                throw new Error(
+                    `Critical error: optimizer worsened memory cost of ${this.props.name}`
+                )
+            }
+
+            if (cekResult.cost.cpu > cekResultUnoptim.cost.cpu) {
+                throw new Error(
+                    `Critical error: optimizer worsened cpu cost of ${this.props.name}`
+                )
+            }
+
+            if (
+                cekResult.cost.mem == cekResultUnoptim.cost.mem &&
+                cekResult.cost.cpu == cekResultUnoptim.cost.cpu
+            ) {
+                console.error(
+                    `Warning: optimizer didn't improve cost of ${this.props.name}`
+                )
+            }
         }
 
-        if (isLeft(result)) {
-            throw new Error(result.left.error)
-        } else if (result.right instanceof UplcDataValue) {
-            return result.right.value
-        } else {
-            throw new Error(`${result.right.toString()} isn't a UplcDataValue`)
-        }
+        return cekResult
     }
 }
 
