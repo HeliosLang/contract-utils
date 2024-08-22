@@ -6,7 +6,7 @@ import {
     ValidatorHash
 } from "@helios-lang/ledger"
 import { None, expectSome, isSome } from "@helios-lang/type-utils"
-import { UplcProgramV1, UplcProgramV2 } from "@helios-lang/uplc"
+import { restoreUplcProgram } from "@helios-lang/uplc"
 import { configureCast } from "../cast/index.js"
 
 /**
@@ -105,29 +105,35 @@ export class DagCompiler {
             const excludeUserFuncs = new Set(Object.keys(this.cachedUserFuncs))
 
             // optimized compilation
-            const { cborHex: optimizedCborHex } = this.lib.compile(
-                sourceCode,
-                moduleDeps,
-                {
-                    optimize: true,
-                    hashDependencies: hashDepHashes,
-                    allValidatorHashTypes: hashTypes,
-                    allValidatorIndices: validatorIndices ?? undefined,
-                    dependsOnOwnHash: validator.$dependsOnOwnHash,
-                    parameters: parameters,
-                    isTestnet: isTestnet,
-                    excludeUserFuncs: excludeUserFuncs,
-                    onCompileUserFunc: (name, cborHex, plutusVersion) => {
-                        console.log(`Compiled user function ${name}`)
-                        this.cachedUserFuncs[name] =
-                            plutusVersion == "PlutusScriptV1"
-                                ? UplcProgramV1.fromCbor(cborHex)
-                                : UplcProgramV2.fromCbor(cborHex)
-                    }
+            const {
+                cborHex: optimizedCborHex,
+                plutusVersion: optimPlutusVersion
+            } = this.lib.compile(sourceCode, moduleDeps, {
+                optimize: true,
+                hashDependencies: hashDepHashes,
+                allValidatorHashTypes: hashTypes,
+                allValidatorIndices: validatorIndices ?? undefined,
+                dependsOnOwnHash: validator.$dependsOnOwnHash,
+                parameters: parameters,
+                isTestnet: isTestnet,
+                excludeUserFuncs: excludeUserFuncs,
+                onCompileUserFunc: (name, cborHex, plutusVersion) => {
+                    // this compilation process is potentially very slow, so print messages indicating progress
+                    console.log(`Compiled user function ${name}`)
+                    this.cachedUserFuncs[name] = restoreUplcProgram(
+                        plutusVersion,
+                        cborHex
+                    )
                 }
-            )
+            })
 
-            const optimizedProgram = UplcProgramV2.fromCbor(optimizedCborHex)
+            // this compilation process is potentially very slow, so print messages indicating progress
+            console.log(`Compiled validator ${validator.$name}`)
+
+            const optimizedProgram = restoreUplcProgram(
+                optimPlutusVersion,
+                optimizedCborHex
+            )
 
             // calculate the hash
             const ownHash = bytesToHex(optimizedProgram.hash())
@@ -142,7 +148,10 @@ export class DagCompiler {
             }
 
             // unoptimized compilation (so traces are untouched)
-            const { cborHex: unoptimizedCborHex } = this.lib.compile(
+            const {
+                cborHex: unoptimizedCborHex,
+                plutusVersion: unoptimPlutusVersion
+            } = this.lib.compile(
                 validator.$sourceCode,
                 Array.from(moduleDeps.values()),
                 {
@@ -156,43 +165,24 @@ export class DagCompiler {
                     onCompileUserFunc: (name, cborHex, plutusVersion) => {
                         const prev = expectSome(this.cachedUserFuncs[name])
 
-                        if (plutusVersion == "PlutusScriptV1") {
-                            if (prev instanceof UplcProgramV1) {
-                                this.cachedUserFuncs[name] =
-                                    UplcProgramV1.fromCbor(cborHex).withAlt(
-                                        prev
-                                    )
-                            } else {
-                                throw new Error("previous not UplcProgramV1")
-                            }
-                        } else if (plutusVersion == "PlutusScriptV2") {
-                            if (prev instanceof UplcProgramV2) {
-                                this.cachedUserFuncs[name] =
-                                    UplcProgramV2.fromCbor(cborHex).withAlt(
-                                        prev
-                                    )
-                            } else {
-                                throw new Error("previous not UplcProgramV2")
-                            }
-                        } else {
-                            throw new Error(
-                                `unhandled PlutusVersion ${plutusVersion}`
-                            )
-                        }
+                        this.cachedUserFuncs[name] = restoreUplcProgram(
+                            plutusVersion,
+                            cborHex
+                        ).withAlt(prev)
                     }
                 }
             )
 
             // TODO: with source mapping
-            const unoptimizedProgram =
-                UplcProgramV2.fromCbor(unoptimizedCborHex)
+            const unoptimizedProgram = restoreUplcProgram(
+                unoptimPlutusVersion,
+                unoptimizedCborHex
+            )
+
+            const completeProgram = optimizedProgram.withAlt(unoptimizedProgram)
 
             // add result to cache (unoptimizedProgram is attached to optimizedProgram)
-            this.addValidatorToCache(
-                validator,
-                optimizedProgram.withAlt(unoptimizedProgram),
-                ownHash
-            )
+            this.addValidatorToCache(validator, completeProgram, ownHash)
         }
 
         validators.forEach((v) => buildValidator(v))
@@ -206,7 +196,7 @@ export class DagCompiler {
     /**
      * @private
      * @param {LoadedValidator} validator
-     * @param {UplcProgramV2} program
+     * @param {UplcProgram} program
      * @param {string} hash - although this can be derived from `program`, reuse this to save some effort
      */
     addValidatorToCache(validator, program, hash) {

@@ -117,7 +117,8 @@ export class CompilerLib_v0_17 {
         })
 
         return {
-            cborHex: bytesToHex(uplc.toCbor())
+            cborHex: bytesToHex(uplc.toCbor()),
+            plutusVersion: uplc.plutusVersion
         }
     }
 

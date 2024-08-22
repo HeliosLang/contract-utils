@@ -224,10 +224,12 @@ export class CompilerLib_v0_16 {
                   )
                 : this.lib.IRProgram.new(ir, purpose, optimize)
 
-        const cborHex = bytesToHex(irProgram.toUplc().toCbor())
+        const uplc = irProgram.toUplc()
+        const cborHex = bytesToHex(uplc.toCbor())
 
         return {
-            cborHex
+            cborHex,
+            plutusVersion: "PlutusScriptV2"
         }
     }
 
