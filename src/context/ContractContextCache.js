@@ -263,15 +263,12 @@ class ContractContextCache {
                  */
                 let datum = None
 
-                if (hash instanceof ValidatorHash) {
-                    datum =
-                        hash.context.datum instanceof Cast
-                            ? hash.context.datum
-                            : None
+                if (hash.context.datum && hash.context.datum instanceof Cast) {
+                    datum = hash.context.datum
+                }
 
-                    if (!datum) {
-                        throw new Error("Datum is not a Cast type")
-                    }
+                if (["spending", "mixed"].includes(purpose) && !datum) {
+                    throw new Error("Datum is not a Cast type")
                 }
 
                 resValidators[name] = {
