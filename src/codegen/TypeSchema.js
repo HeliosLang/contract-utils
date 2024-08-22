@@ -106,6 +106,14 @@ export function genTypes(schema) {
 
             return [`Map<${ck}, ${cv}>`, `Map<${pk}, ${pv}> | [${pk}, ${pv}][]`]
         }
+        case "tuple": {
+            const itemTypes = schema.itemTypes.map((it) => genTypes(it))
+
+            return [
+                `[${itemTypes.map((it) => it[0]).join(", ")}]`,
+                `[${itemTypes.map((it) => it[1]).join(", ")}]`
+            ]
+        }
         case "option": {
             const [c, p] = genTypes(schema.someType)
             return [`(${c}) | null`, `(${p}) | null | undefined`]

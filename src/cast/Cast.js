@@ -189,6 +189,10 @@ function schemaToUplc(schema, x, defs = {}) {
                 ])
             )
         }
+        case "tuple":
+            return new ListData(
+                x.map((x, i) => schemaToUplc(schema.itemTypes[i], x, defs))
+            )
         case "option":
             return encodeOptionData(
                 x ? schemaToUplc(schema.someType, x, defs) : None
@@ -341,6 +345,10 @@ function uplcToSchema(schema, data, config, defs = {}) {
                     uplcToSchema(schema.keyType, k, config, defs),
                     uplcToSchema(schema.valueType, v, config, defs)
                 ])
+            )
+        case "tuple":
+            return ListData.expect(data).items.map((x, i) =>
+                uplcToSchema(schema.itemTypes[i], x, config, defs)
             )
         case "option": {
             const optionData = decodeOptionData(data)
