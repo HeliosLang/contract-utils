@@ -165,10 +165,9 @@ export class DagCompiler {
                     onCompileUserFunc: (name, cborHex, plutusVersion) => {
                         const prev = expectSome(this.cachedUserFuncs[name])
 
-                        this.cachedUserFuncs[name] = restoreUplcProgram(
-                            plutusVersion,
-                            cborHex
-                        ).withAlt(prev)
+                        this.cachedUserFuncs[name] = prev.withAlt(
+                            restoreUplcProgram(plutusVersion, cborHex)
+                        )
                     }
                 }
             )
