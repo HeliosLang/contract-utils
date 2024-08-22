@@ -1,11 +1,12 @@
+import { expectSome, isLeft } from "@helios-lang/type-utils"
+import { ConstrData, UplcDataValue, UplcProgramV2 } from "@helios-lang/uplc"
+
 /**
  * @typedef {import("@helios-lang/type-utils").TypeSchema} TypeSchema
  * @typedef {import("@helios-lang/uplc").UplcData} UplcData
  * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
+ * @typedef {import("@helios-lang/uplc").UplcValue} UplcValue
  */
-
-import { expectSome, isLeft } from "@helios-lang/type-utils"
-import { ConstrData, UplcDataValue } from "@helios-lang/uplc"
 
 /**
  * @typedef {{
@@ -91,9 +92,24 @@ export class UserFunc {
                     args.push(new ConstrData(index, []))
                 }
 
-                const result = this.uplc.eval(
-                    args.map((a) => new UplcDataValue(a))
-                ).result
+                const argValues = args.map((a) => new UplcDataValue(a))
+
+                const result = this.uplc.eval(argValues).result
+
+                if (
+                    "alt" in this.uplc &&
+                    this.uplc.alt instanceof UplcProgramV2
+                ) {
+                    const resultUnoptim = this.uplc.alt.eval(argValues).result
+                    const resultUnoptimStr = evalResultToString(resultUnoptim)
+                    const resultStr = evalResultToString(result)
+
+                    if (resultStr != resultUnoptimStr) {
+                        throw new Error(
+                            `Critical error: contact Helios maintainers, expected ${resultUnoptimStr}, got ${resultStr}`
+                        )
+                    }
+                }
 
                 if (isLeft(result)) {
                     throw new Error(result.left.error)
@@ -106,5 +122,24 @@ export class UserFunc {
                 }
             }
         )
+    }
+}
+
+/**
+ * @param {Either<{error: string}, string | UplcValue>} result
+ * @returns {string}
+ */
+function evalResultToString(result) {
+    if (isLeft(result)) {
+        console.error(result.left.error)
+        return "error"
+    } else {
+        if (typeof result.right == "string") {
+            return result.right
+        } else if (result.right instanceof UplcDataValue) {
+            return result.right.value.toString()
+        } else {
+            return result.right.toString()
+        }
     }
 }
