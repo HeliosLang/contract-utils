@@ -158,6 +158,7 @@ class ContractContextCache {
                             redeemer: redeemer,
                             program: program
                         })
+                        break
                     }
                     default:
                         throw new Error("unhandled purpose")
