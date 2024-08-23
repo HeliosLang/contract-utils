@@ -38,7 +38,6 @@ import { Cast } from "./Cast.js"
  */
 export class UserFunc {
     /**
-     * @private
      * @readonly
      * @type {UplcProgram}
      */
@@ -82,6 +81,8 @@ export class UserFunc {
                     typeSchema,
                     this.props.castConfig
                 ).toUplcData(argValue)
+            } else if (["$currentScript", "$scriptContext"].includes(argName)) {
+                unsafeNamedArgs[argName] = argValue
             } else {
                 console.error(
                     `invalid arg '${argName}' for user function ${this.props.name}`
