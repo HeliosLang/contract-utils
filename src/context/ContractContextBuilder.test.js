@@ -7,7 +7,7 @@ import { Address, AssetClass } from "@helios-lang/ledger"
 /**
  * @typedef {import("@helios-lang/codec-utils").IntLike} IntLike
  * @typedef {import("@helios-lang/ledger").TimeLike} TimeLike
- * @typedef {import("@helios-lang/ledger").UplcData} UplcData
+ * @typedef {import("@helios-lang/uplc").UplcData} UplcData
  * @typedef {import("../cast/index.js").CastConfig} CastConfig
  * @typedef {import("../codegen/index.js").LoadedModule} LoadedModule
  * @typedef {import("../codegen/index.js").LoadedValidator} LoadedValidator
