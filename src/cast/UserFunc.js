@@ -1,4 +1,4 @@
-import { expectSome, isLeft } from "@helios-lang/type-utils"
+import { expectSome, isLeft, isString } from "@helios-lang/type-utils"
 import { ConstrData, UplcDataValue, UplcProgramV2 } from "@helios-lang/uplc"
 import { Cast } from "./Cast.js"
 
@@ -108,7 +108,7 @@ export class UserFunc {
 
         if (isLeft(result)) {
             throw new Error(result.left.error)
-        } else if (result.right instanceof UplcDataValue) {
+        } else if (!isString(result.right) && result.right.kind == "data") {
             return result.right.value
         } else {
             throw new Error(`${result.right.toString()} isn't a UplcDataValue`)
@@ -155,7 +155,7 @@ export class UserFunc {
 
         const cekResult = this.uplc.eval(argValues)
 
-        if ("alt" in this.uplc && this.uplc.alt instanceof UplcProgramV2) {
+        if (this.uplc.alt?.plutusVersion == "PlutusScriptV2") {
             const cekResultUnoptim = this.uplc.alt.eval(argValues)
             const resultUnoptim = cekResultUnoptim.result
             const resultUnoptimStr = evalResultToString(resultUnoptim)
@@ -203,9 +203,9 @@ function evalResultToString(result) {
         console.error(result.left.error)
         return "error"
     } else {
-        if (typeof result.right == "string") {
+        if (isString(result.right)) {
             return result.right
-        } else if (result.right instanceof UplcDataValue) {
+        } else if (result.right.kind == "data") {
             return result.right.value.toString()
         } else {
             return result.right.toString()

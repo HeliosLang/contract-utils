@@ -96,17 +96,20 @@ class ContractContextCache {
             for (let name in entry.validators) {
                 const props = entry.validators[name]
 
+                /**
+                 * @type {UplcProgram}
+                 */
                 let program =
                     props.plutusVersion == "PlutusScriptV1"
                         ? UplcProgramV1.fromCbor(props.optimizedCborHex)
                         : UplcProgramV2.fromCbor(props.optimizedCborHex)
 
                 if (props.unoptimizedCborHex) {
-                    if (program instanceof UplcProgramV1) {
+                    if (program.plutusVersion == "PlutusScriptV1") {
                         program = program.withAlt(
                             UplcProgramV1.fromCbor(props.unoptimizedCborHex)
                         )
-                    } else if (program instanceof UplcProgramV2) {
+                    } else if (program.plutusVersion == "PlutusScriptV2") {
                         program = program.withAlt(
                             UplcProgramV2.fromCbor(props.unoptimizedCborHex)
                         )
@@ -168,17 +171,20 @@ class ContractContextCache {
             for (let name in entry.userFuncs) {
                 const props = entry.userFuncs[name]
 
+                /**
+                 * @type {UplcProgram}
+                 */
                 let program =
                     props.plutusVersion == "PlutusScriptV1"
                         ? UplcProgramV1.fromCbor(props.optimizedCborHex)
                         : UplcProgramV2.fromCbor(props.optimizedCborHex)
 
                 if (props.unoptimizedCborHex) {
-                    if (program instanceof UplcProgramV1) {
+                    if (program.plutusVersion == "PlutusScriptV1") {
                         program = program.withAlt(
                             UplcProgramV1.fromCbor(props.unoptimizedCborHex)
                         )
-                    } else if (program instanceof UplcProgramV2) {
+                    } else if (program.plutusVersion == "PlutusScriptV2") {
                         program = program.withAlt(
                             UplcProgramV2.fromCbor(props.unoptimizedCborHex)
                         )
@@ -186,7 +192,6 @@ class ContractContextCache {
                         throw new Error("unhandled Plutus version")
                     }
                 }
-
                 res.userFuncs[name] = program
             }
 

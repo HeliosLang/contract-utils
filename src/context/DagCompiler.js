@@ -163,7 +163,9 @@ export class DagCompiler {
                     isTestnet: isTestnet,
                     excludeUserFuncs: excludeUserFuncs,
                     onCompileUserFunc: (name, cborHex, plutusVersion) => {
-                        const prev = expectSome(this.cachedUserFuncs[name])
+                        const prev = /** @type {any} */ (
+                            expectSome(this.cachedUserFuncs[name])
+                        )
 
                         this.cachedUserFuncs[name] = prev.withAlt(
                             restoreUplcProgram(plutusVersion, cborHex)
@@ -178,7 +180,9 @@ export class DagCompiler {
                 unoptimizedCborHex
             )
 
-            const completeProgram = optimizedProgram.withAlt(unoptimizedProgram)
+            const completeProgram = optimizedProgram.withAlt(
+                /** @type {any} */ (unoptimizedProgram)
+            )
 
             // add result to cache (unoptimizedProgram is attached to optimizedProgram)
             this.addValidatorToCache(validator, completeProgram, ownHash)
