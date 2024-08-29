@@ -25,7 +25,7 @@ export {}
  *   isTestnet: boolean
  *   optimize: boolean
  *   excludeUserFuncs?: Set<string>
- *   onCompileUserFunc?: (name: string, cborHex: string, plutusVersion: PlutusVersion) => void
+ *   onCompileUserFunc?: (name: string, cborHex: string, altCborHex: Option<string>, plutusVersion: PlutusVersion) => void
  * }} CompileOptions
  */
 

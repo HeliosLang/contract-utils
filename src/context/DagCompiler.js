@@ -116,15 +116,7 @@ export class DagCompiler {
                 dependsOnOwnHash: validator.$dependsOnOwnHash,
                 parameters: parameters,
                 isTestnet: isTestnet,
-                excludeUserFuncs: excludeUserFuncs,
-                onCompileUserFunc: (name, cborHex, plutusVersion) => {
-                    // this compilation process is potentially very slow, so print messages indicating progress
-                    console.log(`Compiled user function ${name}`)
-                    this.cachedUserFuncs[name] = restoreUplcProgram(
-                        plutusVersion,
-                        cborHex
-                    )
-                }
+                excludeUserFuncs: excludeUserFuncs
             })
 
             // this compilation process is potentially very slow, so print messages indicating progress
@@ -162,14 +154,26 @@ export class DagCompiler {
                     parameters: parameters,
                     isTestnet: isTestnet,
                     excludeUserFuncs: excludeUserFuncs,
-                    onCompileUserFunc: (name, cborHex, plutusVersion) => {
-                        const prev = /** @type {any} */ (
-                            expectSome(this.cachedUserFuncs[name])
-                        )
+                    onCompileUserFunc: (
+                        name,
+                        cborHex,
+                        cborHexAlt,
+                        plutusVersion
+                    ) => {
+                        let uplc = restoreUplcProgram(plutusVersion, cborHex)
 
-                        this.cachedUserFuncs[name] = prev.withAlt(
-                            restoreUplcProgram(plutusVersion, cborHex)
-                        )
+                        if (cborHexAlt) {
+                            uplc = uplc.withAlt(
+                                /**  @type {any} */ (
+                                    restoreUplcProgram(
+                                        plutusVersion,
+                                        cborHexAlt
+                                    )
+                                )
+                            )
+                        }
+
+                        this.cachedUserFuncs[name] = uplc
                     }
                 }
             )
@@ -188,7 +192,84 @@ export class DagCompiler {
             this.addValidatorToCache(validator, completeProgram, ownHash)
         }
 
+        /**
+         * @param {LoadedValidator} validator
+         */
+        const buildValidatorAltAndUserFuncs = (validator) => {
+            const hashDepHashes = this.getHashDepHashes(
+                validator,
+                Object.keys(hashTypes)
+            )
+            const moduleDeps = getModuleDependencies(validator)
+            const excludeUserFuncs = new Set(Object.keys(this.cachedUserFuncs))
+
+            const optimizedHash = expectSome(
+                this.cachedValidators[validator.$name]
+            )
+            const optimizedHashHex = optimizedHash.toHex()
+            const optimizedProgram = optimizedHash.context.program
+
+            // unoptimized compilation (so traces are untouched)
+            const {
+                cborHex: unoptimizedCborHex,
+                plutusVersion: unoptimPlutusVersion
+            } = this.lib.compile(
+                validator.$sourceCode,
+                Array.from(moduleDeps.values()),
+                {
+                    optimize: false,
+                    hashDependencies: hashDepHashes,
+                    allValidatorHashTypes: hashTypes,
+                    ownHash: validator.$dependsOnOwnHash
+                        ? optimizedHashHex
+                        : undefined,
+                    parameters: parameters,
+                    isTestnet: isTestnet,
+                    excludeUserFuncs: excludeUserFuncs,
+                    onCompileUserFunc: (
+                        name,
+                        cborHex,
+                        cborHexAlt,
+                        plutusVersion
+                    ) => {
+                        let uplc = restoreUplcProgram(plutusVersion, cborHex)
+
+                        if (cborHexAlt) {
+                            uplc = uplc.withAlt(
+                                /**  @type {any} */ (
+                                    restoreUplcProgram(
+                                        plutusVersion,
+                                        cborHexAlt
+                                    )
+                                )
+                            )
+                        }
+
+                        this.cachedUserFuncs[name] = uplc
+                    }
+                }
+            )
+
+            // TODO: with source mapping
+            const unoptimizedProgram = restoreUplcProgram(
+                unoptimPlutusVersion,
+                unoptimizedCborHex
+            )
+
+            const completeProgram = optimizedProgram.withAlt(
+                /** @type {any} */ (unoptimizedProgram)
+            )
+
+            this.addValidatorToCache(
+                validator,
+                completeProgram,
+                optimizedHashHex
+            )
+        }
+
         validators.forEach((v) => buildValidator(v))
+
+        validators.forEach((v) => buildValidatorAltAndUserFuncs(v))
 
         return {
             validators: this.cachedValidators,
@@ -269,7 +350,11 @@ export class DagCompiler {
 
         allValidators.forEach((v) => {
             if (!(v in hashes)) {
-                hashes[v] = "#"
+                if (v in this.cachedValidators) {
+                    hashes[v] = `#${this.cachedValidators[v].toHex()}`
+                } else {
+                    hashes[v] = "#"
+                }
             }
         })
 

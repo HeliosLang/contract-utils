@@ -1,8 +1,10 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
+import { None } from "@helios-lang/type-utils"
 import { UplcProgramV2 } from "@helios-lang/uplc"
 
 /**
  * @typedef {import("@helios-lang/uplc").UplcData} UplcData
+ * @typedef {import("@helios-lang/uplc").UplcProgramV2I} UplcProgramV2I
  * @typedef {import("./CompilerLib.js").CompilerLib} CompilerLib
  * @typedef {import("./CompilerLib.js").CompileOptions} CompileOptions
  * @typedef {import("./CompilerLib.js").CompileOutput} CompileOutput
@@ -21,7 +23,7 @@ import { UplcProgramV2 } from "@helios-lang/uplc"
  *     hashDependencies?: Record<string, string>
  *     validatorIndices?: Record<string, number>
  *     excludeUserFuncs?: Set<string>
- *     onCompileUserFunc?: (name: string, uplc: UplcProgramV2) => void
+ *     onCompileUserFunc?: (name: string, uplc: UplcProgramV2I) => void
  *   }): UplcProgramV2
  * }} Program
  */
@@ -106,9 +108,12 @@ export class CompilerLib_v0_17 {
             ...(onCompileUserFunc
                 ? {
                       onCompileUserFunc: (name, uplc) => {
+                          const alt = uplc.alt
+
                           onCompileUserFunc(
                               name,
                               bytesToHex(uplc.toCbor()),
+                              alt ? bytesToHex(alt.toCbor()) : None,
                               "PlutusScriptV2"
                           )
                       }
