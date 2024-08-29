@@ -288,6 +288,8 @@ function uplcToSchema(schema, data, config, defs = {}) {
                 case "Any":
                     // TODO: should this throw an error?
                     return null
+                case "AssetClass":
+                    return AssetClass.fromUplcData(data)
                 case "Bool":
                     return decodeBoolData(data, true)
                 case "ByteArray":
