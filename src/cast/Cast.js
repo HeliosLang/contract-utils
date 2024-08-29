@@ -155,6 +155,8 @@ function schemaToUplc(schema, x, defs = {}) {
                     return StakingCredential.new(x).toUplcData()
                 case "StakingHash":
                     return StakingHash.new(x).toUplcData()
+                case "StakingValidatorHash":
+                    return StakingValidatorHash.new(x).toUplcData()
                 case "String":
                     return new ByteArrayData(encodeUtf8(x))
                 case "Time":
