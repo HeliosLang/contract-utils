@@ -139,57 +139,7 @@ export class DagCompiler {
                 }
             }
 
-            // unoptimized compilation (so traces are untouched)
-            const {
-                cborHex: unoptimizedCborHex,
-                plutusVersion: unoptimPlutusVersion
-            } = this.lib.compile(
-                validator.$sourceCode,
-                Array.from(moduleDeps.values()),
-                {
-                    optimize: false,
-                    hashDependencies: hashDepHashes,
-                    allValidatorHashTypes: hashTypes,
-                    ownHash: validator.$dependsOnOwnHash ? ownHash : undefined,
-                    parameters: parameters,
-                    isTestnet: isTestnet,
-                    excludeUserFuncs: excludeUserFuncs,
-                    onCompileUserFunc: (
-                        name,
-                        cborHex,
-                        cborHexAlt,
-                        plutusVersion
-                    ) => {
-                        let uplc = restoreUplcProgram(plutusVersion, cborHex)
-
-                        if (cborHexAlt) {
-                            uplc = uplc.withAlt(
-                                /**  @type {any} */ (
-                                    restoreUplcProgram(
-                                        plutusVersion,
-                                        cborHexAlt
-                                    )
-                                )
-                            )
-                        }
-
-                        this.cachedUserFuncs[name] = uplc
-                    }
-                }
-            )
-
-            // TODO: with source mapping
-            const unoptimizedProgram = restoreUplcProgram(
-                unoptimPlutusVersion,
-                unoptimizedCborHex
-            )
-
-            const completeProgram = optimizedProgram.withAlt(
-                /** @type {any} */ (unoptimizedProgram)
-            )
-
-            // add result to cache (unoptimizedProgram is attached to optimizedProgram)
-            this.addValidatorToCache(validator, completeProgram, ownHash)
+            this.addValidatorToCache(validator, optimizedProgram, ownHash)
         }
 
         /**
@@ -232,6 +182,7 @@ export class DagCompiler {
                         cborHexAlt,
                         plutusVersion
                     ) => {
+                        console.log(`Compiled user function ${name}`)
                         let uplc = restoreUplcProgram(plutusVersion, cborHex)
 
                         if (cborHexAlt) {
@@ -249,6 +200,8 @@ export class DagCompiler {
                     }
                 }
             )
+
+            console.log(`Compiled validator ${validator.$name} (unoptimized)`)
 
             // TODO: with source mapping
             const unoptimizedProgram = restoreUplcProgram(
