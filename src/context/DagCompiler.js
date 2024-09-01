@@ -170,6 +170,7 @@ export class DagCompiler {
                     optimize: false,
                     hashDependencies: hashDepHashes,
                     allValidatorHashTypes: hashTypes,
+                    allValidatorIndices: validatorIndices ?? undefined,
                     ownHash: validator.$dependsOnOwnHash
                         ? optimizedHashHex
                         : undefined,
