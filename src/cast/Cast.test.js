@@ -1,7 +1,13 @@
 import { deepEqual, strictEqual, throws } from "node:assert"
 import { describe, it } from "node:test"
 import { encodeUtf8 } from "@helios-lang/codec-utils"
-import { ByteArrayData, IntData, ListData, MapData } from "@helios-lang/uplc"
+import {
+    ByteArrayData,
+    ConstrData,
+    IntData,
+    ListData,
+    MapData
+} from "@helios-lang/uplc"
 import { Cast } from "./Cast.js"
 
 /**
@@ -103,9 +109,11 @@ describe(Cast.name, () => {
 
         const cast = new Cast(schema, { isMainnet: false })
 
-        const exampleMapData = new MapData([
-            [new ByteArrayData(encodeUtf8("@b")), new IntData(1)],
-            [new ByteArrayData(encodeUtf8("@a")), new IntData(2)]
+        const exampleData = new ConstrData(0, [
+            new MapData([
+                [new ByteArrayData(encodeUtf8("@b")), new IntData(1)],
+                [new ByteArrayData(encodeUtf8("@a")), new IntData(2)]
+            ])
         ])
 
         it("respects order when converting to uplc data", () => {
@@ -116,12 +124,12 @@ describe(Cast.name, () => {
                         "@a": 2
                     })
                     .toSchemaJson(),
-                exampleMapData.toSchemaJson()
+                exampleData.toSchemaJson()
             )
         })
 
         it("respects order when converting back to JS format", () => {
-            const actualObj = cast.fromUplcData(exampleMapData)
+            const actualObj = cast.fromUplcData(exampleData)
 
             deepEqual(Object.entries(actualObj), [
                 ["@b", 1n],

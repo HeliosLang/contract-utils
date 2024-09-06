@@ -247,7 +247,8 @@ function schemaToUplc(schema, x, defs = {}) {
                         }
                     })
 
-                    return new MapData(pairs)
+                    // wrapped in ConstrData
+                    return new ConstrData(0, [new MapData(pairs)])
                 }
                 default:
                     throw new Error(
@@ -426,7 +427,10 @@ function uplcToSchema(schema, data, config, defs = {}) {
                     )
                 }
                 case "map": {
-                    const entries = MapData.expect(data).items
+                    // wrapped in ConstrData
+                    const entries = MapData.expect(
+                        ConstrData.expect(data).fields[0]
+                    ).items
 
                     if (entries.length != schema.fieldTypes.length) {
                         throw new Error(
