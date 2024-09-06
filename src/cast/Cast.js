@@ -19,7 +19,7 @@ import {
     ValidatorHash,
     Value
 } from "@helios-lang/ledger"
-import { None, expectSome } from "@helios-lang/type-utils"
+import { None, expectSome, isSome } from "@helios-lang/type-utils"
 import {
     ByteArrayData,
     ConstrData,
@@ -220,13 +220,35 @@ function schemaToUplc(schema, x, defs = {}) {
                             schemaToUplc(type, x[name])
                         )
                     )
-                case "map":
-                    return new MapData(
-                        schema.fieldTypes.map(({ name, type }) => [
-                            new ByteArrayData(encodeUtf8(name)),
-                            schemaToUplc(type, x[name], defs)
-                        ])
-                    )
+                case "map": {
+                    // first make sure all fields are present
+                    schema.fieldTypes.forEach((ft) => {
+                        if (!(ft.name in x)) {
+                            throw new Error(`missing field ${ft.name}`)
+                        }
+                    })
+
+                    // respect order of entries
+                    /**
+                     * @type {[UplcData, UplcData][]}
+                     */
+                    const pairs = []
+
+                    Object.entries(x).forEach(([key, value]) => {
+                        const ft = schema.fieldTypes.find(
+                            (ft) => ft.name == key
+                        )
+
+                        if (ft) {
+                            const keyData = new ByteArrayData(encodeUtf8(key))
+                            const valueData = schemaToUplc(ft.type, value, defs)
+
+                            pairs.push([keyData, valueData])
+                        }
+                    })
+
+                    return new MapData(pairs)
+                }
                 default:
                     throw new Error(
                         `unhandled struct format '${schema.format}'`
@@ -412,22 +434,34 @@ function uplcToSchema(schema, data, config, defs = {}) {
                         )
                     }
 
-                    return new Map(
-                        schema.fieldTypes.map(({ name, type }) => {
-                            const pair = expectSome(
-                                entries.find(
-                                    ([key, _]) =>
-                                        decodeUtf8(
-                                            ByteArrayData.expect(key).bytes
-                                        ) == name
+                    return Object.fromEntries(
+                        schema.fieldTypes
+                            .map(({ name, type }) => {
+                                const i = expectSome(
+                                    entries.findIndex(
+                                        ([key, _]) =>
+                                            decodeUtf8(
+                                                ByteArrayData.expect(key).bytes
+                                            ) == name
+                                    )
                                 )
-                            )
 
-                            return [
-                                name,
-                                uplcToSchema(type, pair[1], config, defs)
-                            ]
-                        })
+                                if (i == -1) {
+                                    throw new Error(
+                                        `field ${name} not found in MapData`
+                                    )
+                                }
+
+                                const pair = entries[i]
+
+                                return /** @type {const} */ ([
+                                    i,
+                                    name,
+                                    uplcToSchema(type, pair[1], config, defs)
+                                ])
+                            })
+                            .sort((a, b) => a[0] - b[0])
+                            .map(([_, name, x]) => [name, x])
                     )
                 }
                 default:

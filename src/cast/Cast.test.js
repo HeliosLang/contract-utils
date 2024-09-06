@@ -1,8 +1,12 @@
 import { deepEqual, strictEqual, throws } from "node:assert"
 import { describe, it } from "node:test"
 import { encodeUtf8 } from "@helios-lang/codec-utils"
-import { ByteArrayData, IntData, ListData } from "@helios-lang/uplc"
+import { ByteArrayData, IntData, ListData, MapData } from "@helios-lang/uplc"
 import { Cast } from "./Cast.js"
+
+/**
+ * @typedef {import("@helios-lang/type-utils").TypeSchema} TypeSchema
+ */
 
 /**
  * @template {Cast<any, any>} C
@@ -10,7 +14,7 @@ import { Cast } from "./Cast.js"
  */
 
 describe(Cast.name, () => {
-    it(`StrictType of string correctly extract`, () => {
+    it(`StrictType of string correctly extracted`, () => {
         /**
          * @type {Cast<string, string>}
          */
@@ -67,6 +71,62 @@ describe(Cast.name, () => {
                 cast.toUplcData([10, 11]).toString(),
                 expectedData.toString()
             )
+        })
+    })
+
+    describe("Cip68Struct", () => {
+        /**
+         * @type {TypeSchema}
+         */
+        const schema = {
+            kind: "struct",
+            format: "map",
+            id: "pair",
+            name: "Pair",
+            fieldTypes: [
+                {
+                    name: "@a",
+                    type: {
+                        kind: "internal",
+                        name: "Int"
+                    }
+                },
+                {
+                    name: "@b",
+                    type: {
+                        kind: "internal",
+                        name: "Int"
+                    }
+                }
+            ]
+        }
+
+        const cast = new Cast(schema, { isMainnet: false })
+
+        const exampleMapData = new MapData([
+            [new ByteArrayData(encodeUtf8("@b")), new IntData(1)],
+            [new ByteArrayData(encodeUtf8("@a")), new IntData(2)]
+        ])
+
+        it("respects order when converting to uplc data", () => {
+            strictEqual(
+                cast
+                    .toUplcData({
+                        "@b": 1,
+                        "@a": 2
+                    })
+                    .toSchemaJson(),
+                exampleMapData.toSchemaJson()
+            )
+        })
+
+        it("respects order when converting back to JS format", () => {
+            const actualObj = cast.fromUplcData(exampleMapData)
+
+            deepEqual(Object.entries(actualObj), [
+                ["@b", 1n],
+                ["@a", 2n]
+            ])
         })
     })
 })
