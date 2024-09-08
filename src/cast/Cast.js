@@ -171,8 +171,8 @@ function schemaToUplc(schema, x, defs = {}) {
                     return /** @type {TxOutput} */ (x).toUplcData()
                 case "TxOutputDatum":
                     return x
-                        ? TxOutputDatum.new(x)?.toUplcData() ??
-                              new ConstrData(0, [])
+                        ? (TxOutputDatum.new(x)?.toUplcData() ??
+                              new ConstrData(0, []))
                         : new ConstrData(0, [])
                 case "TxOutputId":
                     return TxOutputId.new(x).toUplcData()
