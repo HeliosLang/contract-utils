@@ -109,13 +109,31 @@ export class CompilerLib_v0_17 {
                 ? {
                       onCompileUserFunc: (name, uplc) => {
                           const alt = uplc.alt
+                          const ir = options.debug ? uplc.ir : None
+                          const altIr = options.debug ? alt?.ir : None
 
-                          onCompileUserFunc(
-                              name,
-                              bytesToHex(uplc.toCbor()),
-                              alt ? bytesToHex(alt.toCbor()) : None,
-                              "PlutusScriptV2"
-                          )
+                          onCompileUserFunc({
+                              name: name,
+                              cborHex: bytesToHex(uplc.toCbor()),
+                              plutusVersion: "PlutusScriptV2",
+                              ...(ir
+                                  ? {
+                                        ir
+                                    }
+                                  : {}),
+                              ...(alt
+                                  ? {
+                                        alt: {
+                                            cborHex: bytesToHex(alt.toCbor()),
+                                            ...(altIr
+                                                ? {
+                                                      ir: altIr
+                                                  }
+                                                : {})
+                                        }
+                                    }
+                                  : {})
+                          })
                       }
                   }
                 : {})

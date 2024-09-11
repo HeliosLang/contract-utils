@@ -41,7 +41,9 @@ import { UplcProgramV2 } from "@helios-lang/uplc"
 /**
  * @typedef {{[name: string]: {
  *   unoptimizedCborHex?: string
+ *   unoptimizedIr?: string
  *   optimizedCborHex: string
+ *   optimizedIr?: string
  *   plutusVersion: PlutusVersion
  * }}} CacheEntryUserFuncsJson
  */
@@ -171,22 +173,44 @@ class ContractContextCache {
             for (let name in entry.userFuncs) {
                 const props = entry.userFuncs[name]
 
+                const optimizedIr = props.optimizedIr
+                const optimizedProps = optimizedIr
+                    ? { ir: () => optimizedIr }
+                    : {}
+
                 /**
                  * @type {UplcProgram}
                  */
                 let program =
                     props.plutusVersion == "PlutusScriptV1"
-                        ? UplcProgramV1.fromCbor(props.optimizedCborHex)
-                        : UplcProgramV2.fromCbor(props.optimizedCborHex)
+                        ? UplcProgramV1.fromCbor(
+                              props.optimizedCborHex,
+                              optimizedProps
+                          )
+                        : UplcProgramV2.fromCbor(
+                              props.optimizedCborHex,
+                              optimizedProps
+                          )
 
                 if (props.unoptimizedCborHex) {
+                    const unoptimizedIr = props.unoptimizedIr
+                    const unoptimizedProps = unoptimizedIr
+                        ? { ir: () => unoptimizedIr }
+                        : {}
+
                     if (program.plutusVersion == "PlutusScriptV1") {
                         program = program.withAlt(
-                            UplcProgramV1.fromCbor(props.unoptimizedCborHex)
+                            UplcProgramV1.fromCbor(
+                                props.unoptimizedCborHex,
+                                unoptimizedProps
+                            )
                         )
                     } else if (program.plutusVersion == "PlutusScriptV2") {
                         program = program.withAlt(
-                            UplcProgramV2.fromCbor(props.unoptimizedCborHex)
+                            UplcProgramV2.fromCbor(
+                                props.unoptimizedCborHex,
+                                unoptimizedProps
+                            )
                         )
                     } else {
                         throw new Error("unhandled Plutus version")
@@ -293,9 +317,11 @@ class ContractContextCache {
 
             for (let name in entry.userFuncs) {
                 const userFunc = entry.userFuncs[name]
+                const optimizedIr = userFunc.ir
 
                 resUserFuncs[name] = {
                     optimizedCborHex: bytesToHex(userFunc.toCbor()),
+                    optimizedIr: optimizedIr ?? undefined,
                     unoptimizedCborHex: /** @type {UplcProgramV2} */ (userFunc)
                         .alt
                         ? bytesToHex(
@@ -304,6 +330,7 @@ class ContractContextCache {
                               ).alt.toCbor()
                           )
                         : undefined,
+                    unoptimizedIr: userFunc?.alt?.ir ?? undefined,
                     plutusVersion: userFunc.plutusVersion
                 }
             }

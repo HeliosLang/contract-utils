@@ -177,21 +177,32 @@ export class DagCompiler {
                     parameters: parameters,
                     isTestnet: isTestnet,
                     excludeUserFuncs: excludeUserFuncs,
-                    onCompileUserFunc: (
+                    onCompileUserFunc: ({
                         name,
                         cborHex,
-                        cborHexAlt,
-                        plutusVersion
-                    ) => {
+                        plutusVersion,
+                        ...props
+                    }) => {
                         console.log(`Compiled user function ${name}`)
-                        let uplc = restoreUplcProgram(plutusVersion, cborHex)
+                        const ir = props.ir
+                        let uplc = restoreUplcProgram(plutusVersion, cborHex, {
+                            ...(ir ? { ir: () => ir } : {})
+                        })
 
-                        if (cborHexAlt) {
+                        if (props?.alt) {
+                            const alt = props.alt
+                            const altIr = alt.ir
+
                             uplc = uplc.withAlt(
                                 /**  @type {any} */ (
                                     restoreUplcProgram(
                                         plutusVersion,
-                                        cborHexAlt
+                                        props.alt.cborHex,
+                                        {
+                                            ...(altIr
+                                                ? { ir: () => altIr }
+                                                : {})
+                                        }
                                     )
                                 )
                             )

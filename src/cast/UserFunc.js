@@ -1,6 +1,8 @@
+import { bytesToHex } from "@helios-lang/codec-utils"
 import { expectSome, isLeft, isString } from "@helios-lang/type-utils"
-import { ConstrData, UplcDataValue, UplcProgramV2 } from "@helios-lang/uplc"
+import { ConstrData, UplcDataValue } from "@helios-lang/uplc"
 import { Cast } from "./Cast.js"
+
 
 /**
  * @typedef {import("@helios-lang/type-utils").TypeSchema} TypeSchema
@@ -162,8 +164,16 @@ export class UserFunc {
             const resultStr = evalResultToString(cekResult.result)
 
             if (resultStr != resultUnoptimStr) {
+                console.error(
+                    `## Unoptimized IR:\n${this.uplc.alt.ir ?? "not available"}`
+                )
+
+                args.forEach((a, i) => {
+                    console.error(`## Arg ${i}: ${bytesToHex(a.toCbor())}`)
+                })
+
                 throw new Error(
-                    `Critical error: contact Helios maintainers, expected ${resultUnoptimStr}, got ${resultStr}`
+                    `Critical error: expected ${resultUnoptimStr}, but got ${resultStr}. Contact Helios maintainers and share this console output`
                 )
             }
 

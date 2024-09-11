@@ -15,6 +15,7 @@ export {}
  */
 
 /**
+ * if `debug` is true, the ir is included in the user functions where possible
  * @typedef {{
  *   allValidatorHashTypes: Record<string, ScriptHashType>
  *   allValidatorIndices?: Record<string, number>
@@ -24,8 +25,18 @@ export {}
  *   parameters?: Record<string, UplcData>
  *   isTestnet: boolean
  *   optimize: boolean
+ *   debug?: boolean
  *   excludeUserFuncs?: Set<string>
- *   onCompileUserFunc?: (name: string, cborHex: string, altCborHex: Option<string>, plutusVersion: PlutusVersion) => void
+ *   onCompileUserFunc?: (props: {
+ *     name: string,
+ *     cborHex: string,
+ *     plutusVersion: PlutusVersion,
+ *     ir?: string,
+ *     alt?: {
+ *       cborHex: string,
+ *       ir?: string
+ *     }
+ *   }) => void
  * }} CompileOptions
  */
 
