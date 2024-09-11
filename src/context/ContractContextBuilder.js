@@ -116,7 +116,10 @@ export class ContractContextBuilder {
         const castConfig = { isMainnet: props.isMainnet }
         const lib = loadCompilerLib()
 
-        const dagCompiler = new DagCompiler(lib, castConfig)
+        const dagCompiler = new DagCompiler(lib, {
+            debug: props.debug ?? false,
+            ...castConfig
+        })
 
         const cached = contractContextCache.shift()
 
