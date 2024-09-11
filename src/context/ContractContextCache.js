@@ -20,6 +20,7 @@ import { UplcProgramV2 } from "@helios-lang/uplc"
 
 /**
  * @typedef {{
+ *   debug?: boolean
  *   validators: {[name: string]: AnyContractValidatorContext}
  *   userFuncs: {[name: string]: UplcProgram}
  * }} CacheEntry
@@ -50,6 +51,7 @@ import { UplcProgramV2 } from "@helios-lang/uplc"
 
 /**
  * @typedef {{
+ *   debug?: boolean
  *   validators: CacheEntryValidatorsJson
  *   userFuncs: CacheEntryUserFuncsJson
  * }} CacheEntryJson
@@ -91,6 +93,7 @@ class ContractContextCache {
              * @type {CacheEntry}
              */
             const res = {
+                debug: entry.debug ?? false,
                 validators: {},
                 userFuncs: {}
             }
@@ -336,6 +339,7 @@ class ContractContextCache {
             }
 
             return {
+                debug: entry.debug ?? false,
                 validators: resValidators,
                 userFuncs: resUserFuncs
             }

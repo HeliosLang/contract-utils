@@ -18,7 +18,13 @@ import { configureCast } from "../cast/index.js"
  */
 
 /**
+ * @typedef {CastConfig & {
+ *   debug?: boolean
+ * }} DagCompilerConfig
+ */
+/**
  * @typedef {{
+ *   debug?: boolean
  *   validators: {[name: string]: AnyContractValidatorContext}
  *   userFuncs: {[name: string]: UplcProgram}
  * }} DagCompilerOutput
@@ -38,7 +44,7 @@ export class DagCompiler {
     /**
      * @private
      * @readonly
-     * @type {CastConfig}
+     * @type {DagCompilerConfig}
      */
     config
 
@@ -58,11 +64,11 @@ export class DagCompiler {
 
     /**
      * @param {CompilerLib} lib
-     * @param {CastConfig} castConfig
+     * @param {DagCompilerConfig} config
      */
-    constructor(lib, castConfig) {
+    constructor(lib, config) {
         this.lib = lib
-        this.castConfig = castConfig
+        this.config = config
         this.cachedValidators = {}
         this.cachedUserFuncs = {}
     }
@@ -168,6 +174,7 @@ export class DagCompiler {
                 Array.from(moduleDeps.values()),
                 {
                     optimize: false,
+                    debug: this.config.debug,
                     hashDependencies: hashDepHashes,
                     allValidatorHashTypes: hashTypes,
                     allValidatorIndices: validatorIndices ?? undefined,
@@ -237,6 +244,7 @@ export class DagCompiler {
         validators.forEach((v) => buildValidatorAltAndUserFuncs(v))
 
         return {
+            debug: this.config.debug ?? false,
             validators: this.cachedValidators,
             userFuncs: this.cachedUserFuncs
         }
@@ -250,21 +258,21 @@ export class DagCompiler {
      */
     addValidatorToCache(validator, program, hash) {
         const name = validator.$name
-        const redeemer = configureCast(validator.$Redeemer, this.castConfig)
+        const redeemer = configureCast(validator.$Redeemer, this.config)
 
         switch (validator.$purpose) {
             case "spending":
                 this.cachedValidators[name] = new ValidatorHash(hash, {
                     program,
                     redeemer,
-                    datum: configureCast(validator.$Datum, this.castConfig)
+                    datum: configureCast(validator.$Datum, this.config)
                 })
                 break
             case "mixed":
                 this.cachedValidators[name] = new ScriptHash(hash, {
                     program,
                     redeemer,
-                    datum: configureCast(validator.$Datum, this.castConfig)
+                    datum: configureCast(validator.$Datum, this.config)
                 })
                 break
             case "minting":

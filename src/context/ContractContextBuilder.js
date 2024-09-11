@@ -28,6 +28,7 @@ import { contractContextCache } from "./ContractContextCache.js"
  *   expectedHashes?: {[name: string]: string}
  *   parameters?: Record<string, any>
  *   dumpHashes?: boolean
+ *   debug?: boolean
  * }} ContractContextBuildProps
  */
 
@@ -119,14 +120,15 @@ export class ContractContextBuilder {
 
         const cached = contractContextCache.shift()
 
-        const compiled = cached
-            ? cached
-            : dagCompiler.build(
-                  Object.values(this.validators),
-                  props.parameters ?? {},
-                  !props.isMainnet,
-                  props.expectedHashes
-              )
+        const compiled =
+            cached && cached.debug === props.debug
+                ? cached
+                : dagCompiler.build(
+                      Object.values(this.validators),
+                      props.parameters ?? {},
+                      !props.isMainnet,
+                      props.expectedHashes
+                  )
 
         // TODO: adapt to use generic cache interface
         contractContextCache.push(compiled)
