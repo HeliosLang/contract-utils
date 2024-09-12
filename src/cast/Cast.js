@@ -60,7 +60,7 @@ import {
 
 /**
  * @template TStrict
- * @template TPermissive
+ * @template TPermissive=TStrict
  */
 export class Cast {
     /**
