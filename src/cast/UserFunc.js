@@ -13,6 +13,7 @@ import { Cast } from "./Cast.js"
  */
 
 /**
+ * `returns` is optional to accomodate main functions that return void
  * @typedef {{
  *   name: string
  *   requiresScriptContext: boolean
@@ -23,7 +24,7 @@ import { Cast } from "./Cast.js"
  *     isOptional: boolean
  *     isIgnored?: boolean
  *   }[]
- *   returns: TypeSchema
+ *   returns?: TypeSchema
  *   validatorIndices?: Record<string, number>
  *   castConfig: CastConfig
  * }} UserFuncProps
@@ -103,14 +104,19 @@ export class UserFunc {
             /** @type {UnsafeArgsT<ArgsT>} */ (unsafeNamedArgs)
         )
 
-        return new Cast(this.props.returns, this.props.castConfig).fromUplcData(
-            result
-        )
+        if (this.props.returns) {
+            return new Cast(
+                this.props.returns,
+                this.props.castConfig
+            ).fromUplcData(expectSome(/** @type {any} */ (result)))
+        } else {
+            return /** @type {any} */ (undefined)
+        }
     }
 
     /**
      * @param {UnsafeArgsT<ArgsT>} namedArgs
-     * @returns {UplcData}
+     * @returns {RetT extends void ? void : UplcData}
      */
     evalUnsafe(namedArgs) {
         const result = this.profile(namedArgs).result
@@ -118,9 +124,11 @@ export class UserFunc {
         if (isLeft(result)) {
             throw new Error(result.left.error)
         } else if (!isString(result.right) && result.right.kind == "data") {
-            return result.right.value
-        } else {
+            return /** @type {any} */ (result.right.value)
+        } else if (this.props.returns) {
             throw new Error(`${result.right.toString()} isn't a UplcDataValue`)
+        } else {
+            return /** @type {any} */ (undefined)
         }
     }
 

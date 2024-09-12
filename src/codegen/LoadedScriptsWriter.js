@@ -412,7 +412,7 @@ function genFuncType(fn) {
     })
 
     const argsTypeStr = `{${fields.join(", ")}}`
-    const retTypeStr = genTypes(fn.returns)[0]
+    const retTypeStr = fn?.returns ? genTypes(fn.returns)[0] : "void"
 
     return [argsTypeStr, retTypeStr]
 }

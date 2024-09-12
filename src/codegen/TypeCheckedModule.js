@@ -5,6 +5,7 @@ export {}
  */
 
 /**
+ * `returns` is optional to accomodate main functions that return undefined
  * @typedef {{
  *   name: string
  *   requiresScriptContext: boolean
@@ -15,7 +16,7 @@ export {}
  *     isOptional: boolean
  *     isIgnored?: boolean
  *   }[]
- *   returns: TypeSchema
+ *   returns?: TypeSchema
  * }} TypeCheckedUserFunc
  */
 
