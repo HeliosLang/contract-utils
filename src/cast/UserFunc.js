@@ -22,7 +22,6 @@ import { Cast } from "./Cast.js"
  *     name: string
  *     type: TypeSchema
  *     isOptional: boolean
- *     isIgnored?: boolean
  *   }[]
  *   returns?: TypeSchema
  *   validatorIndices?: Record<string, number>
@@ -144,36 +143,28 @@ export class UserFunc {
          */
         const args = []
 
-        this.props.arguments.forEach(
-            ({ name, type, isOptional, isIgnored }) => {
-                if (isMain) {
-                    if (isOptional) {
-                        // used for $datum in mixed script
-                        if (name in namedArgs && namedArgs[name]) {
-                            args.push(namedArgs[name])
-                        }
-                    } else if (isIgnored) {
-                        if (name in namedArgs && namedArgs[name]) {
-                            args.push(namedArgs[name])
-                        } else {
-                            args.push(new IntData(0))
-                        }
-                    } else {
-                        args.push(expectSome(namedArgs[name]))
+        this.props.arguments.forEach(({ name, type, isOptional }) => {
+            if (isMain) {
+                if (isOptional) {
+                    // used for $datum in mixed script
+                    if (name in namedArgs && namedArgs[name]) {
+                        args.push(namedArgs[name])
                     }
                 } else {
-                    if (isOptional) {
-                        if (name in namedArgs && namedArgs[name]) {
-                            args.push(new ConstrData(0, [namedArgs[name]]))
-                        } else {
-                            args.push(new ConstrData(1, []))
-                        }
+                    args.push(expectSome(namedArgs[name]))
+                }
+            } else {
+                if (isOptional) {
+                    if (name in namedArgs && namedArgs[name]) {
+                        args.push(new ConstrData(0, [namedArgs[name]]))
                     } else {
-                        args.push(expectSome(namedArgs[name]))
+                        args.push(new ConstrData(1, []))
                     }
+                } else {
+                    args.push(expectSome(namedArgs[name]))
                 }
             }
-        )
+        })
 
         if (this.props.requiresScriptContext) {
             args.push(expectSome(namedArgs["$scriptContext"]))

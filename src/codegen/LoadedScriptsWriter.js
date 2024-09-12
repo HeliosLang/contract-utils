@@ -406,12 +406,8 @@ function genFuncType(fn) {
         fields.push("$currentScript: string")
     }
 
-    fn.arguments.forEach(({ name, type, isOptional, isIgnored }, i) => {
-        if (isIgnored) {
-            fields.push(`${name}?: UplcData`)
-        } else {
-            fields.push(`${name}${isOptional ? "?" : ""}: ${genTypes(type)[1]}`)
-        }
+    fn.arguments.forEach(({ name, type, isOptional }, i) => {
+        fields.push(`${name}${isOptional ? "?" : ""}: ${genTypes(type)[1]}`)
     })
 
     const argsTypeStr = `{${fields.join(", ")}}`

@@ -14,7 +14,6 @@ export {}
  *     name: string
  *     type: TypeSchema
  *     isOptional: boolean
- *     isIgnored?: boolean
  *   }[]
  *   returns?: TypeSchema
  * }} TypeCheckedUserFunc
