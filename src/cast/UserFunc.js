@@ -1,6 +1,6 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
 import { expectSome, isLeft, isString } from "@helios-lang/type-utils"
-import { ConstrData, UplcDataValue } from "@helios-lang/uplc"
+import { ConstrData, IntData, UplcDataValue } from "@helios-lang/uplc"
 import { Cast } from "./Cast.js"
 
 /**
@@ -21,6 +21,7 @@ import { Cast } from "./Cast.js"
  *     name: string
  *     type: TypeSchema
  *     isOptional: boolean
+ *     isIgnored?: boolean
  *   }[]
  *   returns: TypeSchema
  *   validatorIndices?: Record<string, number>
@@ -58,6 +59,13 @@ export class UserFunc {
     constructor(uplc, props) {
         this.uplc = uplc
         this.props = props
+    }
+
+    /**
+     * @type {string}
+     */
+    get name() {
+        return this.props.name
     }
 
     /**
@@ -121,20 +129,43 @@ export class UserFunc {
      * @returns {CekResult}
      */
     profile(namedArgs) {
+        const isMain = this.name == "main"
+
         /**
          * @type {UplcData[]}
          */
-        const args = this.props.arguments.map(({ name, type, isOptional }) => {
-            if (isOptional) {
-                if (name in namedArgs && namedArgs[name]) {
-                    return new ConstrData(0, [namedArgs[name]])
+        const args = []
+
+        this.props.arguments.forEach(
+            ({ name, type, isOptional, isIgnored }) => {
+                if (isMain) {
+                    if (isOptional) {
+                        // used for $datum in mixed script
+                        if (name in namedArgs && namedArgs[name]) {
+                            args.push(namedArgs[name])
+                        }
+                    } else if (isIgnored) {
+                        if (name in namedArgs && namedArgs[name]) {
+                            args.push(namedArgs[name])
+                        } else {
+                            args.push(new IntData(0))
+                        }
+                    } else {
+                        args.push(expectSome(namedArgs[name]))
+                    }
                 } else {
-                    return new ConstrData(1, [])
+                    if (isOptional) {
+                        if (name in namedArgs && namedArgs[name]) {
+                            args.push(new ConstrData(0, [namedArgs[name]]))
+                        } else {
+                            args.push(new ConstrData(1, []))
+                        }
+                    } else {
+                        args.push(expectSome(namedArgs[name]))
+                    }
                 }
-            } else {
-                return expectSome(namedArgs[name])
             }
-        })
+        )
 
         if (this.props.requiresScriptContext) {
             args.push(expectSome(namedArgs["$scriptContext"]))

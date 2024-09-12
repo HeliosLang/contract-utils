@@ -187,15 +187,32 @@ export class ContractContextBuilder {
                 ),
                 ...Object.fromEntries(
                     Object.entries(validator.$functions).map(
-                        ([funcKey, userFunc]) => [
-                            funcKey,
-                            userFunc(
-                                expectSome(
-                                    compiled.userFuncs[`${name}::${funcKey}`]
-                                ),
-                                castConfig
-                            )
-                        ]
+                        ([funcKey, userFunc]) => {
+                            if (funcKey == "main") {
+                                return [
+                                    funcKey,
+                                    userFunc(
+                                        expectSome(
+                                            compiled.validators[name].context
+                                                .program
+                                        ),
+                                        castConfig
+                                    )
+                                ]
+                            } else {
+                                return [
+                                    funcKey,
+                                    userFunc(
+                                        expectSome(
+                                            compiled.userFuncs[
+                                                `${name}::${funcKey}`
+                                            ]
+                                        ),
+                                        castConfig
+                                    )
+                                ]
+                            }
+                        }
                     )
                 ),
                 $hash: compiled.validators[name]
