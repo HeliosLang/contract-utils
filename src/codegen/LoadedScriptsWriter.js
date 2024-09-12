@@ -179,9 +179,11 @@ export class LoadedScriptsWriter {
             "Address",
             "AssetClass",
             "DatumHash",
+            "DCert",
             "MintingPolicyHash",
             "PubKey",
             "PubKeyHash",
+            "ScriptHash",
             "SpendingCredential",
             "StakingCredential",
             "StakingHash",
@@ -191,6 +193,7 @@ export class LoadedScriptsWriter {
             "TxInput",
             "TxOutput",
             "TxOutputDatum",
+            "TxOutputId",
             "ValidatorHash",
             "Value"
         )
@@ -202,7 +205,7 @@ export class LoadedScriptsWriter {
             ["TStrict", "TPermissive"]
         )
         this.writeImportType("@helios-lang/ledger", "TimeLike")
-        this.writeImportType("@helios-lang/ledger", "UplcData")
+        this.writeImportType("@helios-lang/uplc", "UplcData")
         this.writeImportType("@helios-lang/uplc", "UplcProgram")
     }
 

@@ -4,6 +4,7 @@ import {
     AssetClass,
     DatumHash,
     MintingPolicyHash,
+    PubKey,
     PubKeyHash,
     ScriptHash,
     SpendingCredential,
@@ -143,6 +144,8 @@ function schemaToUplc(schema, x, defs = {}) {
                     return new IntData(x)
                 case "MintingPolicyHash":
                     return MintingPolicyHash.new(x).toUplcData()
+                case "PubKey":
+                    return PubKey.new(x).toUplcData()
                 case "PubKeyHash":
                     return PubKeyHash.new(x).toUplcData()
                 case "Real":
@@ -331,6 +334,8 @@ function uplcToSchema(schema, data, config, defs = {}) {
                     return IntData.expect(data).value
                 case "MintingPolicyHash":
                     return MintingPolicyHash.fromUplcData(data)
+                case "PubKey":
+                    return PubKey.fromUplcData(data)
                 case "PubKeyHash":
                     return PubKeyHash.fromUplcData(data)
                 case "Ratio": {
@@ -362,6 +367,8 @@ function uplcToSchema(schema, data, config, defs = {}) {
                     return TxInput.fromUplcData(config.isMainnet, data)
                 case "TxOutput":
                     return TxOutput.fromUplcData(config.isMainnet, data)
+                case "TxOutputDatum":
+                    return TxOutputDatum.fromUplcData(data)
                 case "TxOutputId":
                     return TxOutputId.fromUplcData(data)
                 case "ValidatorHash":

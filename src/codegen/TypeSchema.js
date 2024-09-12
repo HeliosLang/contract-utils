@@ -2,6 +2,8 @@
  * @typedef {import("@helios-lang/type-utils").TypeSchema} TypeSchema
  */
 
+const NONE = "null"
+
 /**
  * TODO: handle recursive data structures
  * @param {TypeSchema} schema
@@ -82,8 +84,8 @@ export function genTypes(schema) {
                     return ["TxOutput", "TxOutput"]
                 case "TxOutputDatum":
                     return [
-                        "TxOutputDatum | null",
-                        "TxOutputDatum | null | undefined | DatumHash | UplcData"
+                        `TxOutputDatum | ${NONE}`,
+                        `TxOutputDatum | ${NONE} | undefined | DatumHash | UplcData`
                     ]
                 case "TxOutputId":
                     return ["TxOutputId", "TxOutputId | string"]
@@ -120,7 +122,7 @@ export function genTypes(schema) {
         }
         case "option": {
             const [c, p] = genTypes(schema.someType)
-            return [`(${c}) | null`, `(${p}) | null | undefined`]
+            return [`(${c}) | ${NONE}`, `(${p}) | null | undefined`]
         }
         case "struct": {
             const fieldTypes = schema.fieldTypes.map(({ name, type }) => ({
