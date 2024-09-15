@@ -95,10 +95,11 @@ export class Cast {
 
     /**
      * @param {TPermissive} x
+     * @param {string} dataPath
      * @returns {UplcData}
      */
-    toUplcData(x) {
-        return schemaToUplc(this.schema, x)
+    toUplcData(x, dataPath = "") {
+        return schemaToUplc(this.schema, x, {}, dataPath)
     }
 }
 
@@ -106,15 +107,15 @@ export class Cast {
  * @param {TypeSchema} schema
  * @param {any} x
  * @param {Record<string, TypeSchema>} defs
+ * @param {string} dataPath
  * @returns {UplcData}
  */
-function schemaToUplc(schema, x, defs = {}) {
+function schemaToUplc(schema, x, defs = {}, dataPath = "") {
     const kind = schema.kind
-
     switch (kind) {
         case "reference": {
             const def = expectSome(defs[schema.id])
-            return schemaToUplc(def, x, defs)
+            return schemaToUplc(def, x, defs, `${dataPath}::ref{${schema.id}}`)
         }
         case "internal": {
             const name = schema.name
@@ -184,50 +185,97 @@ function schemaToUplc(schema, x, defs = {}) {
                 case "Value":
                     return Value.new(x).toUplcData()
                 default:
-                    throw new Error(`not yet implemented for ${name}`)
+                    throw new Error(
+                        `schemaToUplc not yet implemented for ${name} at ${dataPath}`
+                    )
             }
         }
         case "list":
             return new ListData(
-                x.map((x) => schemaToUplc(schema.itemType, x, defs))
+                x.map((x, i) =>
+                    schemaToUplc(
+                        schema.itemType,
+                        x,
+                        defs,
+                        `${dataPath}.list[${i}]`
+                    )
+                )
             )
         case "map": {
-            const entries = x instanceof Map ? x.entries() : x
+            const entries =
+                x instanceof Map
+                    ? [...x.entries()]
+                    : Array.isArray(x)
+                      ? x
+                      : Object.entries(x)
             return new MapData(
                 entries.map(([k, v]) => [
-                    schemaToUplc(schema.keyType, k, defs),
-                    schemaToUplc(schema.valueType, v, defs)
+                    schemaToUplc(
+                        schema.keyType,
+                        k,
+                        defs,
+                        `${dataPath}[mapKey '${k}]'`
+                    ),
+                    schemaToUplc(
+                        schema.valueType,
+                        v,
+                        defs,
+                        `${dataPath}[map].${k}`
+                    )
                 ])
             )
         }
         case "tuple":
             return new ListData(
-                x.map((x, i) => schemaToUplc(schema.itemTypes[i], x, defs))
+                x.map((x, i) =>
+                    schemaToUplc(
+                        schema.itemTypes[i],
+                        x,
+                        defs,
+                        `${dataPath}[tuple@${i}]`
+                    )
+                )
             )
         case "option":
             return encodeOptionData(
-                x ? schemaToUplc(schema.someType, x, defs) : None
+                x
+                    ? schemaToUplc(
+                          schema.someType,
+                          x,
+                          defs,
+                          `${dataPath}::Some`
+                      )
+                    : None
             )
         case "struct": {
             defs[schema.id] = schema
             switch (schema.format) {
                 case "singleton":
+                    const singleFieldName = schema.fieldTypes[0].name
                     return schemaToUplc(
                         schema.fieldTypes[0].type,
-                        x[schema.fieldTypes[0].name],
-                        defs
+                        x[singleFieldName],
+                        defs,
+                        `${dataPath}[sStruct.${singleFieldName}]`
                     )
                 case "list":
                     return new ListData(
                         schema.fieldTypes.map(({ name, type }) =>
-                            schemaToUplc(type, x[name])
+                            schemaToUplc(
+                                type,
+                                x[name],
+                                {},
+                                `${dataPath}[fStruct].${name}`
+                            )
                         )
                     )
                 case "map": {
                     // first make sure all fields are present
                     schema.fieldTypes.forEach((ft) => {
                         if (!(ft.name in x)) {
-                            throw new Error(`missing field ${ft.name}`)
+                            throw new Error(
+                                `missing field ${ft.name} at ${dataPath}`
+                            )
                         }
                     })
 
@@ -243,8 +291,18 @@ function schemaToUplc(schema, x, defs = {}) {
                         )
 
                         if (ft) {
-                            const keyData = new ByteArrayData(encodeUtf8(key))
-                            const valueData = schemaToUplc(ft.type, value, defs)
+                            debugger
+                            //@ts-expect-error
+                            const rawKey = ft.tag || ft.name
+                            const keyData = new ByteArrayData(
+                                encodeUtf8(rawKey)
+                            )
+                            const valueData = schemaToUplc(
+                                ft.type,
+                                value,
+                                defs,
+                                `${dataPath}[mStruct][${key}]`
+                            )
 
                             pairs.push([keyData, valueData])
                         }
@@ -255,7 +313,7 @@ function schemaToUplc(schema, x, defs = {}) {
                 }
                 default:
                     throw new Error(
-                        `unhandled struct format '${schema.format}'`
+                        `unhandled struct format '${schema.format}' at ${dataPath}`
                     )
             }
         }
@@ -276,7 +334,12 @@ function schemaToUplc(schema, x, defs = {}) {
             return new ConstrData(
                 tag,
                 schema.variantTypes[tag].fieldTypes.map((f) =>
-                    schemaToUplc(f.type, variantFields[f.name], defs)
+                    schemaToUplc(
+                        f.type,
+                        variantFields[f.name],
+                        defs,
+                        `${dataPath}[${schema.name}::${variantName}].${f.name}`
+                    )
                 )
             )
         }
@@ -285,11 +348,11 @@ function schemaToUplc(schema, x, defs = {}) {
             return new ConstrData(
                 schema.tag,
                 schema.fieldTypes.map(({ name, type }) =>
-                    schemaToUplc(type, x[name])
+                    schemaToUplc(type, x[name], {}, `${dataPath}.${name}`)
                 )
             )
         default:
-            throw new Error(`unhandled schema kind '${kind}'`)
+            throw new Error(`unhandled schema kind '${kind}' at ${dataPath}`)
     }
 }
 
