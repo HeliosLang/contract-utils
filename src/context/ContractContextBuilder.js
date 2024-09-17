@@ -5,6 +5,7 @@ import { DagCompiler } from "./DagCompiler.js"
 import { contractContextCache } from "./ContractContextCache.js"
 
 /**
+ * @typedef {import("@helios-lang/uplc").UplcData} UplcData
  * @typedef {import("../cast/index.js").CastConfig} CastConfig
  * @typedef {import("../codegen/LoadedModule.js").LoadedModule} LoadedModule
  * @typedef {import("../codegen/LoadedValidator.js").LoadedValidator} LoadedValidator
@@ -26,7 +27,7 @@ import { contractContextCache } from "./ContractContextCache.js"
  * @typedef {{
  *   isMainnet: boolean
  *   expectedHashes?: {[name: string]: string}
- *   parameters?: Record<string, any>
+ *   parameters?: Record<string, UplcData>
  *   dumpHashes?: boolean
  *   debug?: boolean
  * }} ContractContextBuildProps

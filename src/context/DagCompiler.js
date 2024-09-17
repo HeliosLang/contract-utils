@@ -10,6 +10,7 @@ import { restoreUplcProgram } from "@helios-lang/uplc"
 import { configureCast } from "../cast/index.js"
 
 /**
+ * @typedef {import("@helios-lang/uplc").UplcData} UplcData
  * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
  * @typedef {import("../cast/index.js").CastConfig} CastConfig
  * @typedef {import("../codegen/LoadedValidator.js").LoadedValidator} LoadedValidator
@@ -75,7 +76,7 @@ export class DagCompiler {
 
     /**
      * @param {LoadedValidator[]} validators
-     * @param {Record<string, any>} parameters
+     * @param {Record<string, UplcData>} parameters
      * @param {boolean} isTestnet
      * @param {Option<{[name: string]: string}>} expectedHashes
      * @returns {DagCompilerOutput}
