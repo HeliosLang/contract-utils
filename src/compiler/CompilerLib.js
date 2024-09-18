@@ -44,6 +44,7 @@ export {}
  * @typedef {{
  *   cborHex: string
  *   plutusVersion: PlutusVersion
+ *   ir?: string
  * }} CompileOutput
  */
 

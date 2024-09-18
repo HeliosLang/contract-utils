@@ -114,7 +114,8 @@ export class DagCompiler {
             // optimized compilation
             const {
                 cborHex: optimizedCborHex,
-                plutusVersion: optimPlutusVersion
+                plutusVersion: optimPlutusVersion,
+                ir: optimIr
             } = this.lib.compile(sourceCode, moduleDeps, {
                 optimize: true,
                 hashDependencies: hashDepHashes,
@@ -131,7 +132,8 @@ export class DagCompiler {
 
             const optimizedProgram = restoreUplcProgram(
                 optimPlutusVersion,
-                optimizedCborHex
+                optimizedCborHex,
+                { ir: optimIr }
             )
 
             // calculate the hash
@@ -169,7 +171,8 @@ export class DagCompiler {
             // unoptimized compilation (so traces are untouched)
             const {
                 cborHex: unoptimizedCborHex,
-                plutusVersion: unoptimPlutusVersion
+                plutusVersion: unoptimPlutusVersion,
+                ir: unoptimIr
             } = this.lib.compile(
                 validator.$sourceCode,
                 Array.from(moduleDeps.values()),
@@ -226,7 +229,8 @@ export class DagCompiler {
             // TODO: with source mapping
             const unoptimizedProgram = restoreUplcProgram(
                 unoptimPlutusVersion,
-                unoptimizedCborHex
+                unoptimizedCborHex,
+                { ir: unoptimIr }
             )
 
             const completeProgram = optimizedProgram.withAlt(
