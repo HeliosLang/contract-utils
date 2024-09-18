@@ -31,7 +31,9 @@ import { UplcProgramV2 } from "@helios-lang/uplc"
  *     purpose: "minting" | "spending" | "staking" | "mixed"
  *     bytes: number[]
  *     unoptimizedCborHex?: string
+ *     unoptimizedIr?: string
  *     optimizedCborHex: string
+ *     optimizedIr?: string
  *     plutusVersion: PlutusVersion
  *     castConfig: CastConfig
  *     datum?: TypeSchema
@@ -106,17 +108,25 @@ class ContractContextCache {
                  */
                 let program =
                     props.plutusVersion == "PlutusScriptV1"
-                        ? UplcProgramV1.fromCbor(props.optimizedCborHex)
-                        : UplcProgramV2.fromCbor(props.optimizedCborHex)
+                        ? UplcProgramV1.fromCbor(props.optimizedCborHex, {
+                              ir: props.optimizedIr
+                          })
+                        : UplcProgramV2.fromCbor(props.optimizedCborHex, {
+                              ir: props.optimizedIr
+                          })
 
                 if (props.unoptimizedCborHex) {
                     if (program.plutusVersion == "PlutusScriptV1") {
                         program = program.withAlt(
-                            UplcProgramV1.fromCbor(props.unoptimizedCborHex)
+                            UplcProgramV1.fromCbor(props.unoptimizedCborHex, {
+                                ir: props.unoptimizedIr
+                            })
                         )
                     } else if (program.plutusVersion == "PlutusScriptV2") {
                         program = program.withAlt(
-                            UplcProgramV2.fromCbor(props.unoptimizedCborHex)
+                            UplcProgramV2.fromCbor(props.unoptimizedCborHex, {
+                                ir: props.unoptimizedIr
+                            })
                         )
                     } else {
                         throw new Error("unhandled Plutus version")
@@ -176,44 +186,30 @@ class ContractContextCache {
             for (let name in entry.userFuncs) {
                 const props = entry.userFuncs[name]
 
-                const optimizedIr = props.optimizedIr
-                const optimizedProps = optimizedIr
-                    ? { ir: () => optimizedIr }
-                    : {}
-
                 /**
                  * @type {UplcProgram}
                  */
                 let program =
                     props.plutusVersion == "PlutusScriptV1"
-                        ? UplcProgramV1.fromCbor(
-                              props.optimizedCborHex,
-                              optimizedProps
-                          )
-                        : UplcProgramV2.fromCbor(
-                              props.optimizedCborHex,
-                              optimizedProps
-                          )
+                        ? UplcProgramV1.fromCbor(props.optimizedCborHex, {
+                              ir: props.optimizedIr
+                          })
+                        : UplcProgramV2.fromCbor(props.optimizedCborHex, {
+                              ir: props.optimizedIr
+                          })
 
                 if (props.unoptimizedCborHex) {
-                    const unoptimizedIr = props.unoptimizedIr
-                    const unoptimizedProps = unoptimizedIr
-                        ? { ir: () => unoptimizedIr }
-                        : {}
-
                     if (program.plutusVersion == "PlutusScriptV1") {
                         program = program.withAlt(
-                            UplcProgramV1.fromCbor(
-                                props.unoptimizedCborHex,
-                                unoptimizedProps
-                            )
+                            UplcProgramV1.fromCbor(props.unoptimizedCborHex, {
+                                ir: props.unoptimizedIr
+                            })
                         )
                     } else if (program.plutusVersion == "PlutusScriptV2") {
                         program = program.withAlt(
-                            UplcProgramV2.fromCbor(
-                                props.unoptimizedCborHex,
-                                unoptimizedProps
-                            )
+                            UplcProgramV2.fromCbor(props.unoptimizedCborHex, {
+                                ir: props.unoptimizedIr
+                            })
                         )
                     } else {
                         throw new Error("unhandled Plutus version")
@@ -311,6 +307,12 @@ class ContractContextCache {
                     unoptimizedCborHex: hash.context.program.alt
                         ? bytesToHex(hash.context.program.alt.toCbor())
                         : undefined,
+                    optimizedIr:
+                        /** @type {UplcProgramV2} */ (hash.context.program)
+                            .ir ?? undefined,
+                    unoptimizedIr:
+                        /** @type {UplcProgramV2} */ (hash.context.program).alt
+                            ?.ir ?? undefined,
                     plutusVersion: hash.context.program.plutusVersion,
                     castConfig: redeemer.config,
                     redeemer: redeemer.schema,
@@ -320,11 +322,10 @@ class ContractContextCache {
 
             for (let name in entry.userFuncs) {
                 const userFunc = entry.userFuncs[name]
-                const optimizedIr = userFunc.ir
 
                 resUserFuncs[name] = {
                     optimizedCborHex: bytesToHex(userFunc.toCbor()),
-                    optimizedIr: optimizedIr ?? undefined,
+                    optimizedIr: userFunc.ir ?? undefined,
                     unoptimizedCborHex: /** @type {UplcProgramV2} */ (userFunc)
                         .alt
                         ? bytesToHex(
