@@ -182,10 +182,10 @@ export class DagCompiler {
                     hashDependencies: hashDepHashes,
                     allValidatorHashTypes: hashTypes,
                     allValidatorIndices: validatorIndices ?? undefined,
-                    // Even though the ownHash is available at this point (taken from the optimized script), 
-                    //  fetching the ownHash in the optimized script has some logic that can fail, which must be emulated in the unoptimized script. 
+                    // Even though the ownHash is available at this point (taken from the optimized script),
+                    //  fetching the ownHash in the optimized script has some logic that can fail, which must be emulated in the unoptimized script.
                     //  Setting dependsOnOwnHash==true, whilst also specifying the ownHash, tells the internal compilation to inject such an emulation
-                    dependsOnOwnHash: validator.$dependsOnOwnHash, 
+                    dependsOnOwnHash: validator.$dependsOnOwnHash,
                     ownHash: validator.$dependsOnOwnHash
                         ? optimizedHashHex
                         : undefined,
