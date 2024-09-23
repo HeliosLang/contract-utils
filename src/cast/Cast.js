@@ -94,13 +94,34 @@ export class Cast {
     }
 
     /**
+     * converts javascript object to UPLC data, according to the schema.
+     * @remarks
+     * The optional `dataPath` parameter can provide a contextual cue for the
+     * data-conversion process, and will be displayed as part of any error messages
+     * thrown during the data transformation
+     *
      * @param {TPermissive} x
      * @param {string} dataPath
      * @returns {UplcData}
      */
     toUplcData(x, dataPath = "") {
-        return schemaToUplc(this.schema, x, {}, dataPath)
+        const t = schemaToUplcWIthDataPath(this.schema, x, {}, dataPath)
+        t.fromData = x
+        return t
     }
+}
+
+/**
+ * @param {TypeSchema} schema
+ * @param {any} x
+ * @param {Record<string, TypeSchema>} defs
+ * @param {string} dataPath
+ * @returns {UplcData}
+ */
+function schemaToUplcWIthDataPath(schema, x, defs = {}, dataPath = "") {
+    const t = schemaToUplc(schema, x, defs, dataPath)
+    t.dataPath = dataPath
+    return t
 }
 
 /**
@@ -115,7 +136,12 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
     switch (kind) {
         case "reference": {
             const def = expectSome(defs[schema.id])
-            return schemaToUplc(def, x, defs, `${dataPath}::ref{${schema.id}}`)
+            return schemaToUplcWIthDataPath(
+                def,
+                x,
+                defs,
+                `${dataPath}::ref{${schema.id}}`
+            )
         }
         case "internal": {
             const name = schema.name
@@ -193,7 +219,7 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
         case "list":
             return new ListData(
                 x.map((x, i) =>
-                    schemaToUplc(
+                    schemaToUplcWIthDataPath(
                         schema.itemType,
                         x,
                         defs,
@@ -210,13 +236,13 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
                       : Object.entries(x)
             return new MapData(
                 entries.map(([k, v]) => [
-                    schemaToUplc(
+                    schemaToUplcWIthDataPath(
                         schema.keyType,
                         k,
                         defs,
-                        `${dataPath}[mapKey '${k}]'`
+                        `${dataPath}[mapKey '${k}']`
                     ),
-                    schemaToUplc(
+                    schemaToUplcWIthDataPath(
                         schema.valueType,
                         v,
                         defs,
@@ -228,7 +254,7 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
         case "tuple":
             return new ListData(
                 x.map((x, i) =>
-                    schemaToUplc(
+                    schemaToUplcWIthDataPath(
                         schema.itemTypes[i],
                         x,
                         defs,
@@ -239,7 +265,7 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
         case "option":
             return encodeOptionData(
                 x
-                    ? schemaToUplc(
+                    ? schemaToUplcWIthDataPath(
                           schema.someType,
                           x,
                           defs,
@@ -252,7 +278,7 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
             switch (schema.format) {
                 case "singleton":
                     const singleFieldName = schema.fieldTypes[0].name
-                    return schemaToUplc(
+                    return schemaToUplcWIthDataPath(
                         schema.fieldTypes[0].type,
                         x[singleFieldName],
                         defs,
@@ -261,7 +287,7 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
                 case "list":
                     return new ListData(
                         schema.fieldTypes.map(({ name, type }) =>
-                            schemaToUplc(
+                            schemaToUplcWIthDataPath(
                                 type,
                                 x[name],
                                 {},
@@ -297,7 +323,7 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
                             const keyData = new ByteArrayData(
                                 encodeUtf8(rawKey)
                             )
-                            const valueData = schemaToUplc(
+                            const valueData = schemaToUplcWIthDataPath(
                                 ft.type,
                                 value,
                                 defs,
@@ -334,7 +360,7 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
             return new ConstrData(
                 tag,
                 schema.variantTypes[tag].fieldTypes.map((f) =>
-                    schemaToUplc(
+                    schemaToUplcWIthDataPath(
                         f.type,
                         variantFields[f.name],
                         defs,
@@ -345,10 +371,16 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
         }
         case "variant":
             defs[schema.id] = schema
+
             return new ConstrData(
                 schema.tag,
                 schema.fieldTypes.map(({ name, type }) =>
-                    schemaToUplc(type, x[name], {}, `${dataPath}.${name}`)
+                    schemaToUplcWIthDataPath(
+                        type,
+                        x[name],
+                        {},
+                        `${dataPath}.${name}`
+                    )
                 )
             )
         default:

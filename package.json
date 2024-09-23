@@ -16,6 +16,8 @@
         "test": "pnpm run test:pretty && pnpm run test:types && pnpm run test:suite",
         "test:pretty": "prettier . --check",
         "test:suite": "node --test",
+        "testing": "node --test --watch",
+        "testing:debug": "node --inspect-brk --test --watch",
         "test:types": "pnpm run build:types"
     },
     "author": "Christian Schmitz",
