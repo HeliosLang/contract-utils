@@ -325,8 +325,8 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
 
                         if (ft) {
                             debugger
-                            //@ts-expect-error
-                            const rawKey = ft.tag || ft.name
+                            // const rawKey = ft.key || ft.name
+                            const rawKey = ft.name
                             const keyData = new ByteArrayData(
                                 encodeUtf8(rawKey)
                             )
