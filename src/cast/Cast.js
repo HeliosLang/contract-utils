@@ -308,9 +308,7 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
                     // first make sure all fields are present
                     schema.fieldTypes.forEach((ft) => {
                         if (!(ft.name in x)) {
-                            throw new Error(
-                                `missing field ${ft.name}`
-                            )
+                            throw new Error(`missing field ${ft.name}`)
                         }
                     })
 
