@@ -119,9 +119,18 @@ export class Cast {
  * @returns {UplcData}
  */
 function schemaToUplcWIthDataPath(schema, x, defs = {}, dataPath = "") {
-    const t = schemaToUplc(schema, x, defs, dataPath)
-    t.dataPath = dataPath
-    return t
+    try {
+        const t = schemaToUplc(schema, x, defs, dataPath)
+        t.dataPath = dataPath
+        return t
+    } catch (e) {
+        if (!e.uplcDataPath) {
+            e.message = `${e.message}\n ... at ${dataPath}`
+            e.uplcDataPath = dataPath
+        }
+        debugger
+        throw e
+    }
 }
 
 /**
@@ -212,7 +221,7 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
                     return Value.new(x).toUplcData()
                 default:
                     throw new Error(
-                        `schemaToUplc not yet implemented for ${name} at ${dataPath}`
+                        `schemaToUplc not yet implemented for ${name}`
                     )
             }
         }
@@ -300,7 +309,7 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
                     schema.fieldTypes.forEach((ft) => {
                         if (!(ft.name in x)) {
                             throw new Error(
-                                `missing field ${ft.name} at ${dataPath}`
+                                `missing field ${ft.name}`
                             )
                         }
                     })
@@ -339,7 +348,7 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
                 }
                 default:
                     throw new Error(
-                        `unhandled struct format '${schema.format}' at ${dataPath}`
+                        `unhandled struct format '${schema.format}'`
                     )
             }
         }
@@ -384,7 +393,7 @@ function schemaToUplc(schema, x, defs = {}, dataPath = "") {
                 )
             )
         default:
-            throw new Error(`unhandled schema kind '${kind}' at ${dataPath}`)
+            throw new Error(`unhandled schema kind '${kind}'`)
     }
 }
 
