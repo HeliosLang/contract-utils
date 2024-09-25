@@ -106,7 +106,7 @@ export class Cast {
      */
     toUplcData(x, dataPath = "") {
         const t = schemaToUplcWIthDataPath(this.schema, x, {}, dataPath)
-        t.fromData = x
+        t.rawData = x
         return t
     }
 }
