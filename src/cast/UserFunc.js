@@ -2,11 +2,13 @@ import { bytesToHex } from "@helios-lang/codec-utils"
 import { expectSome, isLeft, isString } from "@helios-lang/type-utils"
 import { ConstrData, IntData, UplcDataValue } from "@helios-lang/uplc"
 import { Cast } from "./Cast.js"
+import { BasicUplcLogger } from "@helios-lang/uplc"
 
 /**
  * @typedef {import("@helios-lang/type-utils").TypeSchema} TypeSchema
  * @typedef {import("@helios-lang/uplc").CekResult} CekResult
  * @typedef {import("@helios-lang/uplc").UplcData} UplcData
+ * @typedef {import("@helios-lang/uplc").UplcLoggingI} UplcLoggingI
  * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
  * @typedef {import("@helios-lang/uplc").UplcValue} UplcValue
  * @typedef {import("./Cast.js").CastConfig} CastConfig
@@ -70,9 +72,10 @@ export class UserFunc {
 
     /**
      * @param {ArgsT} namedArgs
+     * @param {UplcLoggingI} [logOptions]
      * @returns {RetT}
      */
-    eval(namedArgs) {
+    eval(namedArgs, logOptions) {
         /**
          * @type {{[argName: string]: any}}
          */
@@ -100,7 +103,8 @@ export class UserFunc {
         })
 
         const result = this.evalUnsafe(
-            /** @type {UnsafeArgsT<ArgsT>} */ (unsafeNamedArgs)
+            /** @type {UnsafeArgsT<ArgsT>} */ (unsafeNamedArgs),
+            logOptions
         )
 
         if (this.props.returns) {
@@ -115,10 +119,11 @@ export class UserFunc {
 
     /**
      * @param {UnsafeArgsT<ArgsT>} namedArgs
+     * @param {UplcLoggingI} [logOptions]
      * @returns {RetT extends void ? void : UplcData}
      */
-    evalUnsafe(namedArgs) {
-        const result = this.profile(namedArgs).result
+    evalUnsafe(namedArgs, logOptions) {
+        const result = this.profile(namedArgs, logOptions).result
 
         if (isLeft(result)) {
             throw new Error(result.left.error)
@@ -133,9 +138,10 @@ export class UserFunc {
 
     /**
      * @param {UnsafeArgsT<ArgsT>} namedArgs
+     * @param {UplcLoggingI} [logOptions] - optional, passed to UplcProgram.eval if provided
      * @returns {CekResult}
      */
-    profile(namedArgs) {
+    profile(namedArgs, logOptions) {
         const isMain = this.name == "main"
 
         /**
@@ -184,10 +190,12 @@ export class UserFunc {
 
         const argValues = args.map((a) => new UplcDataValue(a))
 
-        const cekResult = this.uplc.eval(argValues)
+        const cekResult = this.uplc.eval(argValues, { logOptions })
 
         if (this.uplc.alt?.plutusVersion == "PlutusScriptV2") {
-            const cekResultUnoptim = this.uplc.alt.eval(argValues)
+            const cekResultUnoptim = this.uplc.alt.eval(argValues, {
+                logOptions
+            })
             const resultUnoptim = cekResultUnoptim.result
             const resultUnoptimStr = evalResultToString(resultUnoptim)
             const resultStr = evalResultToString(cekResult.result)
