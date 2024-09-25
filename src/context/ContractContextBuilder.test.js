@@ -26,8 +26,15 @@ import { Address, AssetClass } from "@helios-lang/ledger"
 const utils = {
     $name: /** @type {const} */ ("utils"),
     $purpose: /** @type {const} */ ("module"),
-    $sourceCode:
-        "module utils\n\nstruct MyUtilType {\n    hello: Int\n}\n\nconst my_assetclass: AssetClass = AssetClass::new(Scripts::match_string_policy, #)\n\nconst my_hash: ValidatorHash = Scripts::match_string\n\nfunc compare(a: String, b: String) -> Bool {\n    a == b\n}",
+    $sourceCode: `module utils
+struct MyUtilType {
+    hello: Int
+}
+const my_assetclass: AssetClass = AssetClass::new(Scripts::match_string_policy, #)
+const my_hash: ValidatorHash = Scripts::match_string
+func compare(a: String, b: String) -> Bool {
+    a == b
+}`,
     $dependencies: /** @type {const} */ ([]),
     $types: {
         MyUtilType: (config) =>
@@ -55,8 +62,11 @@ const utils = {
 const match_string_policy = {
     $name: /** @type {const} */ ("match_string_policy"),
     $purpose: /** @type {const} */ ("minting"),
-    $sourceCode:
-        "minting match_string_policy\n\nfunc main(redeemer: Bool) -> Bool {\n    redeemer\n}",
+    $currentScriptIndex: 0,
+    $sourceCode: `minting match_string_policy
+func main(redeemer: Bool) -> Bool {
+    redeemer
+}`,
     $dependencies: /** @type {const} */ ([]),
     $hashDependencies: [],
     $dependsOnOwnHash: false,
@@ -71,8 +81,25 @@ const match_string_policy = {
 const match_string = {
     $name: /** @type {const} */ ("match_string"),
     $purpose: /** @type {const} */ ("spending"),
-    $sourceCode:
-        "spending match_string\n\nimport { compare, my_assetclass } from utils\n\nimport { tx } from ScriptContext\n\nenum Datum {\n One {\n  message: String\n }\n\n Two {\n  code: Int\n }\n}\n\nfunc main(datum: Datum, redeemer: String) -> Bool {\n compare(datum.switch{d: One => d.message, d: Two => d.code.show()}, redeemer) &&\n   tx.minted.get(my_assetclass) > 0\n}",
+    $currentScriptIndex: 1,
+    $sourceCode: `spending match_string
+import { compare, my_assetclass } from utils
+import { tx } from ScriptContext
+enum Datum {
+    One {
+        message: String
+    }
+    Two {
+        code: Int
+    }
+}
+func main(datum: Datum, redeemer: String) -> Bool {
+    compare(datum.switch{
+        d: One => d.message, 
+        d: Two => d.code.show()
+    }, redeemer) &&
+    tx.minted.get(my_assetclass) > 0
+}`,
     $dependencies: /** @type {const} */ ([utils]),
     $hashDependencies: [match_string_policy],
     $dependsOnOwnHash: true,
