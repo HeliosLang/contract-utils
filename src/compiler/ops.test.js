@@ -1,9 +1,12 @@
 import { describe, it } from "node:test"
 import { deepEqual } from "node:assert"
+import * as assert from "node:assert"
+
 import { expectSome } from "@helios-lang/type-utils"
 import { ByteArrayData, IntData } from "@helios-lang/uplc"
 import { Cast } from "../cast/index.js"
 import { loadCompilerLib, typeCheckScripts } from "./ops.js"
+import { encodeUtf8 } from "@helios-lang/codec-utils"
 
 /**
  * @typedef {import("../cast/index.js").CastConfig} CastConfig
@@ -94,5 +97,38 @@ describe(typeCheckScripts.name, () => {
                 }
             })
         )
+    })
+
+    it("correctly generates typeschema for a map-type struct (Cip68)", () => {
+        const src = `
+        spending test
+
+        struct cip68 {
+           field1: Int "f1"
+           field2: String
+        }
+        enum Datum {
+            Foo
+            MapRec { data: cip68 } 
+        }
+        
+        func main(datum: Datum, _) -> Bool {
+            datum == datum
+        }
+        `
+
+        const lib = loadCompilerLib()
+        const { validators } = typeCheckScripts(lib, [src])
+        const datumTypeSchema = expectSome(validators.test.Datum)
+
+        const cast = new Cast(datumTypeSchema, castConfig)
+
+        const inputData = { field1: 42, field2: "hello" }
+        const uplcData = cast.toUplcData({
+            MapRec: { data: inputData }
+        })
+
+        const result = cast.fromUplcData(uplcData)
+        deepEqual(result.MapRec.data, inputData)
     })
 })
