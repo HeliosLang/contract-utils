@@ -311,7 +311,7 @@ function schemaToUplc(schema, x, inputContextOnly) {
                         x[singleFieldName],
                         {
                             defs,
-                            dataPath: `${dataPath}[sStruct.${singleFieldName}]`
+                            dataPath: `${dataPath}[sfStruct.${singleFieldName}]`
                         }
                     )
                 case "list":
@@ -329,9 +329,9 @@ function schemaToUplc(schema, x, inputContextOnly) {
                         // todo: ? allow Option[T] fields to be missing?
 
                         if (!(ft.name in x)) {
-                            if (ft.encodingKey && ft.encodingKey in x) {
-                                const encodingInfo = ft.encodingKey
-                                    ? `incorrectly specified as encoding-key '${ft.encodingKey}')`
+                            if (ft.key && ft.key in x) {
+                                const encodingInfo = ft.key
+                                    ? `incorrectly specified as encoding-key '${ft.key}'`
                                     : ""
                                 throw new Error(
                                     `field '${ft.name}' ${encodingInfo}`
@@ -355,12 +355,8 @@ function schemaToUplc(schema, x, inputContextOnly) {
                         )
 
                         if (ft) {
-                            const encodingKey = ft.encodingKey || ft.name
-                            const encodingInfo = ft.encodingKey
-                                ? `@'${ft.encodingKey}'`
-                                : ""
-                            // ?? encode field-name into the keyData??
-                            // xxxx  feels way wrong!
+                            const encodingKey = ft.key || ft.name
+                            const encodingInfo = ft.key ? ` as '${ft.key}'` : ""
                             const keyData = new ByteArrayData(
                                 encodeUtf8(encodingKey)
                             )
@@ -600,7 +596,7 @@ function uplcToSchema(schema, data, inputContextOnly) {
                         [schema.fieldTypes[0].name]: uplcToSchemaWithDataPath(
                             schema.fieldTypes[0].type,
                             data,
-                            { ...context, dataPath: `${dataPath}[sStruct]` }
+                            { ...context, dataPath: `${dataPath}[sfStruct]` }
                         )
                     }
                 case "list": {
@@ -643,7 +639,7 @@ function uplcToSchema(schema, data, inputContextOnly) {
                      * @param {string} targetName
                      * @returns {number}
                      */
-                    function findEncodedFieldIndex(targetName) {
+                    function findSerializedFieldIndex(targetName) {
                         return encodedEntries.findIndex(([key, _]) => {
                             return (
                                 targetName ==
@@ -654,20 +650,29 @@ function uplcToSchema(schema, data, inputContextOnly) {
                     // loops over the Schema fields:
                     return Object.fromEntries(
                         schema.fieldTypes
-                            .map(({ name, encodingKey, type }) => {
+                            .map(({ name, type, key: encodingKey }) => {
                                 const i = expectSome(
-                                    findEncodedFieldIndex(encodingKey || name)
+                                    findSerializedFieldIndex(
+                                        encodingKey || name
+                                    )
                                 )
 
                                 if (i == -1) {
                                     // todo: ? allow Option[T] fields to be missing?
                                     if (encodingKey) {
+                                        if (
+                                            findSerializedFieldIndex(name) > -1
+                                        ) {
+                                            throw new Error(
+                                                `field '${name}' encoded by name (must be encoded as '${encodingKey}')`
+                                            )
+                                        }
                                         throw new Error(
-                                            `field '${name}' missing from MapData (must be encoded as '${encodingKey}')`
+                                            `field '${name}' missing (must be encoded as '${encodingKey}')`
                                         )
                                     }
                                     throw new Error(
-                                        `field '${name}' missing from MapData`
+                                        `field '${name}' missing from field map`
                                     )
                                 }
 

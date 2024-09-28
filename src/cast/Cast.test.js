@@ -158,11 +158,10 @@ describe("Cip68Struct serialization", () => {
             },
             {
                 name: "taggedFieldName",
-                encodingKey: "FNT",
+                key: "FNT",
                 type: {
                     kind: "internal",
                     name: "String"
-                    // encodingKey: "FNT"
                 }
             }
         ]
@@ -204,16 +203,32 @@ describe("Cip68Struct serialization", () => {
         ])
     ])
 
+    const missingField = new ConstrData(0, [
+        new MapData([
+            [new ByteArrayData(encodeUtf8("plainFieldName")), new IntData(1)],
+            [
+                new ByteArrayData(encodeUtf8("wrongFieldName")),
+                new ByteArrayData(encodeUtf8(greeting))
+            ]
+        ])
+    ])
+
     it("doesn't accept a struct with wrong encoding of field name when it expects a field-name tag", () => {
         throws(() => {
             cast.fromUplcData(wrongEncoding)
-        }, /decoding .*field 'taggedFieldName' missing.*must be encoded as 'FNT'/)
+        }, /decoding .*field 'taggedFieldName' encoded by name .*must be.* 'FNT'/)
+    })
+
+    it("doesn't accept a struct with missing field, when it expects a field-name tag", () => {
+        throws(() => {
+            cast.fromUplcData(missingField)
+        }, /decoding .*field 'taggedFieldName' missing .*must be encoded as 'FNT'/)
     })
 
     it("doesn't accept a struct with wrong encoding (e.g. a typo) of untagged field-name", () => {
         throws(() => {
             cast.fromUplcData(wrongPlainFieldName)
-        }, /decoding .* field 'plainFieldName' missing from MapData$/)
+        }, /decoding .* field 'plainFieldName' missing/)
     })
 
     it("parses a correctly encoded struct", () => {

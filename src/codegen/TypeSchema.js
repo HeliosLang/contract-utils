@@ -7,10 +7,11 @@ const NONE = "null"
 /**
  * TODO: handle recursive data structures
  * @param {TypeSchema} schema
- * @param {string} [encodingKey] - optional field-name (encoding-key) for map-typed (Cip68) struct fields only
  * @returns {[string, string]} - the first entry is the strict canonical type, the second is the permissive type
  */
-export function genTypes(schema, encodingKey) {
+// XXX * @param {string} [encodingKey] - optional field-name (encoding-key) for map-typed struct fields only
+// XXX export function genTypes(schema, encodingKey) {
+export function genTypes(schema) {
     const kind = schema.kind
 
     switch (kind) {
@@ -127,9 +128,10 @@ export function genTypes(schema, encodingKey) {
         }
         case "struct": {
             const fieldTypes = schema.fieldTypes.map(
-                ({ name, encodingKey, type }) => ({
+                ({ name, type /* key - not used for type */ }) => ({
                     name: name,
-                    types: genTypes(type, encodingKey)
+                    // .. the field's definition name is always used, not the encoding key
+                    types: genTypes(type)
                 })
             )
 
