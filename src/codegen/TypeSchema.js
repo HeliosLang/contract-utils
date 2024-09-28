@@ -27,6 +27,7 @@ export function genTypes(schema) {
                     return ["boolean", "boolean"]
                 case "ByteArray":
                     return ["number[]", "number[]"]
+                case "Any": // for backward compat with v0.16.* of the compiler
                 case "Data":
                     return ["UplcData", "UplcData"]
                 case "Duration":

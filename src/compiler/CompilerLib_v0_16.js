@@ -390,7 +390,12 @@ export class CompilerLib_v0_16 {
         // inject hashes of other validators
         Object.entries(options.hashDependencies ?? {}).forEach(
             ([depName, dep]) => {
-                extra.set(`__helios__scripts__${depName}`, new IR(`#${dep}`))
+                const key = `__helios__scripts__${depName}`
+
+                // don't overwrite if set above!
+                if (!extra.has(key)) {
+                    extra.set(key, new IR(`#${dep}`))
+                }
             }
         )
 
