@@ -24,6 +24,7 @@ import { configureCast } from "../cast/index.js"
  * }} DagCompilerConfig
  */
 /**
+ * if `debug` is true, the ir is included in the user functions where possible
  * @typedef {{
  *   debug?: boolean
  *   validators: {[name: string]: AnyContractValidatorContext}

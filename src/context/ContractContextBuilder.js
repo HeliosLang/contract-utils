@@ -24,6 +24,7 @@ import { contractContextCache } from "./ContractContextCache.js"
  */
 
 /**
+ * if `debug` is true, the ir is included where possible
  * @typedef {{
  *   isMainnet: boolean
  *   expectedHashes?: {[name: string]: string}
@@ -125,14 +126,13 @@ export class ContractContextBuilder {
         const cached = contractContextCache.shift()
 
         const compiled =
-            cached && cached.debug === props.debug
-                ? cached
-                : dagCompiler.build(
-                      Object.values(this.validators),
-                      props.parameters ?? {},
-                      !props.isMainnet,
-                      props.expectedHashes
-                  )
+            cached ||
+            dagCompiler.build(
+                Object.values(this.validators),
+                props.parameters ?? {},
+                !props.isMainnet,
+                props.expectedHashes
+            )
 
         // TODO: adapt to use generic cache interface
         contractContextCache.push(compiled)
