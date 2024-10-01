@@ -7,12 +7,12 @@ import {
 } from "@helios-lang/ledger"
 import { Cast } from "../cast/Cast.js"
 import { None, expectSome } from "@helios-lang/type-utils"
-import { UplcProgramV1 } from "@helios-lang/uplc"
-import { UplcProgramV2 } from "@helios-lang/uplc"
+import { UplcProgramV1, UplcProgramV2, UplcSourceMap } from "@helios-lang/uplc"
 
 /**
  * @typedef {import("@helios-lang/uplc").PlutusVersion} PlutusVersion
  * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
+ * @typedef {import("@helios-lang/uplc").UplcSourceMapJsonSafe} UplcSourceMapJsonSafe
  * @typedef {import("../cast/index.js").CastConfig} CastConfig
  * @typedef {import("../codegen/index.js").TypeSchema} TypeSchema
  * @typedef {import("./ContractContext.js").AnyContractValidatorContext} AnyContractValidatorContext
@@ -32,8 +32,10 @@ import { UplcProgramV2 } from "@helios-lang/uplc"
  *     bytes: number[]
  *     unoptimizedCborHex?: string
  *     unoptimizedIr?: string
+ *     unoptimizedSourceMap?: UplcSourceMapJsonSafe
  *     optimizedCborHex: string
  *     optimizedIr?: string
+ *     optimizedSourceMap?: UplcSourceMapJsonSafe
  *     plutusVersion: PlutusVersion
  *     castConfig: CastConfig
  *     datum?: TypeSchema
@@ -45,8 +47,10 @@ import { UplcProgramV2 } from "@helios-lang/uplc"
  * @typedef {{[name: string]: {
  *   unoptimizedCborHex?: string
  *   unoptimizedIr?: string
+ *   unoptimizedSourceMap?: UplcSourceMapJsonSafe
  *   optimizedCborHex: string
  *   optimizedIr?: string
+ *   optimizedSourceMap?: UplcSourceMapJsonSafe
  *   plutusVersion: PlutusVersion
  * }}} CacheEntryUserFuncsJson
  */
@@ -109,23 +113,27 @@ class ContractContextCache {
                 let program =
                     props.plutusVersion == "PlutusScriptV1"
                         ? UplcProgramV1.fromCbor(props.optimizedCborHex, {
-                              ir: props.optimizedIr
+                              ir: props.optimizedIr,
+                              sourceMap: props.optimizedSourceMap
                           })
                         : UplcProgramV2.fromCbor(props.optimizedCborHex, {
-                              ir: props.optimizedIr
+                              ir: props.optimizedIr,
+                              sourceMap: props.optimizedSourceMap
                           })
 
                 if (props.unoptimizedCborHex) {
                     if (program.plutusVersion == "PlutusScriptV1") {
                         program = program.withAlt(
                             UplcProgramV1.fromCbor(props.unoptimizedCborHex, {
-                                ir: props.unoptimizedIr
+                                ir: props.unoptimizedIr,
+                                sourceMap: props.unoptimizedSourceMap
                             })
                         )
                     } else if (program.plutusVersion == "PlutusScriptV2") {
                         program = program.withAlt(
                             UplcProgramV2.fromCbor(props.unoptimizedCborHex, {
-                                ir: props.unoptimizedIr
+                                ir: props.unoptimizedIr,
+                                sourceMap: props.unoptimizedSourceMap
                             })
                         )
                     } else {
@@ -192,23 +200,27 @@ class ContractContextCache {
                 let program =
                     props.plutusVersion == "PlutusScriptV1"
                         ? UplcProgramV1.fromCbor(props.optimizedCborHex, {
-                              ir: props.optimizedIr
+                              ir: props.optimizedIr,
+                              sourceMap: props.optimizedSourceMap
                           })
                         : UplcProgramV2.fromCbor(props.optimizedCborHex, {
-                              ir: props.optimizedIr
+                              ir: props.optimizedIr,
+                              sourceMap: props.optimizedSourceMap
                           })
 
                 if (props.unoptimizedCborHex) {
                     if (program.plutusVersion == "PlutusScriptV1") {
                         program = program.withAlt(
                             UplcProgramV1.fromCbor(props.unoptimizedCborHex, {
-                                ir: props.unoptimizedIr
+                                ir: props.unoptimizedIr,
+                                sourceMap: props.unoptimizedSourceMap
                             })
                         )
                     } else if (program.plutusVersion == "PlutusScriptV2") {
                         program = program.withAlt(
                             UplcProgramV2.fromCbor(props.unoptimizedCborHex, {
-                                ir: props.unoptimizedIr
+                                ir: props.unoptimizedIr,
+                                sourceMap: props.unoptimizedSourceMap
                             })
                         )
                     } else {
@@ -300,19 +312,31 @@ class ContractContextCache {
                     throw new Error("Datum is not a Cast type")
                 }
 
+                /**
+                 * @type {UplcProgramV1 | UplcProgramV2}
+                 */
+                const program = hash.context.program
+
                 resValidators[name] = {
                     purpose: purpose,
                     bytes: hash.bytes,
-                    optimizedCborHex: bytesToHex(hash.context.program.toCbor()),
-                    unoptimizedCborHex: hash.context.program.alt
-                        ? bytesToHex(hash.context.program.alt.toCbor())
+                    optimizedCborHex: bytesToHex(program.toCbor()),
+                    unoptimizedCborHex: program.alt
+                        ? bytesToHex(program.alt.toCbor())
                         : undefined,
                     optimizedIr:
-                        /** @type {UplcProgramV2} */ (hash.context.program)
-                            .ir ?? undefined,
+                        /** @type {UplcProgramV2} */ (program).ir ?? undefined,
                     unoptimizedIr:
-                        /** @type {UplcProgramV2} */ (hash.context.program).alt
-                            ?.ir ?? undefined,
+                        /** @type {UplcProgramV2} */ (program).alt?.ir ??
+                        undefined,
+                    optimizedSourceMap: UplcSourceMap.fromUplcTerm(
+                        program.root
+                    ).toJsonSafe(),
+                    unoptimizedSourceMap: program.alt
+                        ? UplcSourceMap.fromUplcTerm(
+                              program.alt.root
+                          ).toJsonSafe()
+                        : undefined,
                     plutusVersion: hash.context.program.plutusVersion,
                     castConfig: redeemer.config,
                     redeemer: redeemer.schema,
@@ -325,7 +349,6 @@ class ContractContextCache {
 
                 resUserFuncs[name] = {
                     optimizedCborHex: bytesToHex(userFunc.toCbor()),
-                    optimizedIr: userFunc.ir ?? undefined,
                     unoptimizedCborHex: /** @type {UplcProgramV2} */ (userFunc)
                         .alt
                         ? bytesToHex(
@@ -334,7 +357,16 @@ class ContractContextCache {
                               ).alt.toCbor()
                           )
                         : undefined,
-                    unoptimizedIr: userFunc?.alt?.ir ?? undefined,
+                    optimizedIr: userFunc.ir ?? undefined,
+                    unoptimizedIr: userFunc.alt?.ir ?? undefined,
+                    optimizedSourceMap: UplcSourceMap.fromUplcTerm(
+                        userFunc.root
+                    ).toJsonSafe(),
+                    unoptimizedSourceMap: userFunc.alt
+                        ? UplcSourceMap.fromUplcTerm(
+                              userFunc.alt.root
+                          ).toJsonSafe()
+                        : undefined,
                     plutusVersion: userFunc.plutusVersion
                 }
             }
