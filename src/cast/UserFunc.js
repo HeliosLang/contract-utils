@@ -126,7 +126,15 @@ export class UserFunc {
         const result = this.profile(namedArgs, logOptions).result
 
         if (isLeft(result)) {
-            throw new Error(result.left.error)
+            const stackTrace = result.left.callSites.map((s) => s.toString())
+
+            let msg = result.left.error
+
+            if (stackTrace.length > 0) {
+                msg = `Stack trace:\n    ${stackTrace.join("\n    ")}\n${msg}`
+            }
+
+            throw new Error(msg)
         } else if (!isString(result.right) && result.right.kind == "data") {
             return /** @type {any} */ (result.right.value)
         } else if (this.props.returns) {
@@ -247,7 +255,6 @@ export class UserFunc {
  */
 function evalResultToString(result) {
     if (isLeft(result)) {
-        console.error(result.left.error)
         return "error"
     } else {
         if (isString(result.right)) {
