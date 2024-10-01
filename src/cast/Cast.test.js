@@ -80,7 +80,7 @@ describe(Cast.name, () => {
         })
     })
 
-    describe("Cip68Struct", () => {
+    describe("mStruct", () => {
         /**
          * @type {TypeSchema}
          */
@@ -109,11 +109,9 @@ describe(Cast.name, () => {
 
         const cast = new Cast(schema, { isMainnet: false })
 
-        const exampleData = new ConstrData(0, [
-            new MapData([
-                [new ByteArrayData(encodeUtf8("@b")), new IntData(1)],
-                [new ByteArrayData(encodeUtf8("@a")), new IntData(2)]
-            ])
+        const exampleData = new MapData([
+            [new ByteArrayData(encodeUtf8("@b")), new IntData(1)],
+            [new ByteArrayData(encodeUtf8("@a")), new IntData(2)]
         ])
 
         it("respects order when converting to uplc data", () => {
@@ -170,48 +168,44 @@ describe("Cip68Struct serialization", () => {
     const cast = new Cast(schema, { isMainnet: false })
     const greeting = "good day!"
 
-    const exampleData = new ConstrData(0, [
-        new MapData([
-            [new ByteArrayData(encodeUtf8("plainFieldName")), new IntData(1)],
-            [
-                new ByteArrayData(encodeUtf8("FNT")),
-                new ByteArrayData(encodeUtf8(greeting))
-            ]
-        ])
-    ])
-    const wrongPlainFieldName = new ConstrData(0, [
-        new MapData([
-            [
-                new ByteArrayData(encodeUtf8("wrongPlainFieldName")),
-                new IntData(1)
-            ],
-            [
-                new ByteArrayData(encodeUtf8("FNT")),
-                new ByteArrayData(encodeUtf8(greeting))
-            ]
-        ])
+    const exampleData = new MapData([
+        [new ByteArrayData(encodeUtf8("plainFieldName")), new IntData(1)],
+        [
+            new ByteArrayData(encodeUtf8("FNT")),
+            new ByteArrayData(encodeUtf8(greeting))
+        ]
     ])
 
-    const wrongEncoding = new ConstrData(0, [
-        new MapData([
-            [new ByteArrayData(encodeUtf8("plainFieldName")), new IntData(1)],
-            [
-                // has the definintion's field name, but should be the encoding key "FNT":
-                new ByteArrayData(encodeUtf8("taggedFieldName")),
-                new ByteArrayData(encodeUtf8(greeting))
-            ]
-        ])
+    const wrongPlainFieldName = new MapData([
+        [new ByteArrayData(encodeUtf8("wrongPlainFieldName")), new IntData(1)],
+        [
+            new ByteArrayData(encodeUtf8("FNT")),
+            new ByteArrayData(encodeUtf8(greeting))
+        ]
     ])
 
-    const missingField = new ConstrData(0, [
-        new MapData([
-            [new ByteArrayData(encodeUtf8("plainFieldName")), new IntData(1)],
-            [
-                new ByteArrayData(encodeUtf8("wrongFieldName")),
-                new ByteArrayData(encodeUtf8(greeting))
-            ]
-        ])
+    const wrongEncoding = new MapData([
+        [new ByteArrayData(encodeUtf8("plainFieldName")), new IntData(1)],
+        [
+            // has the definintion's field name, but should be the encoding key "FNT":
+            new ByteArrayData(encodeUtf8("taggedFieldName")),
+            new ByteArrayData(encodeUtf8(greeting))
+        ]
     ])
+
+    const missingField = new MapData([
+        [new ByteArrayData(encodeUtf8("plainFieldName")), new IntData(1)],
+        [
+            new ByteArrayData(encodeUtf8("wrongFieldName")),
+            new ByteArrayData(encodeUtf8(greeting))
+        ]
+    ])
+
+    it("doesn't accept a ConstrData wrapper around an mStruct", () => {
+        throws(() => {
+            cast.fromUplcData(new ConstrData(0, [exampleData]))
+        }, /expected MapData, got 0\{/)
+    })
 
     it("doesn't accept a struct with wrong encoding of field name when it expects a field-name tag", () => {
         throws(() => {

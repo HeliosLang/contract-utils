@@ -63,14 +63,12 @@ import {
  * @typedef {Object} SchemaToUplcContext
  * @property {Record<string, TypeSchema>} defs - symbol table permitting recursive schema references
  * @property {string} dataPath - provides developer-facing cues for any parsing errors, showing the deep field path of any error
- * @property {boolean} [isInEnum] - a single-level indicator of being directly inside an enum (internal use)
  */
 
 /**
  * @typedef {Object} UplcToSchemaContext
  * @property {Record<string, TypeSchema>} defs - symbol table permitting recursive schema references
  * @property {string} dataPath - provides developer-facing cues for any parsing errors, showing the deep field path of any error
- * @property {boolean} [isInEnum] - a single-level indicator of being directly inside an enum (internal use)
  * @property {CastConfig} config - has isMainnet indicator
  */
 
@@ -162,9 +160,9 @@ function schemaToUplcWithDataPath(schema, x, context) {
  * @returns {UplcData}
  */
 function schemaToUplc(schema, x, inputContextOnly) {
-    // const { +defs = {}, dataPath = "", isInEnum = false } = inputContext
+    // const { defs = {}, dataPath = "" } = inputContext
     // important: DON'T extend the inputContext for use in nested calls.
-    const { dataPath, isInEnum, defs } = inputContextOnly
+    const { dataPath, defs } = inputContextOnly
 
     // Only the defs can be passed down, and it's simpler syntactically
     //   ... just use the defs directly in the nested calls.
@@ -374,14 +372,12 @@ function schemaToUplc(schema, x, inputContextOnly) {
                         }
                     })
 
-                    // when this is a CIP-68 struct, this lets us be sensitive to the context of
-                    // "it already has a ConstrData wrapper", and avoid double-wrapping it.
-                    if (isInEnum) {
-                        return new MapData(pairs)
-                    }
+                    // A struct targeting CIP-68 compliance must have ConstrData
+                    // ... due to its explicitly-declared Enum variant in developer-land.
+                    //
+                    // We just return our MapData, and we don't care whether it's used in any particular context.
 
-                    // otherwise, wrap in ConstrData
-                    return new ConstrData(0, [new MapData(pairs)])
+                    return new MapData(pairs)
                 }
                 default:
                     throw new Error(
@@ -405,13 +401,11 @@ function schemaToUplc(schema, x, inputContextOnly) {
 
             // Gives the encoding of nested data a context to prevent a second ConstrData wrapper on the MapData
             // ... only for the first field.
-            const fieldCount = schema.variantTypes[tag].fieldTypes.length
             return new ConstrData(
                 tag,
                 schema.variantTypes[tag].fieldTypes.map((f, i) =>
                     schemaToUplcWithDataPath(f.type, variantFields[f.name], {
                         defs,
-                        isInEnum: fieldCount <= 3 && i == 0,
                         dataPath: `${dataPath}[${schema.name}::${variantName}].${f.name}`
                     })
                 )
@@ -419,18 +413,16 @@ function schemaToUplc(schema, x, inputContextOnly) {
         }
         case "variant":
             defs[schema.id] = schema
-            throw new Error(`unused?`)
 
-        // return new ConstrData(
-        //     schema.tag,
-        //     schema.fieldTypes.map(({ name, type }) =>
-        //         schemaToUplcWithDataPath(type, x[name], {
-        //             defs,
-        //             isInEnum: true,
-        //             dataPath: `${dataPath}.${name}`
-        //         })
-        //     )
-        // )
+            return new ConstrData(
+                schema.tag,
+                schema.fieldTypes.map(({ name, type }) =>
+                    schemaToUplcWithDataPath(type, x[name], {
+                        defs,
+                        dataPath: `${dataPath}[enumVariant ${schema.id}.${name}`
+                    })
+                )
+            )
         default:
             throw new Error(`unhandled schema kind '${kind}'`)
     }
@@ -469,8 +461,8 @@ function uplcToSchema(schema, data, inputContextOnly) {
     const kind = schema.kind
     const { config, defs } = inputContextOnly
     // Note: don't use the inputContext directly in nested calls.
-    const { dataPath, isInEnum, ...context } = inputContextOnly
-    //   use { ... context } augmented with the new dataPath and isInEnum (if applicable)
+    const { dataPath, ...context } = inputContextOnly
+    //   use { ... context } augmented with a de-novo `dataPath` attr
 
     switch (kind) {
         case "internal": {
@@ -623,11 +615,8 @@ function uplcToSchema(schema, data, inputContextOnly) {
                     )
                 }
                 case "map": {
-                    // might be wrapped in ConstrData
-                    const encodedEntries = isInEnum
-                        ? MapData.expect(data).items
-                        : MapData.expect(ConstrData.expect(data).fields[0])
-                              .items
+                    // never uses a ConstrData (one MAY be used in the Enum layer, if needed)
+                    const encodedEntries = MapData.expect(data).items
 
                     if (encodedEntries.length != schema.fieldTypes.length) {
                         throw new Error(
@@ -729,10 +718,7 @@ function uplcToSchema(schema, data, inputContextOnly) {
                             f,
                             {
                                 ...context,
-                                dataPath: `${dataPath}[${schema.name}::${variantSchema.name}]`,
-                                // only skip extra ConstrData wrapper for the first field when this
-                                //   enum's shape indicates it is providing the CIP68 struct's wrapper
-                                isInEnum: fieldCount <= 3 && i == 0
+                                dataPath: `${dataPath}[${schema.name}::${variantSchema.name}]`
                             }
                         )
                     ])
@@ -741,15 +727,17 @@ function uplcToSchema(schema, data, inputContextOnly) {
         }
         case "variant": {
             defs[schema.id] = schema
-            throw new Error(`unused?`)
-            // const { fields } = ConstrData.expect(data)
+            const { fields } = ConstrData.expect(data)
 
-            // return Object.fromEntries(
-            //     fields.map((field, i) => [
-            //         schema.fieldTypes[i].name,
-            //         uplcToSchema(schema.fieldTypes[i].type, field, config, defs)
-            //     ])
-            // )
+            return Object.fromEntries(
+                fields.map((field, i) => [
+                    schema.fieldTypes[i].name,
+                    uplcToSchemaWithDataPath(schema.fieldTypes[i].type, field, {
+                        ...context,
+                        dataPath: `${dataPath}[enumVariant ${schema.id}].${schema.fieldTypes[i].name}`
+                    })
+                ])
+            )
         }
         default:
             throw new Error(`unhandled schema kind '${kind}'`)

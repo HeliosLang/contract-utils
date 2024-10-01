@@ -132,3 +132,11 @@ describe(typeCheckScripts.name, () => {
         deepEqual(result.MapRec.data, inputData)
     })
 })
+
+// todo when we can import test/utils.js from the compiler more easily
+// describe("integration with UplcProgram", () => {
+//     // compileForRun
+//     it.todo("test: round-trips an fStruct", async () => {})
+//     it.todo("test: round-trips an mStruct", async () => {})
+//     it.todo("test: round-trips a CIP-68 struct", async () => {})
+// })
