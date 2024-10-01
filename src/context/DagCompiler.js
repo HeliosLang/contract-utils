@@ -116,7 +116,8 @@ export class DagCompiler {
             const {
                 cborHex: optimizedCborHex,
                 plutusVersion: optimPlutusVersion,
-                ir: optimIr
+                ir: optimIr,
+                sourceMap: optimSourceMap
             } = this.lib.compile(sourceCode, moduleDeps, {
                 optimize: true,
                 hashDependencies: hashDepHashes,
@@ -134,7 +135,7 @@ export class DagCompiler {
             const optimizedProgram = restoreUplcProgram(
                 optimPlutusVersion,
                 optimizedCborHex,
-                { ir: optimIr }
+                { ir: optimIr, sourceMap: optimSourceMap }
             )
 
             // calculate the hash
@@ -173,7 +174,8 @@ export class DagCompiler {
             const {
                 cborHex: unoptimizedCborHex,
                 plutusVersion: unoptimPlutusVersion,
-                ir: unoptimIr
+                ir: unoptimIr,
+                sourceMap: unoptimSourceMap
             } = this.lib.compile(
                 validator.$sourceCode,
                 Array.from(moduleDeps.values()),
@@ -201,13 +203,16 @@ export class DagCompiler {
                     }) => {
                         console.log(`Compiled user function ${name}`)
                         const ir = props.ir
+                        const sourceMap = props.sourceMap
                         let uplc = restoreUplcProgram(plutusVersion, cborHex, {
-                            ...(ir ? { ir: () => ir } : {})
+                            ...(ir ? { ir: () => ir } : {}),
+                            ...(sourceMap ? { sourceMap } : {})
                         })
 
                         if (props?.alt) {
                             const alt = props.alt
                             const altIr = alt.ir
+                            const altSourceMap = alt.sourceMap
 
                             uplc = uplc.withAlt(
                                 /**  @type {any} */ (
@@ -217,6 +222,9 @@ export class DagCompiler {
                                         {
                                             ...(altIr
                                                 ? { ir: () => altIr }
+                                                : {}),
+                                            ...(altSourceMap
+                                                ? { sourceMap: altSourceMap }
                                                 : {})
                                         }
                                     )
@@ -235,7 +243,7 @@ export class DagCompiler {
             const unoptimizedProgram = restoreUplcProgram(
                 unoptimPlutusVersion,
                 unoptimizedCborHex,
-                { ir: unoptimIr }
+                { ir: unoptimIr, sourceMap: unoptimSourceMap }
             )
 
             const completeProgram = optimizedProgram.withAlt(

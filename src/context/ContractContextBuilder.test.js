@@ -1,8 +1,8 @@
+import { deepEqual, strictEqual } from "node:assert"
 import { describe, it } from "node:test"
+import { Address, AssetClass } from "@helios-lang/ledger"
 import { Cast } from "../cast/index.js"
 import { ContractContextBuilder } from "./ContractContextBuilder.js"
-import { deepEqual, strictEqual } from "node:assert"
-import { Address, AssetClass } from "@helios-lang/ledger"
 
 /**
  * @typedef {import("@helios-lang/codec-utils").IntLike} IntLike
