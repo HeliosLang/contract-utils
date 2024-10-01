@@ -385,7 +385,7 @@ function schemaToUplc(schema, x, inputContextOnly) {
                 }
                 default:
                     throw new Error(
-                        `unhandled struct format '${schema.format}'`
+                        `unhandled struct format '${/** @type {any} */ (schema).format}'`
                     )
             }
         }
@@ -697,7 +697,7 @@ function uplcToSchema(schema, data, inputContextOnly) {
                 }
                 default:
                     throw new Error(
-                        `unhandled struct format '${schema.format}'`
+                        `unhandled struct format '${/** @type {any} */ (schema).format}'`
                     )
             }
         }
