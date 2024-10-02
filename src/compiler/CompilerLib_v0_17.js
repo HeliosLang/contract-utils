@@ -159,7 +159,7 @@ export class CompilerLib_v0_17 {
             cborHex: bytesToHex(uplc.toCbor()),
             plutusVersion: uplc.plutusVersion,
             sourceMap: sourceMap.toJsonSafe(),
-            ir: uplc.ir ?? undefined
+            ir: options.debug ? (uplc.ir ?? undefined) : undefined
         }
     }
 
