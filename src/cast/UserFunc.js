@@ -2,6 +2,7 @@ import { bytesToHex } from "@helios-lang/codec-utils"
 import { expectSome, isLeft, isString } from "@helios-lang/type-utils"
 import { ConstrData, IntData, UplcDataValue } from "@helios-lang/uplc"
 import { Cast } from "./Cast.js"
+import { None } from "@helios-lang/type-utils"
 import { BasicUplcLogger } from "@helios-lang/uplc"
 
 /**
@@ -15,6 +16,7 @@ import { BasicUplcLogger } from "@helios-lang/uplc"
  */
 
 /**
+ * TODO: add logOptions here as well (which can be overridden by logOptions passed directly to eval(), evalUnsafe() and profile())?
  * `returns` is optional to accomodate main functions that return void
  * @typedef {{
  *   name: string
@@ -72,10 +74,10 @@ export class UserFunc {
 
     /**
      * @param {ArgsT} namedArgs
-     * @param {UplcLoggingI} [logOptions]
+     * @param {Option<UplcLoggingI>} logOptions
      * @returns {RetT}
      */
-    eval(namedArgs, logOptions) {
+    eval(namedArgs, logOptions = None) {
         /**
          * @type {{[argName: string]: any}}
          */
@@ -119,14 +121,24 @@ export class UserFunc {
 
     /**
      * @param {UnsafeArgsT<ArgsT>} namedArgs
-     * @param {UplcLoggingI} [logOptions]
+     * @param {Option<UplcLoggingI>} logOptions
      * @returns {RetT extends void ? void : UplcData}
      */
-    evalUnsafe(namedArgs, logOptions) {
+    evalUnsafe(namedArgs, logOptions = None) {
         const result = this.profile(namedArgs, logOptions).result
 
         if (isLeft(result)) {
-            throw new Error(result.left.error)
+            const stackTrace = result.left.callSites.map((s) => s.toString())
+
+            let msg = result.left.error
+
+            // only add the stackTrace if the logOptions aren't given
+            // TODO: make sure logOptions actually logs the stack trace
+            if (!logOptions && stackTrace.length > 0) {
+                msg = `Stack trace:\n    ${stackTrace.join("\n    ")}\n${msg}`
+            }
+
+            throw new Error(msg)
         } else if (!isString(result.right) && result.right.kind == "data") {
             return /** @type {any} */ (result.right.value)
         } else if (this.props.returns) {
@@ -138,10 +150,10 @@ export class UserFunc {
 
     /**
      * @param {UnsafeArgsT<ArgsT>} namedArgs
-     * @param {UplcLoggingI} [logOptions] - optional, passed to UplcProgram.eval if provided
+     * @param {Option<UplcLoggingI>} logOptions - optional, passed to UplcProgram.eval if provided
      * @returns {CekResult}
      */
-    profile(namedArgs, logOptions) {
+    profile(namedArgs, logOptions = None) {
         const isMain = this.name == "main"
 
         /**
@@ -190,11 +202,13 @@ export class UserFunc {
 
         const argValues = args.map((a) => new UplcDataValue(a))
 
-        const cekResult = this.uplc.eval(argValues, { logOptions })
+        const cekResult = this.uplc.eval(argValues, {
+            logOptions: logOptions ?? undefined
+        })
 
         if (this.uplc.alt?.plutusVersion == "PlutusScriptV2") {
             const cekResultUnoptim = this.uplc.alt.eval(argValues, {
-                logOptions
+                logOptions: logOptions ?? undefined
             })
             const resultUnoptim = cekResultUnoptim.result
             const resultUnoptimStr = evalResultToString(resultUnoptim)
@@ -235,6 +249,9 @@ export class UserFunc {
                     `Warning: optimizer didn't improve cost of ${this.props.name}`
                 )
             }
+
+            // overwrite the optimized cekResult.result with the unoptimized result because it contains more information
+            cekResult.result = resultUnoptim
         }
 
         return cekResult
@@ -247,7 +264,6 @@ export class UserFunc {
  */
 function evalResultToString(result) {
     if (isLeft(result)) {
-        console.error(result.left.error)
         return "error"
     } else {
         if (isString(result.right)) {

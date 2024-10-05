@@ -1,6 +1,6 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
 import { None } from "@helios-lang/type-utils"
-import { UplcProgramV2 } from "@helios-lang/uplc"
+import { UplcProgramV2, UplcSourceMap } from "@helios-lang/uplc"
 
 /**
  * @typedef {import("@helios-lang/uplc").UplcData} UplcData
@@ -111,11 +111,20 @@ export class CompilerLib_v0_17 {
                           const alt = uplc.alt
                           const ir = options.debug ? uplc.ir : None
                           const altIr = options.debug ? alt?.ir : None
+                          const sourceMap = UplcSourceMap.fromUplcTerm(
+                              uplc.root
+                          ).toJsonSafe()
+                          const altSourceMap = alt
+                              ? UplcSourceMap.fromUplcTerm(
+                                    alt.root
+                                ).toJsonSafe()
+                              : None
 
                           onCompileUserFunc({
                               name: name,
                               cborHex: bytesToHex(uplc.toCbor()),
                               plutusVersion: "PlutusScriptV2",
+                              sourceMap,
                               ...(ir
                                   ? {
                                         ir
@@ -129,6 +138,11 @@ export class CompilerLib_v0_17 {
                                                 ? {
                                                       ir: altIr
                                                   }
+                                                : {}),
+                                            ...(altSourceMap
+                                                ? {
+                                                      sourceMap: altSourceMap
+                                                  }
                                                 : {})
                                         }
                                     }
@@ -139,10 +153,13 @@ export class CompilerLib_v0_17 {
                 : {})
         })
 
+        const sourceMap = UplcSourceMap.fromUplcTerm(uplc.root)
+
         return {
             cborHex: bytesToHex(uplc.toCbor()),
             plutusVersion: uplc.plutusVersion,
-            ir: uplc.ir ?? undefined
+            sourceMap: sourceMap.toJsonSafe(),
+            ir: options.debug ? (uplc.ir ?? undefined) : undefined
         }
     }
 

@@ -5,6 +5,7 @@ export {}
 /**
  * @typedef {import("@helios-lang/uplc").PlutusVersion} PlutusVersion
  * @typedef {import("@helios-lang/uplc").UplcData} UplcData
+ * @typedef {import("@helios-lang/uplc").UplcSourceMapJsonSafe} UplcSourceMapJsonSafe
  * @typedef {import("../codegen/index.js").TypeSchema} InternalTypeDetails
  * @typedef {import("../codegen/index.js").TypeCheckedModule} TypeCheckedModule
  * @typedef {import("../codegen/index.js").TypeCheckedValidator} TypeCheckedValidator
@@ -28,13 +29,15 @@ export {}
  *   debug?: boolean
  *   excludeUserFuncs?: Set<string>
  *   onCompileUserFunc?: (props: {
- *     name: string,
- *     cborHex: string,
- *     plutusVersion: PlutusVersion,
- *     ir?: string,
+ *     name: string
+ *     cborHex: string
+ *     plutusVersion: PlutusVersion
+ *     ir?: string
+ *     sourceMap?: UplcSourceMapJsonSafe
  *     alt?: {
- *       cborHex: string,
+ *       cborHex: string
  *       ir?: string
+ *       sourceMap?: UplcSourceMapJsonSafe
  *     }
  *   }) => void
  * }} CompileOptions
@@ -45,6 +48,7 @@ export {}
  *   cborHex: string
  *   plutusVersion: PlutusVersion
  *   ir?: string
+ *   sourceMap?: import("@helios-lang/uplc").UplcSourceMapJsonSafe
  * }} CompileOutput
  */
 
