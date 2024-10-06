@@ -9,6 +9,8 @@ const NONE = "null"
  * @param {TypeSchema} schema
  * @returns {[string, string]} - the first entry is the strict canonical type, the second is the permissive type
  */
+// XXX * @param {string} [encodingKey] - optional field-name (encoding-key) for map-typed struct fields only
+// XXX export function genTypes(schema, encodingKey) {
 export function genTypes(schema) {
     const kind = schema.kind
 
@@ -126,10 +128,13 @@ export function genTypes(schema) {
             return [`(${c}) | ${NONE}`, `(${p}) | null | undefined`]
         }
         case "struct": {
-            const fieldTypes = schema.fieldTypes.map(({ name, type }) => ({
-                name: name,
-                types: genTypes(type)
-            }))
+            const fieldTypes = schema.fieldTypes.map(
+                ({ name, type /* key - not used for type */ }) => ({
+                    name: name,
+                    // .. the field's definition name is always used, not the encoding key
+                    types: genTypes(type)
+                })
+            )
 
             return [
                 `{${fieldTypes.map(({ name, types: [c, p] }) => `${name}: ${c}`).join(", ")}}`,
@@ -152,7 +157,7 @@ export function genTypes(schema) {
             ]
         }
         case "variant": {
-            // similar to structure
+            // similar to a list-typed struct (no encoding keys allowed)
             const fieldTypes = schema.fieldTypes.map(({ name, type }) => ({
                 name: name,
                 types: genTypes(type)
