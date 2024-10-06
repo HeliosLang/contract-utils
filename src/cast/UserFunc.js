@@ -1,9 +1,7 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
-import { expectSome, isLeft, isString } from "@helios-lang/type-utils"
-import { ConstrData, IntData, UplcDataValue } from "@helios-lang/uplc"
+import { expectSome, isLeft, isString, None } from "@helios-lang/type-utils"
+import { ConstrData, UplcDataValue, UplcRuntimeError } from "@helios-lang/uplc"
 import { Cast } from "./Cast.js"
-import { None } from "@helios-lang/type-utils"
-import { BasicUplcLogger } from "@helios-lang/uplc"
 
 /**
  * @typedef {import("@helios-lang/type-utils").TypeSchema} TypeSchema
@@ -128,17 +126,7 @@ export class UserFunc {
         const result = this.profile(namedArgs, logOptions).result
 
         if (isLeft(result)) {
-            const stackTrace = result.left.callSites.map((s) => s.toString())
-
-            let msg = result.left.error
-
-            // only add the stackTrace if the logOptions aren't given
-            // TODO: make sure logOptions actually logs the stack trace
-            if (!logOptions && stackTrace.length > 0) {
-                msg = `Stack trace:\n    ${stackTrace.join("\n    ")}\n${msg}`
-            }
-
-            throw new Error(msg)
+            throw new UplcRuntimeError(result.left.error, result.left.callSites)
         } else if (!isString(result.right) && result.right.kind == "data") {
             return /** @type {any} */ (result.right.value)
         } else if (this.props.returns) {

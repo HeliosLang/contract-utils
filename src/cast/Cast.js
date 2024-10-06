@@ -20,7 +20,7 @@ import {
     ValidatorHash,
     Value
 } from "@helios-lang/ledger"
-import { None, expectSome, isSome } from "@helios-lang/type-utils"
+import { None, expectSome } from "@helios-lang/type-utils"
 import {
     ByteArrayData,
     ConstrData,

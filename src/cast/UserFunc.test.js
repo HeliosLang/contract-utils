@@ -1,6 +1,6 @@
 import { describe, it } from "node:test"
-import { UserFunc } from "./UserFunc.js"
 import { UplcConst, UplcDelay, UplcInt, UplcProgramV2 } from "@helios-lang/uplc"
+import { UserFunc } from "./UserFunc.js"
 
 describe("UserFunc<{}, void>", () => {
     const uplcProgram = new UplcProgramV2(

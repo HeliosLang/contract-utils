@@ -1,12 +1,9 @@
-import { describe, it } from "node:test"
 import { deepEqual } from "node:assert"
-import * as assert from "node:assert"
-
+import { describe, it } from "node:test"
 import { expectSome } from "@helios-lang/type-utils"
 import { ByteArrayData, IntData } from "@helios-lang/uplc"
 import { Cast } from "../cast/index.js"
 import { loadCompilerLib, typeCheckScripts } from "./ops.js"
-import { encodeUtf8 } from "@helios-lang/codec-utils"
 
 /**
  * @typedef {import("../cast/index.js").CastConfig} CastConfig
