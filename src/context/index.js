@@ -1,5 +1,5 @@
 export { ContractContextBuilder } from "./ContractContextBuilder.js"
-export { contractContextCache, setBuildCache } from "./ContractContextCache.js"
+export { contractContextCache } from "./ContractContextCache.js"
 
 /**
  * @template {{[name: string]: import("../codegen/index.js").LoadedValidator}} Vs

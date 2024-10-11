@@ -4,6 +4,12 @@
     "description": "Convenience and type-safety utilities for using Helios validators from within Typescript",
     "main": "src/index.js",
     "types": "types/index.d.ts",
+    "exports": {
+        "./set-fs-build-cache": "./src/context/set-fs-build-cache.js"
+    },
+    "sideEffects": [
+        "./src/context/set-fs-build-cache.js"
+    ],
     "type": "module",
     "bin": {
         "hl2ts": "src/hl2ts.js"
