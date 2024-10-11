@@ -1,3 +1,6 @@
+import * as fs from "node:fs"
+import * as os from "node:os"
+import * as path from "node:path"
 import { contractContextCache } from "./ContractContextCache.js"
 
 /**
@@ -11,46 +14,18 @@ import { contractContextCache } from "./ContractContextCache.js"
 class FileSystemCache {
     /**
      * @private
-     * @type {typeof import("node:fs")}
-     */
-    fs
-
-    /**
-     * @private
-     * @type {typeof import("node:os")}
-     */
-    os
-
-    /**
-     * @private
-     * @type {typeof import("node:path")}
-     */
-    path
-
-    /**
-     * @private
      * @type {string}
      */
     cacheDir
 
     constructor() {
-        // hopefully this loads before starting the context build
-        Promise.all([
-            import("node:fs"),
-            import("node:os"),
-            import("node:path")
-        ]).then(([fs, os, path]) => {
-            this.fs = fs
-            this.os = os
-            this.path = path
-            this.cacheDir = this.path.join(this.os.tmpdir(), "helios-cache")
+        this.cacheDir = path.join(os.tmpdir(), "helios-cache")
 
-            if (!this.fs.existsSync(this.cacheDir)) {
-                this.fs.mkdirSync(this.cacheDir, {
-                    recursive: true
-                })
-            }
-        })
+        if (!fs.existsSync(this.cacheDir)) {
+            fs.mkdirSync(this.cacheDir, {
+                recursive: true
+            })
+        }
     }
 
     /**
@@ -58,14 +33,14 @@ class FileSystemCache {
      * @param {string} key
      */
     genPath(key) {
-        return this.path.join(this.cacheDir, key + ".json")
+        return path.join(this.cacheDir, key + ".json")
     }
 
     /**
      * @param {string} key
      */
     has(key) {
-        return this.fs.existsSync(this.genPath(key))
+        return fs.existsSync(this.genPath(key))
     }
 
     /**
@@ -73,7 +48,7 @@ class FileSystemCache {
      * @returns {JsonSafe}
      */
     get(key) {
-        return JSON.parse(this.fs.readFileSync(this.genPath(key)).toString())
+        return JSON.parse(fs.readFileSync(this.genPath(key)).toString())
     }
 
     /**
@@ -81,7 +56,7 @@ class FileSystemCache {
      * @param {JsonSafe} obj
      */
     set(key, obj) {
-        this.fs.writeFileSync(this.genPath(key), JSON.stringify(obj))
+        fs.writeFileSync(this.genPath(key), JSON.stringify(obj))
     }
 }
 
