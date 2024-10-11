@@ -34,16 +34,23 @@ class FileSystemCache {
     cacheDir
 
     constructor() {
-        this.fs = require("node:fs")
-        this.os = require("node:os")
-        this.path = require("node:path")
-        this.cacheDir = this.path.join(this.os.tmpdir(), "helios-cache")
+        // hopefully this loads before starting the context build
+        Promise.all([
+            import("node:fs"),
+            import("node:os"),
+            import("node:path")
+        ]).then(([fs, os, path]) => {
+            this.fs = fs
+            this.os = os
+            this.path = path
+            this.cacheDir = this.path.join(this.os.tmpdir(), "helios-cache")
 
-        if (!this.fs.existsSync(this.cacheDir)) {
-            this.fs.mkdirSync(this.cacheDir, {
-                recursive: true
-            })
-        }
+            if (!this.fs.existsSync(this.cacheDir)) {
+                this.fs.mkdirSync(this.cacheDir, {
+                    recursive: true
+                })
+            }
+        })
     }
 
     /**
