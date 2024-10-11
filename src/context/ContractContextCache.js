@@ -12,6 +12,8 @@ import { Cast } from "../cast/Cast.js"
 /**
  * @typedef {import("@helios-lang/uplc").PlutusVersion} PlutusVersion
  * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
+ * @typedef {import("@helios-lang/uplc").UplcProgramV1I} UplcProgramV1I
+ * @typedef {import("@helios-lang/uplc").UplcProgramV2I} UplcProgramV2I
  * @typedef {import("@helios-lang/uplc").UplcSourceMapJsonSafe} UplcSourceMapJsonSafe
  * @typedef {import("../cast/index.js").CastConfig} CastConfig
  * @typedef {import("../codegen/index.js").TypeSchema} TypeSchema
@@ -313,7 +315,7 @@ class ContractContextCache {
                 }
 
                 /**
-                 * @type {UplcProgramV1 | UplcProgramV2}
+                 * @type {UplcProgramV1I | UplcProgramV2I}
                  */
                 const program = hash.context.program
 
@@ -325,9 +327,9 @@ class ContractContextCache {
                         ? bytesToHex(program.alt.toCbor())
                         : undefined,
                     optimizedIr:
-                        /** @type {UplcProgramV2} */ (program).ir ?? undefined,
+                        /** @type {UplcProgramV2I} */ (program).ir ?? undefined,
                     unoptimizedIr:
-                        /** @type {UplcProgramV2} */ (program).alt?.ir ??
+                        /** @type {UplcProgramV2I} */ (program).alt?.ir ??
                         undefined,
                     optimizedSourceMap: UplcSourceMap.fromUplcTerm(
                         program.root
@@ -349,10 +351,10 @@ class ContractContextCache {
 
                 resUserFuncs[name] = {
                     optimizedCborHex: bytesToHex(userFunc.toCbor()),
-                    unoptimizedCborHex: /** @type {UplcProgramV2} */ (userFunc)
+                    unoptimizedCborHex: /** @type {UplcProgramV2I} */ (userFunc)
                         .alt
                         ? bytesToHex(
-                              /** @type {UplcProgramV2} */ (
+                              /** @type {UplcProgramV2I} */ (
                                   userFunc
                               ).alt.toCbor()
                           )

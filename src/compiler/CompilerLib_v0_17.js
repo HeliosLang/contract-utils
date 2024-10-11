@@ -1,6 +1,6 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
 import { None } from "@helios-lang/type-utils"
-import { UplcProgramV2, UplcSourceMap } from "@helios-lang/uplc"
+import { UplcSourceMap } from "@helios-lang/uplc"
 
 /**
  * @typedef {import("@helios-lang/uplc").UplcData} UplcData
@@ -24,7 +24,7 @@ import { UplcProgramV2, UplcSourceMap } from "@helios-lang/uplc"
  *     validatorIndices?: Record<string, number>
  *     excludeUserFuncs?: Set<string>
  *     onCompileUserFunc?: (name: string, uplc: UplcProgramV2I) => void
- *   }): UplcProgramV2
+ *   }): UplcProgramV2I
  * }} Program
  */
 
@@ -90,7 +90,7 @@ export class CompilerLib_v0_17 {
         const onCompileUserFunc = options.onCompileUserFunc
 
         /**
-         * @type {UplcProgramV2}
+         * @type {UplcProgramV2I}
          */
         const uplc = program.compile({
             optimize: options.optimize,
