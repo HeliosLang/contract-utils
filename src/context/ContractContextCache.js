@@ -110,7 +110,7 @@ class ContractContextCache {
      * @param {CacheEntry} entry
      */
     set(key, entry) {
-        if (key != "" && this.explicitCache) {
+        if (key != "" && this.explicitCache && !this.explicitCache.has(key)) {
             this.explicitCache.set(key, cacheEntryToJsonSafe(entry))
         } else if (this.enabled) {
             this.positionalCache.push(entry)
