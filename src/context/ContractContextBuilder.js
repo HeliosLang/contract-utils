@@ -47,6 +47,7 @@ export class ContractContextBuilder {
     validators
 
     /**
+     * @private
      * @readonly
      * @type {Ms}
      */
@@ -118,12 +119,22 @@ export class ContractContextBuilder {
         const castConfig = { isMainnet: props.isMainnet }
         const lib = loadCompilerLib()
 
+        // generate a cache key
+        const key = contractContextCache.genCacheKey({
+            version: lib.version,
+            debug: !!props.debug,
+            isMainnet: props.isMainnet,
+            validators: this.validators,
+            modules: this.modules,
+            parameters: props.parameters ?? {}
+        })
+
         const dagCompiler = new DagCompiler(lib, {
             debug: props.debug ?? false,
             ...castConfig
         })
 
-        const cached = contractContextCache.shift()
+        const cached = contractContextCache.get(key)
 
         const compiled =
             cached ||
@@ -134,8 +145,7 @@ export class ContractContextBuilder {
                 props.expectedHashes
             )
 
-        // TODO: adapt to use generic cache interface
-        contractContextCache.push(compiled)
+        contractContextCache.set(key, compiled)
 
         if (props.dumpHashes) {
             for (let name in compiled.validators) {
