@@ -7,3 +7,8 @@ export { LoadedScriptsWriter } from "./LoadedScriptsWriter.js"
  * @typedef {import("./TypeCheckedValidator.js").TypeCheckedValidator} TypeCheckedValidator
  * @typedef {import("./TypeSchema.js").TypeSchema} TypeSchema
  */
+
+/**
+ * @template {LoadedValidator} V
+ * @typedef {import("./LoadedValidator.js").ExtractDependencies<V>} ExtractDependencies
+ */
