@@ -162,7 +162,7 @@ function readFiles(filePaths) {
 
 /**
  * @param {string} fileName
- * @returns {Option<string>}
+ * @returns {string | undefined}
  */
 function findPackageJson(fileName = "package.json") {
     let dir = process.cwd()
@@ -179,7 +179,7 @@ function findPackageJson(fileName = "package.json") {
     if (found) {
         return path
     } else {
-        return None
+        return undefined
     }
 }
 

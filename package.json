@@ -5,7 +5,11 @@
     "main": "src/index.js",
     "types": "types/index.d.ts",
     "exports": {
-        ".": "./src/index.js",
+        ".": {
+            "import": "./src/index.js",
+            "require": "./src/index.js",
+            "types": "./types/index.d.ts"
+        },
         "./set-fs-build-cache": "./src/context/set-fs-build-cache.js"
     },
     "sideEffects": [

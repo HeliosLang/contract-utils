@@ -120,6 +120,7 @@ export class DagCompiler {
                 sourceMap: optimSourceMap
             } = this.lib.compile(sourceCode, moduleDeps, {
                 optimize: true,
+                debug: this.config.debug ?? false,
                 hashDependencies: hashDepHashes,
                 allValidatorHashTypes: hashTypes,
                 allValidatorIndices: validatorIndices ?? undefined,
