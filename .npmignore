@@ -7,3 +7,6 @@ log.*
 *.test.js
 *.test.d.ts
 *.test.d.ts.map
+examples/*
+*.png
+*.svg
