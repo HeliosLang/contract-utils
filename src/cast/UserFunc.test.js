@@ -1,16 +1,25 @@
 import { describe, it } from "node:test"
-import { UplcConst, UplcDelay, UplcInt, UplcProgramV2 } from "@helios-lang/uplc"
-import { UserFunc } from "./UserFunc.js"
+import {
+    makeUplcConst,
+    makeUplcDelay,
+    makeUplcInt,
+    makeUplcProgramV2
+} from "@helios-lang/uplc"
+import { makeUserFunc } from "./UserFunc.js"
+
+/**
+ * @import { UserFunc } from "../index.js"
+ */
 
 describe("UserFunc<{}, void>", () => {
-    const uplcProgram = new UplcProgramV2(
-        new UplcDelay(new UplcConst(new UplcInt(0)))
+    const uplcProgram = makeUplcProgramV2(
+        makeUplcDelay({ arg: makeUplcConst({ value: makeUplcInt(0) }) })
     )
 
     /**
      * @type {UserFunc<{}, void>}
      */
-    const userFunc = new UserFunc(uplcProgram, {
+    const userFunc = makeUserFunc(uplcProgram, {
         name: "main",
         arguments: [],
         requiresScriptContext: false,

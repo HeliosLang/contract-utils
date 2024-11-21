@@ -1,13 +1,13 @@
 import { deepEqual } from "node:assert"
 import { describe, it } from "node:test"
-import { expectSome } from "@helios-lang/type-utils"
-import { ByteArrayData, IntData } from "@helios-lang/uplc"
-import { Cast } from "../cast/index.js"
+import { expectDefined } from "@helios-lang/type-utils"
+import { makeByteArrayData, makeIntData } from "@helios-lang/uplc"
+import { makeCast } from "../cast/index.js"
 import { loadCompilerLib, typeCheckScripts } from "./ops.js"
 
 /**
- * @typedef {import("../cast/index.js").CastConfig} CastConfig
- * @typedef {import("../codegen/index.js").TypeSchema} TypeSchema
+ * @import { TypeSchema } from "@helios-lang/type-utils"
+ * @import { CastConfig } from "../index.js"
  */
 
 /**
@@ -32,7 +32,7 @@ describe(typeCheckScripts.name, () => {
 
         const lib = loadCompilerLib()
         const { validators } = typeCheckScripts(lib, [src])
-        const datumTypeSchema = expectSome(validators.test.Datum)
+        const datumTypeSchema = expectDefined(validators.test.Datum)
 
         /**
          * @type {TypeSchema}
@@ -76,7 +76,7 @@ describe(typeCheckScripts.name, () => {
 
         deepEqual(datumTypeSchema, expectedTypeSchema)
 
-        const cast = new Cast(datumTypeSchema, castConfig)
+        const cast = makeCast(datumTypeSchema, castConfig)
 
         cast.fromUplcData(
             cast.toUplcData({
@@ -88,8 +88,8 @@ describe(typeCheckScripts.name, () => {
             cast.toUplcData({
                 Bar: {
                     data: [
-                        ["hello", new IntData(0)],
-                        ["world", new ByteArrayData([])]
+                        ["hello", makeIntData(0)],
+                        ["world", makeByteArrayData([])]
                     ]
                 }
             })
@@ -116,9 +116,9 @@ describe(typeCheckScripts.name, () => {
 
         const lib = loadCompilerLib()
         const { validators } = typeCheckScripts(lib, [src])
-        const datumTypeSchema = expectSome(validators.test.Datum)
+        const datumTypeSchema = expectDefined(validators.test.Datum)
 
-        const cast = new Cast(datumTypeSchema, castConfig)
+        const cast = makeCast(datumTypeSchema, castConfig)
 
         const inputData = { field1: 42, field2: "hello" }
         const uplcData = cast.toUplcData({

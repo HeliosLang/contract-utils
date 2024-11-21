@@ -2,34 +2,30 @@ import { deepEqual, strictEqual, throws } from "node:assert"
 import { describe, it } from "node:test"
 import { encodeUtf8 } from "@helios-lang/codec-utils"
 import {
-    ByteArrayData,
-    ConstrData,
-    IntData,
-    ListData,
-    MapData
+    makeByteArrayData,
+    makeConstrData,
+    makeIntData,
+    makeListData,
+    makeMapData
 } from "@helios-lang/uplc"
-import { Cast } from "./Cast.js"
+import { makeCast } from "./Cast.js"
 
 /**
- * @typedef {import("@helios-lang/type-utils").TypeSchema} TypeSchema
+ * @import { TypeSchema } from "@helios-lang/type-utils"
+ * @import { Cast, StrictType } from "../index.js"
  */
 
-/**
- * @template {Cast<any, any>} C
- * @typedef {import("./StrictType.js").StrictType<C>} StrictType
- */
-
-describe(Cast.name, () => {
+describe("Cast", () => {
     it(`StrictType of string correctly extracted`, () => {
         /**
          * @type {Cast<string, string>}
          */
-        const cast = new Cast(
+        const cast = makeCast(
             { kind: "internal", name: "String" },
             { isMainnet: false }
         )
 
-        const data = new ByteArrayData(encodeUtf8("hello world"))
+        const data = makeByteArrayData(encodeUtf8("hello world"))
 
         /**
          * @satisfies {StrictType<typeof cast>}
@@ -43,12 +39,12 @@ describe(Cast.name, () => {
         /**
          * @type {Cast<string, string>}
          */
-        const cast = new Cast(
+        const cast = makeCast(
             { kind: "internal", name: "String" },
             { isMainnet: false }
         )
 
-        const data = new IntData(0)
+        const data = makeIntData(0)
 
         throws(() => {
             cast.fromUplcData(data)
@@ -56,21 +52,21 @@ describe(Cast.name, () => {
     })
 
     describe("Ratio", () => {
-        const cast = new Cast(
+        const cast = makeCast(
             { kind: "internal", name: "Ratio" },
             { isMainnet: false }
         )
 
         it("fromUplcData([10, 11]) == [10n, 11n]", () => {
-            const data = new ListData([new IntData(10), new IntData(11)])
+            const data = makeListData([makeIntData(10), makeIntData(11)])
 
             deepEqual(cast.fromUplcData(data), [10n, 11n])
         })
 
         it("toUplcData([10, 11]) == [iData(10), iData(11)]", () => {
-            const expectedData = new ListData([
-                new IntData(10),
-                new IntData(11)
+            const expectedData = makeListData([
+                makeIntData(10),
+                makeIntData(11)
             ])
 
             strictEqual(
@@ -107,11 +103,11 @@ describe(Cast.name, () => {
             ]
         }
 
-        const cast = new Cast(schema, { isMainnet: false })
+        const cast = makeCast(schema, { isMainnet: false })
 
-        const exampleData = new MapData([
-            [new ByteArrayData(encodeUtf8("@b")), new IntData(1)],
-            [new ByteArrayData(encodeUtf8("@a")), new IntData(2)]
+        const exampleData = makeMapData([
+            [makeByteArrayData(encodeUtf8("@b")), makeIntData(1)],
+            [makeByteArrayData(encodeUtf8("@a")), makeIntData(2)]
         ])
 
         it("respects order when converting to uplc data", () => {
@@ -165,45 +161,45 @@ describe("Cip68Struct serialization", () => {
         ]
     }
 
-    const cast = new Cast(schema, { isMainnet: false })
+    const cast = makeCast(schema, { isMainnet: false })
     const greeting = "good day!"
 
-    const exampleData = new MapData([
-        [new ByteArrayData(encodeUtf8("plainFieldName")), new IntData(1)],
+    const exampleData = makeMapData([
+        [makeByteArrayData(encodeUtf8("plainFieldName")), makeIntData(1)],
         [
-            new ByteArrayData(encodeUtf8("FNT")),
-            new ByteArrayData(encodeUtf8(greeting))
+            makeByteArrayData(encodeUtf8("FNT")),
+            makeByteArrayData(encodeUtf8(greeting))
         ]
     ])
 
-    const wrongPlainFieldName = new MapData([
-        [new ByteArrayData(encodeUtf8("wrongPlainFieldName")), new IntData(1)],
+    const wrongPlainFieldName = makeMapData([
+        [makeByteArrayData(encodeUtf8("wrongPlainFieldName")), makeIntData(1)],
         [
-            new ByteArrayData(encodeUtf8("FNT")),
-            new ByteArrayData(encodeUtf8(greeting))
+            makeByteArrayData(encodeUtf8("FNT")),
+            makeByteArrayData(encodeUtf8(greeting))
         ]
     ])
 
-    const wrongEncoding = new MapData([
-        [new ByteArrayData(encodeUtf8("plainFieldName")), new IntData(1)],
+    const wrongEncoding = makeMapData([
+        [makeByteArrayData(encodeUtf8("plainFieldName")), makeIntData(1)],
         [
             // has the definintion's field name, but should be the encoding key "FNT":
-            new ByteArrayData(encodeUtf8("taggedFieldName")),
-            new ByteArrayData(encodeUtf8(greeting))
+            makeByteArrayData(encodeUtf8("taggedFieldName")),
+            makeByteArrayData(encodeUtf8(greeting))
         ]
     ])
 
-    const missingField = new MapData([
-        [new ByteArrayData(encodeUtf8("plainFieldName")), new IntData(1)],
+    const missingField = makeMapData([
+        [makeByteArrayData(encodeUtf8("plainFieldName")), makeIntData(1)],
         [
-            new ByteArrayData(encodeUtf8("wrongFieldName")),
-            new ByteArrayData(encodeUtf8(greeting))
+            makeByteArrayData(encodeUtf8("wrongFieldName")),
+            makeByteArrayData(encodeUtf8(greeting))
         ]
     ])
 
     it("doesn't accept a ConstrData wrapper around an mStruct", () => {
         throws(() => {
-            cast.fromUplcData(new ConstrData(0, [exampleData]))
+            cast.fromUplcData(makeConstrData(0, [exampleData]))
         }, /expected MapData, got 0\{/)
     })
 

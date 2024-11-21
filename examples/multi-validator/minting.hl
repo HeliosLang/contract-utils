@@ -1,5 +1,5 @@
 minting match_string_policy
 
-func main(redeemer: Bool, _) -> Bool {
+func main(redeemer: Bool) -> Bool {
     redeemer
 }

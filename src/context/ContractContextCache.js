@@ -1,13 +1,11 @@
 import { bytesToHex, encodeUtf8 } from "@helios-lang/codec-utils"
 import { blake2b } from "@helios-lang/crypto"
-import { JSON, None } from "@helios-lang/type-utils"
+import { JSON } from "@helios-lang/type-utils"
 import { cacheEntryFromJson, cacheEntryToJsonSafe } from "./CacheEntry.js"
 
 /**
- * @typedef {import("@helios-lang/uplc").UplcData} UplcData
- * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
- * @typedef {import("../codegen/LoadedModule.js").LoadedModule} LoadedModule
- * @typedef {import("../codegen/LoadedValidator.js").LoadedValidator} LoadedValidator
+ * @import { UplcData, UplcProgram } from "@helios-lang/uplc"
+ * @import { LoadedModule, LoadedValidator } from "../index.js"
  * @typedef {import("./CacheEntry.js").CacheEntry} CacheEntry
  * @typedef {import("./CacheEntry.js").CacheEntryJson} CacheEntryJson
  * @typedef {import("./CacheEntry.js").CacheEntryUserFuncsJson} CacheEntryUserFuncsJson
@@ -129,11 +127,11 @@ class ContractContextCache {
                 )
             }
 
-            return None
+            return undefined
         } else {
             if (this.i >= this.positionalCache.length) {
                 // TODO: lookup in explicitCache
-                return None
+                return undefined
             }
 
             const res = this.positionalCache[this.i]

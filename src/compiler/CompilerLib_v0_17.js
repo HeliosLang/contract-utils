@@ -1,15 +1,9 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
-import { None } from "@helios-lang/type-utils"
-import { UplcSourceMap } from "@helios-lang/uplc"
+import { makeUplcSourceMap } from "@helios-lang/uplc"
 
 /**
- * @typedef {import("@helios-lang/uplc").UplcData} UplcData
- * @typedef {import("@helios-lang/uplc").UplcProgramV2I} UplcProgramV2I
- * @typedef {import("./CompilerLib.js").CompilerLib} CompilerLib
- * @typedef {import("./CompilerLib.js").CompileOptions} CompileOptions
- * @typedef {import("./CompilerLib.js").CompileOutput} CompileOutput
- * @typedef {import("./CompilerLib.js").ScriptHashType} ScriptHashType
- * @typedef {import("./CompilerLib.js").TypeCheckOutput} TypeCheckOutput
+ * @import { UplcData, UplcProgramV2 } from "@helios-lang/uplc"
+ * @import { CompilerLib, CompileOptions, CompileOutput, ScriptHashType, TypeCheckOutput } from "../index.js"
  */
 
 /**
@@ -23,15 +17,23 @@ import { UplcSourceMap } from "@helios-lang/uplc"
  *     hashDependencies?: Record<string, string>
  *     validatorIndices?: Record<string, number>
  *     excludeUserFuncs?: Set<string>
- *     onCompileUserFunc?: (name: string, uplc: UplcProgramV2I) => void
- *   }): UplcProgramV2I
+ *     onCompileUserFunc?: (name: string, uplc: UplcProgramV2) => void
+ *   }): UplcProgramV2
  * }} Program
  */
 
 /**
+ * @param {any} lib
+ * @returns {CompilerLib}
+ */
+export function makeCompilerLib_v0_17(lib) {
+    return new CompilerLib_v0_17(lib)
+}
+
+/**
  * @implements {CompilerLib}
  */
-export class CompilerLib_v0_17 {
+class CompilerLib_v0_17 {
     /**
      * @private
      * @type {any}
@@ -90,7 +92,7 @@ export class CompilerLib_v0_17 {
         const onCompileUserFunc = options.onCompileUserFunc
 
         /**
-         * @type {UplcProgramV2I}
+         * @type {UplcProgramV2}
          */
         const uplc = program.compile({
             optimize: options.optimize,
@@ -109,16 +111,16 @@ export class CompilerLib_v0_17 {
                 ? {
                       onCompileUserFunc: (name, uplc) => {
                           const alt = uplc.alt
-                          const ir = options.debug ? uplc.ir : None
-                          const altIr = options.debug ? alt?.ir : None
-                          const sourceMap = UplcSourceMap.fromUplcTerm(
-                              uplc.root
-                          ).toJsonSafe()
+                          const ir = options.debug ? uplc.ir : undefined
+                          const altIr = options.debug ? alt?.ir : undefined
+                          const sourceMap = makeUplcSourceMap({
+                              term: uplc.root
+                          }).toJsonSafe()
                           const altSourceMap = alt
-                              ? UplcSourceMap.fromUplcTerm(
-                                    alt.root
-                                ).toJsonSafe()
-                              : None
+                              ? makeUplcSourceMap({
+                                    term: alt.root
+                                }).toJsonSafe()
+                              : undefined
 
                           onCompileUserFunc({
                               name: name,
@@ -153,7 +155,7 @@ export class CompilerLib_v0_17 {
                 : {})
         })
 
-        const sourceMap = UplcSourceMap.fromUplcTerm(uplc.root)
+        const sourceMap = makeUplcSourceMap({ term: uplc.root })
 
         return {
             cborHex: bytesToHex(uplc.toCbor()),

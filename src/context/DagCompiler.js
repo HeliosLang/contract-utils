@@ -1,21 +1,19 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
 import {
-    MintingPolicyHash,
-    ScriptHash,
-    StakingValidatorHash,
-    ValidatorHash
+    makeMintingPolicyHash,
+    makeStakingValidatorHash,
+    makeValidatorHash
 } from "@helios-lang/ledger"
-import { None, expectSome, isSome } from "@helios-lang/type-utils"
+import {
+    expectDefined as expectSome,
+    isDefined as isSome
+} from "@helios-lang/type-utils"
 import { restoreUplcProgram } from "@helios-lang/uplc"
 import { configureCast } from "../cast/index.js"
 
 /**
- * @typedef {import("@helios-lang/uplc").UplcData} UplcData
- * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
- * @typedef {import("../cast/index.js").CastConfig} CastConfig
- * @typedef {import("../codegen/LoadedValidator.js").LoadedValidator} LoadedValidator
- * @typedef {import("../compiler/index.js").CompilerLib} CompilerLib
- * @typedef {import("./ContractContext.js").AnyContractValidatorContext} AnyContractValidatorContext
+ * @import { UplcData, UplcProgram, UplcProgramV2 } from "@helios-lang/uplc"
+ * @import { AnyContractValidatorContext, CastConfig, CompilerLib, LoadedValidator} from "../index.js"
  */
 
 /**
@@ -79,10 +77,10 @@ export class DagCompiler {
      * @param {LoadedValidator[]} validators
      * @param {Record<string, UplcData>} parameters
      * @param {boolean} isTestnet
-     * @param {Option<{[name: string]: string}>} expectedHashes
+     * @param {{[name: string]: string} | undefined} expectedHashes
      * @returns {DagCompilerOutput}
      */
-    build(validators, parameters, isTestnet, expectedHashes = None) {
+    build(validators, parameters, isTestnet, expectedHashes = undefined) {
         const hashTypes = this.getHashTypes(validators)
         const validatorIndices = this.getValidatorIndices(validators)
 
@@ -169,7 +167,12 @@ export class DagCompiler {
                 this.cachedValidators[validator.$name]
             )
             const optimizedHashHex = optimizedHash.toHex()
-            const optimizedProgram = optimizedHash.context.program
+
+            /**
+             * @type {UplcProgramV2}
+             */
+            const optimizedProgram = /** @type {any} */ (optimizedHash.context)
+                .program
 
             // unoptimized compilation (so traces are untouched)
             const {
@@ -281,21 +284,22 @@ export class DagCompiler {
 
         switch (validator.$purpose) {
             case "spending":
-                this.cachedValidators[name] = new ValidatorHash(hash, {
+                this.cachedValidators[name] = makeValidatorHash(hash, {
                     program,
                     redeemer,
                     datum: configureCast(validator.$Datum, this.config)
                 })
                 break
             case "mixed":
-                this.cachedValidators[name] = new ScriptHash(hash, {
+                throw new Error("not yet implemented")
+                /*this.cachedValidators[name] = new ScriptHash(hash, {
                     program,
                     redeemer,
                     datum: configureCast(validator.$Datum, this.config)
-                })
+                })*/
                 break
             case "minting":
-                this.cachedValidators[name] = new MintingPolicyHash(hash, {
+                this.cachedValidators[name] = makeMintingPolicyHash(hash, {
                     program,
                     redeemer
                 })
@@ -303,7 +307,7 @@ export class DagCompiler {
             case "certifying":
             case "rewarding":
             case "staking":
-                this.cachedValidators[name] = new StakingValidatorHash(hash, {
+                this.cachedValidators[name] = makeStakingValidatorHash(hash, {
                     program,
                     redeemer
                 })
@@ -397,7 +401,7 @@ export class DagCompiler {
             if (isSome(v.$currentScriptIndex)) {
                 res[v.$name] = v.$currentScriptIndex
             } else {
-                return None
+                return undefined
             }
         }
 

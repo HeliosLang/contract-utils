@@ -1,26 +1,21 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
 import {
-    MintingPolicyHash,
-    ScriptHash,
-    StakingValidatorHash,
-    ValidatorHash
+    makeMintingPolicyHash,
+    makeStakingValidatorHash,
+    makeValidatorHash
 } from "@helios-lang/ledger"
-import { None, expectSome } from "@helios-lang/type-utils"
-import { UplcProgramV1, UplcProgramV2, UplcSourceMap } from "@helios-lang/uplc"
-import { Cast } from "../cast/Cast.js"
+import { expectDefined } from "@helios-lang/type-utils"
+import {
+    decodeUplcProgramV1FromCbor,
+    decodeUplcProgramV2FromCbor,
+    makeUplcSourceMap
+} from "@helios-lang/uplc"
+import { makeCast } from "../cast/Cast.js"
 
 /**
- * @typedef {import("@helios-lang/type-utils").TypeSchema} TypeSchema
- * @typedef {import("@helios-lang/uplc").UplcData} UplcData
- * @typedef {import("@helios-lang/uplc").PlutusVersion} PlutusVersion
- * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
- * @typedef {import("@helios-lang/uplc").UplcProgramV1I} UplcProgramV1I
- * @typedef {import("@helios-lang/uplc").UplcProgramV2I} UplcProgramV2I
- * @typedef {import("@helios-lang/uplc").UplcSourceMapJsonSafe} UplcSourceMapJsonSafe
- * @typedef {import("../cast/index.js").CastConfig} CastConfig
- * @typedef {import("../codegen/LoadedModule.js").LoadedModule} LoadedModule
- * @typedef {import("../codegen/LoadedValidator.js").LoadedValidator} LoadedValidator
- * @typedef {import("./ContractContext.js").AnyContractValidatorContext} AnyContractValidatorContext
+ * @import { TypeSchema } from "@helios-lang/type-utils"
+ * @import { PlutusVersion, UplcData, UplcProgram, UplcProgramV1, UplcProgramV2, UplcSourceMapJsonSafe } from "@helios-lang/uplc"
+ * @import { AnyContractValidatorContext, Cast, CastConfig, LoadedModule, LoadedValidator } from "../index.js"
  */
 
 /**
@@ -87,33 +82,57 @@ export function cacheEntryToJsonSafe(entry) {
         const hash = entry.validators[name]
 
         const purpose =
-            hash instanceof ValidatorHash
+            hash.kind == "ValidatorHash"
                 ? "spending"
-                : hash instanceof MintingPolicyHash
+                : hash.kind == "MintingPolicyHash"
                   ? "minting"
-                  : hash instanceof StakingValidatorHash
+                  : hash.kind == "StakingValidatorHash"
                     ? "staking"
-                    : hash instanceof ScriptHash
-                      ? "mixed"
-                      : "unknown"
-        if (purpose == "unknown") {
-            throw new Error("unhandled hash type")
+                    : "mixed"
+
+        const context = hash.context
+
+        if (
+            !(
+                typeof hash.context == "object" &&
+                hash.context !== null &&
+                "redeemer" in hash.context &&
+                "program" in hash.context
+            )
+        ) {
+            throw new Error("invalid context")
         }
 
-        const redeemer =
-            hash.context.redeemer instanceof Cast ? hash.context.redeemer : None
+        /**
+         * @type {Cast<any, any> | undefined}
+         */
+        const redeemer = /** @type {any} */ (
+            typeof hash.context.redeemer == "object" &&
+            hash.context.redeemer !== null &&
+            "kind" in hash.context.redeemer &&
+            hash.context.redeemer.kind == "Cast"
+                ? hash.context.redeemer
+                : undefined
+        )
 
         if (!redeemer) {
             throw new Error("Redeemer is not a Cast type")
         }
 
         /**
-         * @type {Option<Cast>}
+         * @type {Cast<any, any> | undefined}
          */
-        let datum = None
+        let datum = undefined
 
-        if (hash.context.datum && hash.context.datum instanceof Cast) {
-            datum = hash.context.datum
+        if (
+            "datum" in hash.context &&
+            hash.context.datum &&
+            typeof hash.context.datum == "object" &&
+            hash.context.datum !== null &&
+            "kind" in hash.context.datum &&
+            hash.context.datum.kind == "Cast"
+        ) {
+            datum = /** @type {any} */ (hash.context.datum)
         }
 
         if (["spending", "mixed"].includes(purpose) && !datum) {
@@ -121,9 +140,9 @@ export function cacheEntryToJsonSafe(entry) {
         }
 
         /**
-         * @type {UplcProgramV1I | UplcProgramV2I}
+         * @type {UplcProgramV1 | UplcProgramV2}
          */
-        const program = hash.context.program
+        const program = /** @type {any} */ (hash.context.program)
 
         resValidators[name] = {
             purpose: purpose,
@@ -132,17 +151,16 @@ export function cacheEntryToJsonSafe(entry) {
             unoptimizedCborHex: program.alt
                 ? bytesToHex(program.alt.toCbor())
                 : undefined,
-            optimizedIr:
-                /** @type {UplcProgramV2I} */ (program).ir ?? undefined,
+            optimizedIr: /** @type {UplcProgramV2} */ (program).ir ?? undefined,
             unoptimizedIr:
-                /** @type {UplcProgramV2I} */ (program).alt?.ir ?? undefined,
-            optimizedSourceMap: UplcSourceMap.fromUplcTerm(
-                program.root
-            ).toJsonSafe(),
+                /** @type {UplcProgramV2} */ (program).alt?.ir ?? undefined,
+            optimizedSourceMap: makeUplcSourceMap({
+                term: program.root
+            }).toJsonSafe(),
             unoptimizedSourceMap: program.alt
-                ? UplcSourceMap.fromUplcTerm(program.alt.root).toJsonSafe()
+                ? makeUplcSourceMap({ term: program.alt.root }).toJsonSafe()
                 : undefined,
-            plutusVersion: hash.context.program.plutusVersion,
+            plutusVersion: program.plutusVersion,
             castConfig: redeemer.config,
             redeemer: redeemer.schema,
             datum: datum?.schema
@@ -154,18 +172,18 @@ export function cacheEntryToJsonSafe(entry) {
 
         resUserFuncs[name] = {
             optimizedCborHex: bytesToHex(userFunc.toCbor()),
-            unoptimizedCborHex: /** @type {UplcProgramV2I} */ (userFunc).alt
+            unoptimizedCborHex: /** @type {UplcProgramV2} */ (userFunc).alt
                 ? bytesToHex(
-                      /** @type {UplcProgramV2I} */ (userFunc).alt.toCbor()
+                      /** @type {UplcProgramV2} */ (userFunc).alt.toCbor()
                   )
                 : undefined,
             optimizedIr: userFunc.ir ?? undefined,
             unoptimizedIr: userFunc.alt?.ir ?? undefined,
-            optimizedSourceMap: UplcSourceMap.fromUplcTerm(
-                userFunc.root
-            ).toJsonSafe(),
+            optimizedSourceMap: makeUplcSourceMap({
+                term: userFunc.root
+            }).toJsonSafe(),
             unoptimizedSourceMap: userFunc.alt
-                ? UplcSourceMap.fromUplcTerm(userFunc.alt.root).toJsonSafe()
+                ? makeUplcSourceMap({ term: userFunc.alt.root }).toJsonSafe()
                 : undefined,
             plutusVersion: userFunc.plutusVersion
         }
@@ -200,11 +218,11 @@ export function cacheEntryFromJson(entry) {
          */
         let program =
             props.plutusVersion == "PlutusScriptV1"
-                ? UplcProgramV1.fromCbor(props.optimizedCborHex, {
+                ? decodeUplcProgramV1FromCbor(props.optimizedCborHex, {
                       ir: props.optimizedIr,
                       sourceMap: props.optimizedSourceMap
                   })
-                : UplcProgramV2.fromCbor(props.optimizedCborHex, {
+                : decodeUplcProgramV2FromCbor(props.optimizedCborHex, {
                       ir: props.optimizedIr,
                       sourceMap: props.optimizedSourceMap
                   })
@@ -212,14 +230,14 @@ export function cacheEntryFromJson(entry) {
         if (props.unoptimizedCborHex) {
             if (program.plutusVersion == "PlutusScriptV1") {
                 program = program.withAlt(
-                    UplcProgramV1.fromCbor(props.unoptimizedCborHex, {
+                    decodeUplcProgramV1FromCbor(props.unoptimizedCborHex, {
                         ir: props.unoptimizedIr,
                         sourceMap: props.unoptimizedSourceMap
                     })
                 )
             } else if (program.plutusVersion == "PlutusScriptV2") {
                 program = program.withAlt(
-                    UplcProgramV2.fromCbor(props.unoptimizedCborHex, {
+                    decodeUplcProgramV2FromCbor(props.unoptimizedCborHex, {
                         ir: props.unoptimizedIr,
                         sourceMap: props.unoptimizedSourceMap
                     })
@@ -229,37 +247,41 @@ export function cacheEntryFromJson(entry) {
             }
         }
 
-        let redeemer = new Cast(props.redeemer, props.castConfig)
+        let redeemer = makeCast(props.redeemer, props.castConfig)
 
         switch (props.purpose) {
             case "spending": {
-                res.validators[name] = new ValidatorHash(props.bytes, {
-                    datum: new Cast(expectSome(props.datum), props.castConfig),
+                res.validators[name] = makeValidatorHash(props.bytes, {
+                    datum: makeCast(
+                        expectDefined(props.datum),
+                        props.castConfig
+                    ),
                     redeemer: redeemer,
                     program: program
                 })
                 break
             }
             case "minting": {
-                res.validators[name] = new MintingPolicyHash(props.bytes, {
+                res.validators[name] = makeMintingPolicyHash(props.bytes, {
                     redeemer: redeemer,
                     program: program
                 })
                 break
             }
             case "staking": {
-                res.validators[name] = new StakingValidatorHash(props.bytes, {
+                res.validators[name] = makeStakingValidatorHash(props.bytes, {
                     redeemer: redeemer,
                     program: program
                 })
                 break
             }
             case "mixed": {
-                res.validators[name] = new ScriptHash(props.bytes, {
-                    datum: new Cast(expectSome(props.datum), props.castConfig),
+                throw new Error("implement ScriptHash type")
+                /*res.validators[name] = new ScriptHash(props.bytes, {
+                    datum: makeCast(expectDefined(props.datum), props.castConfig),
                     redeemer: redeemer,
                     program: program
-                })
+                })*/
                 break
             }
             default:
@@ -275,11 +297,11 @@ export function cacheEntryFromJson(entry) {
          */
         let program =
             props.plutusVersion == "PlutusScriptV1"
-                ? UplcProgramV1.fromCbor(props.optimizedCborHex, {
+                ? decodeUplcProgramV1FromCbor(props.optimizedCborHex, {
                       ir: props.optimizedIr,
                       sourceMap: props.optimizedSourceMap
                   })
-                : UplcProgramV2.fromCbor(props.optimizedCborHex, {
+                : decodeUplcProgramV2FromCbor(props.optimizedCborHex, {
                       ir: props.optimizedIr,
                       sourceMap: props.optimizedSourceMap
                   })
@@ -287,14 +309,14 @@ export function cacheEntryFromJson(entry) {
         if (props.unoptimizedCborHex) {
             if (program.plutusVersion == "PlutusScriptV1") {
                 program = program.withAlt(
-                    UplcProgramV1.fromCbor(props.unoptimizedCborHex, {
+                    decodeUplcProgramV1FromCbor(props.unoptimizedCborHex, {
                         ir: props.unoptimizedIr,
                         sourceMap: props.unoptimizedSourceMap
                     })
                 )
             } else if (program.plutusVersion == "PlutusScriptV2") {
                 program = program.withAlt(
-                    UplcProgramV2.fromCbor(props.unoptimizedCborHex, {
+                    decodeUplcProgramV2FromCbor(props.unoptimizedCborHex, {
                         ir: props.unoptimizedIr,
                         sourceMap: props.unoptimizedSourceMap
                     })

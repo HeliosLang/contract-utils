@@ -9,15 +9,12 @@ import {
 } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { Cli, EnumOpt, StringOpt } from "@helios-lang/cli-utils"
-import { None } from "@helios-lang/type-utils"
-import { LoadedScriptsWriter } from "./codegen/index.js"
+import { makeLoadedScriptsWriter } from "./codegen/index.js"
 import { loadCompilerLib } from "./compiler/index.js"
 import { typeCheckFiles } from "./compiler/ops.js"
 
 /**
- * @typedef {import("./compiler/CompilerLib.js").CompilerLib} CompilerLib
- * @typedef {import("./compiler/CompilerLib.js").TypeCheckedModule} ModuleDetails
- * @typedef {import("./compiler/CompilerLib.js").TypeCheckedValidator} ValidatorDetails
+ * @import { CompilerLib, TypeCheckedModule, TypeCheckedValidator } from "./index.js"
  */
 
 /**
@@ -90,7 +87,7 @@ async function mainInternal(_args, { outDir, format }) {
         resolve(join(dirname(current), rel))
     )
 
-    const [js, dts, ts] = LoadedScriptsWriter.new()
+    const [js, dts, ts] = makeLoadedScriptsWriter()
         .writeModules(modules)
         .writeValidators(validators)
         .finalize()

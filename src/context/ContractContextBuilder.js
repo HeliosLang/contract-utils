@@ -1,44 +1,27 @@
-import { expectSome } from "@helios-lang/type-utils"
+import { expectDefined } from "@helios-lang/type-utils"
 import { configureCast } from "../cast/Cast.js"
 import { loadCompilerLib } from "../compiler/index.js"
 import { DagCompiler } from "./DagCompiler.js"
 import { contractContextCache } from "./ContractContextCache.js"
 
 /**
- * @typedef {import("@helios-lang/uplc").UplcData} UplcData
- * @typedef {import("../cast/index.js").CastConfig} CastConfig
- * @typedef {import("../codegen/LoadedModule.js").LoadedModule} LoadedModule
- * @typedef {import("../codegen/LoadedValidator.js").LoadedValidator} LoadedValidator
- * @typedef {import("../compiler/index.js").CompilerLib} CompilerLib
+ * @import { UplcData } from "@helios-lang/uplc"
+ * @import { CastConfig, CompilerLib, ContractContext, ContractContextBuilder, ContractContextBuilderProps, ExtractDependencies, LoadedModule, LoadedValidator } from "../index.js"
  */
 
 /**
- * @template {LoadedValidator} V
- * @typedef {import("../codegen/LoadedValidator.js").ExtractDependencies<V>} ExtractDependencies
+ * @returns {ContractContextBuilder<{}, {}>}
  */
-
-/**
- * @template {{[name: string]: LoadedValidator}} Vs
- * @template {{[name: string]: LoadedModule}} Ms
- * @typedef {import("./ContractContext.js").ContractContext<Vs, Ms>} ContractContext
- */
-
-/**
- * if `debug` is true, the ir is included where possible
- * @typedef {{
- *   isMainnet: boolean
- *   expectedHashes?: {[name: string]: string}
- *   parameters?: Record<string, UplcData>
- *   dumpHashes?: boolean
- *   debug?: boolean
- * }} ContractContextBuildProps
- */
+export function makeContractContextBuilder() {
+    return new ContractContextBuilderImpl({}, {})
+}
 
 /**
  * @template {{[name: string]: LoadedValidator}} Vs
  * @template {{[name: string]: LoadedModule}} Ms
+ * @implements {ContractContextBuilder<Vs, Ms>}
  */
-export class ContractContextBuilder {
+class ContractContextBuilderImpl {
     /**
      * @private
      * @readonly
@@ -54,20 +37,12 @@ export class ContractContextBuilder {
     modules
 
     /**
-     * @private
      * @param {Vs} validators
      * @param {Ms} modules
      */
     constructor(validators, modules) {
         this.validators = validators
         this.modules = modules
-    }
-
-    /**
-     * @returns {ContractContextBuilder<{}, {}>}
-     */
-    static new() {
-        return new ContractContextBuilder({}, {})
     }
 
     /**
@@ -79,17 +54,19 @@ export class ContractContextBuilder {
      * >}
      */
     with(validator) {
-        return new ContractContextBuilder(
-            /** @type {any} */ ({
-                ...this.validators,
-                [validator.$name]: validator
-            }),
-            /** @type {any} */ ({
-                ...this.modules,
-                ...Object.fromEntries(
-                    validator.$dependencies.map((d) => [d.$name, d])
-                )
-            })
+        return /** @type {any} */ (
+            new ContractContextBuilderImpl(
+                /** @type {any} */ ({
+                    ...this.validators,
+                    [validator.$name]: validator
+                }),
+                /** @type {any} */ ({
+                    ...this.modules,
+                    ...Object.fromEntries(
+                        validator.$dependencies.map((d) => [d.$name, d])
+                    )
+                })
+            )
         )
     }
 
@@ -102,17 +79,19 @@ export class ContractContextBuilder {
      * >}
      */
     withModule(m) {
-        return new ContractContextBuilder(
-            this.validators,
-            /** @type {any} */ ({
-                ...this.modules,
-                [m.$name]: m
-            })
+        return /** @type {any} */ (
+            new ContractContextBuilderImpl(
+                this.validators,
+                /** @type {any} */ ({
+                    ...this.modules,
+                    [m.$name]: m
+                })
+            )
         )
     }
 
     /**
-     * @param {ContractContextBuildProps} props
+     * @param {ContractContextBuilderProps} props
      * @returns {ContractContext<Vs, Ms>}
      */
     build(props) {
@@ -173,7 +152,7 @@ export class ContractContextBuilder {
                         ([funcKey, userFunc]) => [
                             funcKey,
                             userFunc(
-                                expectSome(
+                                expectDefined(
                                     compiled.userFuncs[`${name}::${funcKey}`]
                                 ),
                                 castConfig
@@ -203,9 +182,10 @@ export class ContractContextBuilder {
                                 return [
                                     funcKey,
                                     userFunc(
-                                        expectSome(
-                                            compiled.validators[name].context
-                                                .program
+                                        expectDefined(
+                                            /** @type {any} */ (
+                                                compiled.validators[name]
+                                            ).context.program
                                         ),
                                         castConfig
                                     )
@@ -214,7 +194,7 @@ export class ContractContextBuilder {
                                 return [
                                     funcKey,
                                     userFunc(
-                                        expectSome(
+                                        expectDefined(
                                             compiled.userFuncs[
                                                 `${name}::${funcKey}`
                                             ]

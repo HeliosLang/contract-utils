@@ -1,46 +1,39 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
-import { expectSome, isLeft, isString, None } from "@helios-lang/type-utils"
-import { ConstrData, UplcDataValue, UplcRuntimeError } from "@helios-lang/uplc"
-import { Cast } from "./Cast.js"
+import {
+    expectDefined as expectDefined,
+    isLeft,
+    isString
+} from "@helios-lang/type-utils"
+import {
+    makeConstrData,
+    makeUplcDataValue,
+    UplcRuntimeError
+} from "@helios-lang/uplc"
+import { makeCast } from "./Cast.js"
 
 /**
- * @typedef {import("@helios-lang/type-utils").TypeSchema} TypeSchema
- * @typedef {import("@helios-lang/uplc").CekResult} CekResult
- * @typedef {import("@helios-lang/uplc").UplcData} UplcData
- * @typedef {import("@helios-lang/uplc").UplcLoggingI} UplcLoggingI
- * @typedef {import("@helios-lang/uplc").UplcProgram} UplcProgram
- * @typedef {import("@helios-lang/uplc").UplcValue} UplcValue
- * @typedef {import("./Cast.js").CastConfig} CastConfig
- */
-
-/**
- * TODO: add logOptions here as well (which can be overridden by logOptions passed directly to eval(), evalUnsafe() and profile())?
- * `returns` is optional to accomodate main functions that return void
- * @typedef {{
- *   name: string
- *   requiresScriptContext: boolean
- *   requiresCurrentScript: boolean
- *   arguments: {
- *     name: string
- *     type: TypeSchema
- *     isOptional: boolean
- *   }[]
- *   returns?: TypeSchema
- *   validatorIndices?: Record<string, number>
- *   castConfig: CastConfig
- * }} UserFuncProps
- */
-
-/**
- * @template ArgsT
- * @typedef {{[K in keyof ArgsT]: K extends "$currentScript" ? string : UplcData}} UnsafeArgsT
+ * @import { TypeSchema } from "@helios-lang/type-utils"
+ * @import { CekResult, UplcData, UplcLogger, UplcProgram, UplcValue } from "@helios-lang/uplc"
+ * @import { Cast, CastConfig, UnsafeArgsT, UserFunc, UserFuncProps } from "../index.js"
  */
 
 /**
  * @template {{[argName: string]: any}} ArgsT
  * @template RetT
+ * @param {UplcProgram} uplc
+ * @param {UserFuncProps} props
+ * @returns {UserFunc<ArgsT, RetT>}
  */
-export class UserFunc {
+export function makeUserFunc(uplc, props) {
+    return new UserFuncImpl(uplc, props)
+}
+
+/**
+ * @template {{[argName: string]: any}} ArgsT
+ * @template RetT
+ * @implements {UserFunc<ArgsT, RetT>}
+ */
+class UserFuncImpl {
     /**
      * @readonly
      * @type {UplcProgram}
@@ -72,10 +65,10 @@ export class UserFunc {
 
     /**
      * @param {ArgsT} namedArgs
-     * @param {Option<UplcLoggingI>} logOptions
+     * @param {UplcLogger | undefined} logOptions
      * @returns {RetT}
      */
-    eval(namedArgs, logOptions = None) {
+    eval(namedArgs, logOptions = undefined) {
         /**
          * @type {{[argName: string]: any}}
          */
@@ -89,7 +82,7 @@ export class UserFunc {
             if (argDetails) {
                 const typeSchema = argDetails.type
 
-                unsafeNamedArgs[argName] = new Cast(
+                unsafeNamedArgs[argName] = makeCast(
                     typeSchema,
                     this.props.castConfig
                 ).toUplcData(argValue)
@@ -108,10 +101,10 @@ export class UserFunc {
         )
 
         if (this.props.returns) {
-            return new Cast(
+            return makeCast(
                 this.props.returns,
                 this.props.castConfig
-            ).fromUplcData(expectSome(/** @type {any} */ (result)))
+            ).fromUplcData(expectDefined(/** @type {any} */ (result)))
         } else {
             return /** @type {any} */ (undefined)
         }
@@ -119,10 +112,10 @@ export class UserFunc {
 
     /**
      * @param {UnsafeArgsT<ArgsT>} namedArgs
-     * @param {Option<UplcLoggingI>} logOptions
+     * @param {UplcLogger | undefined} logOptions
      * @returns {RetT extends void ? void : UplcData}
      */
-    evalUnsafe(namedArgs, logOptions = None) {
+    evalUnsafe(namedArgs, logOptions = undefined) {
         const result = this.profile(namedArgs, logOptions).result
 
         if (isLeft(result)) {
@@ -138,10 +131,10 @@ export class UserFunc {
 
     /**
      * @param {UnsafeArgsT<ArgsT>} namedArgs
-     * @param {Option<UplcLoggingI>} logOptions - optional, passed to UplcProgram.eval if provided
+     * @param {UplcLogger | undefined} logOptions - optional, passed to UplcProgram.eval if provided
      * @returns {CekResult}
      */
-    profile(namedArgs, logOptions = None) {
+    profile(namedArgs, logOptions = undefined) {
         const isMain = this.name == "main"
 
         /**
@@ -157,38 +150,38 @@ export class UserFunc {
                         args.push(namedArgs[name])
                     }
                 } else {
-                    args.push(expectSome(namedArgs[name]))
+                    args.push(expectDefined(namedArgs[name]))
                 }
             } else {
                 if (isOptional) {
                     if (name in namedArgs && namedArgs[name]) {
-                        args.push(new ConstrData(0, [namedArgs[name]]))
+                        args.push(makeConstrData(0, [namedArgs[name]]))
                     } else {
-                        args.push(new ConstrData(1, []))
+                        args.push(makeConstrData(1, []))
                     }
                 } else {
-                    args.push(expectSome(namedArgs[name]))
+                    args.push(expectDefined(namedArgs[name]))
                 }
             }
         })
 
         if (this.props.requiresScriptContext) {
-            args.push(expectSome(namedArgs["$scriptContext"]))
+            args.push(expectDefined(namedArgs["$scriptContext"]))
         }
 
         if (this.props.requiresCurrentScript) {
-            const currentScriptName = expectSome(
+            const currentScriptName = expectDefined(
                 /** @type {any} */ (namedArgs)["$currentScript"]
             )
 
-            const index = expectSome(
-                expectSome(this.props.validatorIndices)[currentScriptName]
+            const index = expectDefined(
+                expectDefined(this.props.validatorIndices)[currentScriptName]
             )
 
-            args.push(new ConstrData(index, []))
+            args.push(makeConstrData(index, []))
         }
 
-        const argValues = args.map((a) => new UplcDataValue(a))
+        const argValues = args.map((a) => makeUplcDataValue(a))
 
         const cekResult = this.uplc.eval(argValues, {
             logOptions: logOptions ?? undefined

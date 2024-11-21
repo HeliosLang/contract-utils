@@ -1,34 +1,30 @@
-import { StringWriter } from "@helios-lang/codec-utils"
-import { isSome } from "@helios-lang/type-utils"
+import { makeStringWriter } from "@helios-lang/codec-utils"
+import { isDefined as isSome } from "@helios-lang/type-utils"
 import { genTypes } from "./TypeSchema.js"
 
 /**
- * @typedef {import("./TypeCheckedModule.js").TypeCheckedModule} TypeCheckedModule
- * @typedef {import("./TypeCheckedModule.js").TypeCheckedUserFunc} TypeCheckedUserFunc
- * @typedef {import("./TypeCheckedValidator.js").TypeCheckedValidator} TypeCheckedValidator
- * @typedef {import("./TypeSchema.js").TypeSchema} TypeSchema
+ * @import { TypeSchema } from "@helios-lang/type-utils"
+ * @import { LoadedScriptsWriter, TypeCheckedModule, TypeCheckedUserFunc, TypeCheckedValidator } from "../index.js"
  */
 
-export class LoadedScriptsWriter {
-    /**
-     * @private
-     */
+/**
+ * Constructs a LoadedScriptsWriter instance and initializes it be writing the header
+ * @returns {LoadedScriptsWriter}
+ */
+export function makeLoadedScriptsWriter() {
+    return new LoadedScriptsWriterImpl()
+}
+
+/**
+ * @implements {LoadedScriptsWriter}
+ */
+class LoadedScriptsWriterImpl {
     constructor() {
-        this.definition = new StringWriter()
-        this.declaration = new StringWriter()
-        this.combined = new StringWriter()
-    }
+        this.definition = makeStringWriter()
+        this.declaration = makeStringWriter()
+        this.combined = makeStringWriter()
 
-    /**
-     * Constructs a LoadedScriptsWriter instance and initializes it be writing the header
-     * @returns {LoadedScriptsWriter}
-     */
-    static new() {
-        const w = new LoadedScriptsWriter()
-
-        w.writeHeaders()
-
-        return w
+        this.writeHeaders()
     }
 
     /**
@@ -132,31 +128,28 @@ export class LoadedScriptsWriter {
     }
 
     /**
+     * @private
      * @param {string} path
-     * @param {string} typeName
-     * @param {string[]} typeParams
+     * @param {string[]} typeNames
      * @returns {LoadedScriptsWriter}
      */
-    writeImportType(path, typeName, typeParams = []) {
+    writeImportType(path, ...typeNames) {
         this.definition.writeLine("/**")
 
-        for (let tp of typeParams) {
-            this.definition.writeLine(` * @template ${tp}`)
-        }
-
         this.definition
-            .writeLine(
-                ` * @typedef {import("${path}").${typeName}${typeParams.length > 0 ? `<${typeParams.join(", ")}>` : ""}} ${typeName}`
-            )
+            .writeLine(` * @import { ${typeNames.join(", ")} } from "${path}";`)
             .writeLine(" */")
         ;[this.declaration, this.combined].forEach((w) => {
-            w.writeLine(`import type { ${typeName} } from "${path}";`)
+            w.writeLine(
+                `import type { ${typeNames.join(", ")} } from "${path}";`
+            )
         })
 
         return this
     }
 
     /**
+     * @private
      * @param {string} path
      * @param {string[]} objectNames
      * @returns {LoadedScriptsWriter}
@@ -173,8 +166,21 @@ export class LoadedScriptsWriter {
      * @private
      */
     writeHeaders() {
-        this.writeImport("@helios-lang/contract-utils", "Cast", "UserFunc")
         this.writeImport(
+            "@helios-lang/contract-utils",
+            "makeCast",
+            "makeUserFunc"
+        )
+
+        this.writeImportType("@helios-lang/codec-utils", "IntLike")
+        this.writeImportType(
+            "@helios-lang/contract-utils",
+            "Cast",
+            "CastConfig",
+            "ConfigurableCast",
+            "UserFunc"
+        )
+        this.writeImportType(
             "@helios-lang/ledger",
             "Address",
             "AssetClass",
@@ -186,8 +192,8 @@ export class LoadedScriptsWriter {
             "ScriptHash",
             "SpendingCredential",
             "StakingCredential",
-            "StakingHash",
             "StakingValidatorHash",
+            "TimeLike",
             "TimeRange",
             "TxId",
             "TxInput",
@@ -197,19 +203,11 @@ export class LoadedScriptsWriter {
             "ValidatorHash",
             "Value"
         )
-        this.writeImportType("@helios-lang/codec-utils", "IntLike")
-        this.writeImportType("@helios-lang/contract-utils", "CastConfig")
-        this.writeImportType(
-            "@helios-lang/contract-utils",
-            "ConfigurableCast",
-            ["TStrict", "TPermissive"]
-        )
-        this.writeImportType("@helios-lang/ledger", "TimeLike")
-        this.writeImportType("@helios-lang/uplc", "UplcData")
-        this.writeImportType("@helios-lang/uplc", "UplcProgram")
+        this.writeImportType("@helios-lang/uplc", "UplcData", "UplcProgram")
     }
 
     /**
+     * @private
      * @param {Record<string, TypeSchema>} types
      */
     writeTypes(types) {
@@ -222,13 +220,13 @@ export class LoadedScriptsWriter {
             const tsTypes = genTypes(t)
 
             this.definition.write(
-                `        ${key}: (config) => /** @type {Cast<${tsTypes[0]}, ${tsTypes[1]}>} */ (new Cast(${JSON.stringify(t)}, config)),\n`
+                `        ${key}: (config) => /** @type {Cast<${tsTypes[0]}, ${tsTypes[1]}>} */ (makeCast(${JSON.stringify(t)}, config)),\n`
             )
             this.declaration.write(
                 `        ${key}: ConfigurableCast<${tsTypes[0]}, ${tsTypes[1]}>,\n`
             )
             this.combined.write(
-                `        ${key}: (config: CastConfig) => new Cast<${tsTypes[0]}, ${tsTypes[1]}>(${JSON.stringify(t)}, config),\n`
+                `        ${key}: (config: CastConfig) => makeCast<${tsTypes[0]}, ${tsTypes[1]}>(${JSON.stringify(t)}, config),\n`
             )
         }
 
@@ -238,6 +236,7 @@ export class LoadedScriptsWriter {
     }
 
     /**
+     * @private
      * @param {Record<string, TypeCheckedUserFunc>} functions
      */
     writeFunctions(functions) {
@@ -252,13 +251,13 @@ export class LoadedScriptsWriter {
             const propsStr = `{...(${JSON.stringify(fn)}), castConfig: config, validatorIndices: __validatorIndices}`
 
             this.definition.write(
-                `        "${key}": (uplc, config) => /** @type {UserFunc<${argsType}, ${retType}>} */ (new UserFunc(uplc, ${propsStr})),\n`
+                `        "${key}": (uplc, config) => /** @type {UserFunc<${argsType}, ${retType}>} */ (makeUserFunc(uplc, ${propsStr})),\n`
             )
             this.declaration.write(
                 `        "${key}": (uplc: UplcProgram, config: CastConfig) => UserFunc<${argsType}, ${retType}>,\n`
             )
             this.combined.write(
-                `        "${key}": (uplc: UplcProgram, config: CastConfig) => new UserFunc<${argsType}, ${retType}>(uplc, ${propsStr}),\n`
+                `        "${key}": (uplc: UplcProgram, config: CastConfig) => makeUserFunc<${argsType}, ${retType}>(uplc, ${propsStr}),\n`
             )
         }
 
@@ -320,8 +319,8 @@ ${isSome(currentScriptIndex) ? `    $currentScriptIndex: /** @type {const} */ ($
     $dependencies: /** @type {const} */ ([${v.moduleDepedencies.join(", ")}]),
     $hashDependencies: [${v.hashDependencies.filter((d) => d != v.name).join(", ")}],
     $dependsOnOwnHash: ${v.hashDependencies.some((d) => d == v.name)},
-    $Redeemer: (config) => /** @type {Cast<${redeemerTypes[0]}, ${redeemerTypes[1]}>} */ (new Cast(${JSON.stringify(v.Redeemer)}, config)),
-${datumTypes ? `    $Datum: (config) => /** @type {Cast<${datumTypes[0]}, ${datumTypes[1]}>} */ (new Cast(${JSON.stringify(v.Datum)}, config)),\n` : ""}`
+    $Redeemer: (config) => /** @type {Cast<${redeemerTypes[0]}, ${redeemerTypes[1]}>} */ (makeCast(${JSON.stringify(v.Redeemer)}, config)),
+${datumTypes ? `    $Datum: (config) => /** @type {Cast<${datumTypes[0]}, ${datumTypes[1]}>} */ (makeCast(${JSON.stringify(v.Datum)}, config)),\n` : ""}`
         )
 
         this.declaration.write(
@@ -349,8 +348,8 @@ ${isSome(currentScriptIndex) ? `    $currentScriptIndex: ${currentScriptIndex} a
     $dependencies: [${v.moduleDepedencies.join(", ")}] as const,
     $hashDependencies: [${v.hashDependencies.filter((d) => d != v.name).join(", ")}],
     $dependsOnOwnHash: ${v.hashDependencies.some((d) => d == v.name)} as boolean,
-    $Redeemer: (config: CastConfig) => new Cast<${redeemerTypes[0]}, ${redeemerTypes[1]}>(${JSON.stringify(v.Redeemer)}, config),
-${datumTypes ? `    $Datum: (config: CastConfig) => new Cast<${datumTypes[0]}, ${datumTypes[1]}>(${JSON.stringify(v.Datum)}, config),\n` : ""}`
+    $Redeemer: (config: CastConfig) => makeCast<${redeemerTypes[0]}, ${redeemerTypes[1]}>(${JSON.stringify(v.Redeemer)}, config),
+${datumTypes ? `    $Datum: (config: CastConfig) => makeCast<${datumTypes[0]}, ${datumTypes[1]}>(${JSON.stringify(v.Datum)}, config),\n` : ""}`
         )
 
         this.writeTypes(v.types)
@@ -362,6 +361,7 @@ ${datumTypes ? `    $Datum: (config: CastConfig) => new Cast<${datumTypes[0]}, $
     }
 
     /**
+     * @private
      * @param {Record<string, TypeCheckedValidator>} validators
      */
     writeValidatorIndices(validators) {

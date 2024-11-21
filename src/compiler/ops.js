@@ -3,13 +3,11 @@ import {
     translateImportPaths as translateImportPathsInternal,
     readHeader
 } from "@helios-lang/compiler-utils"
-import { CompilerLib_v0_16 } from "./CompilerLib_v0_16.js"
-import { CompilerLib_v0_17 } from "./CompilerLib_v0_17.js"
+import { makeCompilerLib_v0_16 } from "./CompilerLib_v0_16.js"
+import { makeCompilerLib_v0_17 } from "./CompilerLib_v0_17.js"
 
 /**
- * @typedef {import("./CompilerLib.js").CompilerLib} CompilerLib
- * @typedef {import("./CompilerLib.js")}
- * @typedef {import("./CompilerLib.js").TypeCheckOutput} TypeCheckOutput
+ * @import { CompilerLib, TypeCheckOutput } from "../index.js"
  */
 
 /**
@@ -31,9 +29,9 @@ export function loadCompilerLib() {
         case 0:
             switch (minor) {
                 case 16:
-                    return new CompilerLib_v0_16(unsafeLib)
+                    return makeCompilerLib_v0_16(unsafeLib)
                 case 17:
-                    return new CompilerLib_v0_17(unsafeLib)
+                    return makeCompilerLib_v0_17(unsafeLib)
             }
         default:
             throw new Error(

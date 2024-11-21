@@ -1,8 +1,8 @@
 /**
- * @typedef {import("@helios-lang/type-utils").TypeSchema} TypeSchema
+ * @import { TypeSchema } from "@helios-lang/type-utils"
  */
 
-const NONE = "null"
+const NONE = "undefined"
 
 /**
  * TODO: handle recursive data structures
@@ -50,20 +50,12 @@ export function genTypes(schema) {
                 case "Real":
                     return ["number", "number"]
                 case "SpendingCredential":
-                    return [
-                        "SpendingCredential",
-                        "SpendingCredential | PubKeyHash | ValidatorHash"
-                    ]
+                    return ["SpendingCredential", "SpendingCredential"]
                 case "StakingCredential":
-                    return [
-                        "StakingCredential",
-                        "StakingCredential | StakingHash | PubKeyHash | StakingValidatorHash"
-                    ]
+                    return ["StakingCredential", "StakingCredential"]
                 case "StakingHash":
-                    return [
-                        "StakingHash",
-                        "StakingHash | PubKeyHash | StakingValidatorHash"
-                    ]
+                    // TODO: implement this
+                    return ["never", "never"]
                 case "StakingValidatorHash":
                     return [
                         "StakingValidatorHash",

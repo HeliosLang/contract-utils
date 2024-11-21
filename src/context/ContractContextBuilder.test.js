@@ -1,22 +1,14 @@
 import { deepEqual, strictEqual } from "node:assert"
 import { describe, it } from "node:test"
-import { Address, AssetClass } from "@helios-lang/ledger"
-import { Cast } from "../cast/index.js"
-import { ContractContextBuilder } from "./ContractContextBuilder.js"
+import { makeAddress, makeAssetClass } from "@helios-lang/ledger"
+import { makeCast } from "../cast/index.js"
+import { makeContractContextBuilder } from "./ContractContextBuilder.js"
 
 /**
- * @typedef {import("@helios-lang/codec-utils").IntLike} IntLike
- * @typedef {import("@helios-lang/ledger").TimeLike} TimeLike
- * @typedef {import("@helios-lang/uplc").UplcData} UplcData
- * @typedef {import("../cast/index.js").CastConfig} CastConfig
- * @typedef {import("../codegen/index.js").LoadedModule} LoadedModule
- * @typedef {import("../codegen/index.js").LoadedValidator} LoadedValidator
- */
-
-/**
- * @template TStrict
- * @template TPermissive
- * @typedef {import("../cast/index.js").ConfigurableCast<TStrict, TPermissive>} ConfigurableCast
+ * @import { IntLike } from "@helios-lang/codec-utils"
+ * @import { TimeLike } from "@helios-lang/ledger"
+ * @import { UplcData } from "@helios-lang/uplc"
+ * @import { Cast, CastConfig, ConfigurableCast, LoadedModule, LoadedValidator } from "../index.js"
  */
 
 /**
@@ -39,7 +31,7 @@ func compare(a: String, b: String) -> Bool {
     $types: {
         MyUtilType: (config) =>
             /** @type {Cast<{hello: bigint}, {hello: IntLike}>} */ (
-                new Cast(
+                makeCast(
                     {
                         kind: "struct",
                         id: "",
@@ -72,7 +64,7 @@ func main(redeemer: Bool) -> Bool {
     $dependsOnOwnHash: false,
     $Redeemer: (config) =>
         /** @type {Cast<boolean, boolean>} */ (
-            new Cast({ kind: "internal", name: "Bool" }, config)
+            makeCast({ kind: "internal", name: "Bool" }, config)
         ),
     $types: {},
     $functions: {}
@@ -105,11 +97,11 @@ func main(datum: Datum, redeemer: String) -> Bool {
     $dependsOnOwnHash: true,
     $Redeemer: (config) =>
         /** @type {Cast<string, string>} */ (
-            new Cast({ kind: "internal", name: "String" }, config)
+            makeCast({ kind: "internal", name: "String" }, config)
         ),
     $Datum: (config) =>
         /** @type {Cast<{One: {message: string}} | {Two: {code: bigint}}, {One: {message: string}} | {Two: {code: IntLike}}>} */ (
-            new Cast(
+            makeCast(
                 {
                     kind: "enum",
                     id: "",
@@ -147,7 +139,7 @@ func main(datum: Datum, redeemer: String) -> Bool {
     $types: {
         Datum: (config) =>
             /** @type {Cast<{One: {message: string}} | {Two: {code: bigint}}, {One: {message: string}} | {Two: {code: IntLike}}>} */ (
-                new Cast(
+                makeCast(
                     {
                         kind: "enum",
                         id: "",
@@ -189,8 +181,8 @@ func main(datum: Datum, redeemer: String) -> Bool {
     $functions: {}
 }
 
-describe(`${ContractContextBuilder.name} typechecks`, () => {
-    const ctx = ContractContextBuilder.new()
+describe("ContractContextBuilder typechecks", () => {
+    const ctx = makeContractContextBuilder()
         .with(match_string)
         .with(match_string_policy)
         .build({ isMainnet: false })
@@ -209,11 +201,11 @@ describe(`${ContractContextBuilder.name} typechecks`, () => {
     })
 
     it(`AssetClass with context ok`, () => {
-        const assetClass = new AssetClass(ctx.match_string_policy.$hash, [])
+        const assetClass = makeAssetClass(ctx.match_string_policy.$hash, [])
 
         strictEqual(
-            assetClass.context.redeemer.fromUplcData(
-                assetClass.context.redeemer.toUplcData(true)
+            assetClass.mph.context.redeemer.fromUplcData(
+                assetClass.mph.context.redeemer.toUplcData(true)
             ),
             true
         )
@@ -221,11 +213,11 @@ describe(`${ContractContextBuilder.name} typechecks`, () => {
     })
 
     it(`Address with context ok`, () => {
-        const addr = Address.fromHash(false, ctx.match_string.$hash)
+        const addr = makeAddress(false, ctx.match_string.$hash)
 
         deepEqual(
-            addr.spendingContext.datum.fromUplcData(
-                addr.spendingContext.datum.toUplcData({
+            addr.spendingCredential.context.datum.fromUplcData(
+                addr.spendingCredential.context.datum.toUplcData({
                     One: { message: "hello" }
                 })
             ),

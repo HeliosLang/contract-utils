@@ -1,82 +1,81 @@
 import { decodeUtf8, encodeUtf8 } from "@helios-lang/codec-utils"
 import {
-    Address,
-    AssetClass,
-    DatumHash,
-    MintingPolicyHash,
-    PubKey,
-    PubKeyHash,
-    ScriptHash,
-    SpendingCredential,
-    StakingCredential,
-    StakingHash,
-    StakingValidatorHash,
-    TimeRange,
-    TxId,
-    TxInput,
-    TxOutput,
-    TxOutputDatum,
-    TxOutputId,
-    ValidatorHash,
-    Value
+    convertSpendingCredentialToUplcData,
+    convertStakingCredentialToUplcData,
+    convertUplcDataToAssetClass,
+    convertUplcDataToMintingPolicyHash,
+    convertUplcDataToPubKey,
+    convertUplcDataToPubKeyHash,
+    convertUplcDataToShelleyAddress,
+    convertUplcDataToSpendingCredential,
+    convertUplcDataToStakingCredential,
+    convertUplcDataToStakingValidatorHash,
+    convertUplcDataToTimeRange,
+    convertUplcDataToTxId,
+    convertUplcDataToTxInput,
+    convertUplcDataToTxOutput,
+    convertUplcDataToTxOutputDatum,
+    convertUplcDataToTxOutputId,
+    convertUplcDataToValidatorHash,
+    convertUplcDataToValue,
+    makeAddress,
+    makeAssetClass,
+    makeDatumHash,
+    makeMintingPolicyHash,
+    makePubKey,
+    makePubKeyHash,
+    makeStakingValidatorHash,
+    makeTimeRange,
+    makeTxId,
+    makeTxOutputDatum,
+    makeTxOutputId,
+    makeValidatorHash,
+    makeValue
 } from "@helios-lang/ledger"
-import { None, expectSome } from "@helios-lang/type-utils"
+import { expectDefined } from "@helios-lang/type-utils"
 import {
-    ByteArrayData,
-    ConstrData,
-    IntData,
-    ListData,
-    MapData,
-    decodeBoolData,
-    decodeOptionData,
-    decodeRealData,
-    encodeBoolData,
-    encodeOptionData,
-    encodeRealData
+    uplcDataToBool,
+    unwrapUplcDataOption,
+    uplcDataToReal,
+    boolToUplcData,
+    wrapUplcDataOption,
+    realToUplcData,
+    expectByteArrayData,
+    expectConstrData,
+    expectIntData,
+    expectListData,
+    expectMapData,
+    makeByteArrayData,
+    makeConstrData,
+    makeIntData,
+    makeListData,
+    makeMapData
 } from "@helios-lang/uplc"
 
 /**
- * @typedef {import("@helios-lang/uplc").UplcData} UplcData
- * @typedef {import("../codegen/index.js").TypeSchema} TypeSchema
- */
-
-/**
- * @typedef {{
- *   isMainnet: boolean
- * }} CastConfig
- */
-
-/**
- * @template TStrict
- * @template TPermissive
- * @typedef {(config: CastConfig) => Cast<TStrict, TPermissive>} ConfigurableCast
- */
-
-/**
- * StrictType and PermissiveType work for both Cast and ConfigurableCast
- * @template TStrict
- * @template TPermissive
- * @typedef {Cast<TStrict, TPermissive> | ConfigurableCast<TStrict, TPermissive>} CastLike
- */
-
-/**
- * @typedef {Object} SchemaToUplcContext
- * @property {Record<string, TypeSchema>} defs - symbol table permitting recursive schema references
- * @property {string} dataPath - provides developer-facing cues for any parsing errors, showing the deep field path of any error
- */
-
-/**
- * @typedef {Object} UplcToSchemaContext
- * @property {Record<string, TypeSchema>} defs - symbol table permitting recursive schema references
- * @property {string} dataPath - provides developer-facing cues for any parsing errors, showing the deep field path of any error
- * @property {CastConfig} config - has isMainnet indicator
+ * @import { TxInput, TxOutput } from "@helios-lang/ledger"
+ * @import { TypeSchema } from "@helios-lang/type-utils"
+ * @import { UplcData } from "@helios-lang/uplc"
+ * @import { Cast, CastConfig, CastLike, SchemaToUplcContext, UplcToSchemaContext } from "../index.js"
  */
 
 /**
  * @template TStrict
  * @template TPermissive=TStrict
+ * @param {TypeSchema} schema
+ * @param {CastConfig} config
+ * @returns {Cast<TStrict, TPermissive>}
  */
-export class Cast {
+export function makeCast(schema, config) {
+    return new CastImpl(schema, config)
+}
+
+/**
+ * @template TStrict
+ * @template TPermissive=TStrict
+ * @implements {Cast<TStrict, TPermissive>}
+ */
+class CastImpl {
     /**
      * @readonly
      * @type {TypeSchema}
@@ -96,6 +95,13 @@ export class Cast {
     constructor(schema, config) {
         this.schema = schema
         this.config = config
+    }
+
+    /**
+     * @type {"Cast"}
+     */
+    get kind() {
+        return "Cast"
     }
 
     /**
@@ -170,7 +176,7 @@ function schemaToUplc(schema, x, inputContextOnly) {
     const kind = schema.kind
     switch (kind) {
         case "reference": {
-            const def = expectSome(defs[schema.id])
+            const def = expectDefined(defs[schema.id])
             return schemaToUplcWithDataPath(def, x, {
                 defs,
                 dataPath: `${dataPath}::ref{${schema.id}}`
@@ -181,68 +187,68 @@ function schemaToUplc(schema, x, inputContextOnly) {
 
             switch (name) {
                 case "Address":
-                    return Address.new(x).toUplcData()
+                    return makeAddress(x).toUplcData()
                 case "Any":
-                    return new IntData(0n)
+                    return makeIntData(0n)
                 case "AssetClass":
-                    return AssetClass.new(x).toUplcData()
+                    return makeAssetClass(x).toUplcData()
                 case "Bool":
-                    return encodeBoolData(x)
+                    return boolToUplcData(x)
                 case "ByteArray":
-                    return new ByteArrayData(x)
+                    return makeByteArrayData(x)
                 case "Credential":
                 case "SpendingCredential":
-                    return SpendingCredential.new(x).toUplcData()
+                    return convertSpendingCredentialToUplcData(x)
                 case "Data":
                     return x
                 case "DatumHash":
-                    return DatumHash.new(x).toUplcData()
+                    return makeDatumHash(x).toUplcData()
                 case "DCert":
                     return x.toUplcData()
                 case "Duration":
                 case "Int":
-                    return new IntData(x)
+                    return makeIntData(x)
                 case "MintingPolicyHash":
-                    return MintingPolicyHash.new(x).toUplcData()
+                    return makeMintingPolicyHash(x).toUplcData()
                 case "PubKey":
-                    return PubKey.new(x).toUplcData()
+                    return makePubKey(x).toUplcData()
                 case "PubKeyHash":
-                    return PubKeyHash.new(x).toUplcData()
+                    return makePubKeyHash(x).toUplcData()
                 case "Real":
-                    return encodeRealData(x)
+                    return realToUplcData(x)
                 case "Ratio":
-                    return new ListData([new IntData(x[0]), new IntData(x[1])])
+                    return makeListData([makeIntData(x[0]), makeIntData(x[1])])
                 case "ScriptHash":
-                    return ScriptHash.new(x).toUplcData()
+                    return makeByteArrayData(makeValidatorHash(x).bytes)
                 case "StakingCredential":
-                    return StakingCredential.new(x).toUplcData()
+                    return convertStakingCredentialToUplcData(makePubKeyHash(x))
                 case "StakingHash":
-                    return StakingHash.new(x).toUplcData()
+                    throw new Error("not yet implemented")
                 case "StakingValidatorHash":
-                    return StakingValidatorHash.new(x).toUplcData()
+                    return makeStakingValidatorHash(x).toUplcData()
                 case "String":
-                    return new ByteArrayData(encodeUtf8(x))
+                    return makeByteArrayData(encodeUtf8(x))
                 case "Time":
-                    return new IntData(x)
+                    return makeIntData(x)
                 case "TimeRange":
-                    return TimeRange.new(x).toUplcData()
+                    return makeTimeRange(x).toUplcData()
                 case "TxId":
-                    return TxId.new(x).toUplcData()
+                    return makeTxId(x).toUplcData()
                 case "TxInput":
                     return /** @type {TxInput} */ (x).toUplcData()
                 case "TxOutput":
                     return /** @type {TxOutput} */ (x).toUplcData()
                 case "TxOutputDatum":
                     return x
-                        ? (TxOutputDatum.new(x)?.toUplcData() ??
-                              new ConstrData(0, []))
-                        : new ConstrData(0, [])
+                        ? (makeTxOutputDatum(x)?.toUplcData() ??
+                              makeConstrData(0, []))
+                        : makeConstrData(0, [])
                 case "TxOutputId":
-                    return TxOutputId.new(x).toUplcData()
+                    return makeTxOutputId(x).toUplcData()
                 case "ValidatorHash":
-                    return ValidatorHash.new(x).toUplcData()
+                    return makeValidatorHash(x).toUplcData()
                 case "Value":
-                    return Value.new(x).toUplcData()
+                    return makeValue(x).toUplcData()
                 default:
                     throw new Error(
                         `schemaToUplc not yet implemented for ${name}`
@@ -250,7 +256,7 @@ function schemaToUplc(schema, x, inputContextOnly) {
             }
         }
         case "list":
-            return new ListData(
+            return makeListData(
                 x.map((x, i) =>
                     schemaToUplcWithDataPath(schema.itemType, x, {
                         defs,
@@ -265,7 +271,7 @@ function schemaToUplc(schema, x, inputContextOnly) {
                     : Array.isArray(x)
                       ? x
                       : Object.entries(x)
-            return new MapData(
+            return makeMapData(
                 entries.map(([k, v], i) => {
                     const displayKey = "string" == typeof k ? `'${k}'` : `@{i}`
                     return [
@@ -282,7 +288,7 @@ function schemaToUplc(schema, x, inputContextOnly) {
             )
         }
         case "tuple":
-            return new ListData(
+            return makeListData(
                 x.map((x, i) =>
                     schemaToUplcWithDataPath(schema.itemTypes[i], x, {
                         defs,
@@ -291,13 +297,13 @@ function schemaToUplc(schema, x, inputContextOnly) {
                 )
             )
         case "option":
-            return encodeOptionData(
+            return wrapUplcDataOption(
                 x
                     ? schemaToUplcWithDataPath(schema.someType, x, {
                           defs,
                           dataPath: `${dataPath}::Some`
                       })
-                    : None
+                    : undefined
             )
         case "struct": {
             defs[schema.id] = schema
@@ -313,7 +319,7 @@ function schemaToUplc(schema, x, inputContextOnly) {
                         }
                     )
                 case "list":
-                    return new ListData(
+                    return makeListData(
                         schema.fieldTypes.map(({ name, type }) =>
                             schemaToUplcWithDataPath(type, x[name], {
                                 defs,
@@ -355,7 +361,7 @@ function schemaToUplc(schema, x, inputContextOnly) {
                         if (ft) {
                             const encodingKey = ft.key || ft.name
                             const encodingInfo = ft.key ? ` as '${ft.key}'` : ""
-                            const keyData = new ByteArrayData(
+                            const keyData = makeByteArrayData(
                                 encodeUtf8(encodingKey)
                             )
 
@@ -377,7 +383,7 @@ function schemaToUplc(schema, x, inputContextOnly) {
                     //
                     // We just return our MapData, and we don't care whether it's used in any particular context.
 
-                    return new MapData(pairs)
+                    return makeMapData(pairs)
                 }
                 default:
                     throw new Error(
@@ -401,7 +407,7 @@ function schemaToUplc(schema, x, inputContextOnly) {
 
             // Gives the encoding of nested data a context to prevent a second ConstrData wrapper on the MapData
             // ... only for the first field.
-            return new ConstrData(
+            return makeConstrData(
                 tag,
                 schema.variantTypes[tag].fieldTypes.map((f, i) =>
                     schemaToUplcWithDataPath(f.type, variantFields[f.name], {
@@ -414,7 +420,7 @@ function schemaToUplc(schema, x, inputContextOnly) {
         case "variant":
             defs[schema.id] = schema
 
-            return new ConstrData(
+            return makeConstrData(
                 schema.tag,
                 schema.fieldTypes.map(({ name, type }) =>
                     schemaToUplcWithDataPath(type, x[name], {
@@ -470,19 +476,22 @@ function uplcToSchema(schema, data, inputContextOnly) {
 
             switch (name) {
                 case "Address":
-                    return Address.fromUplcData(config.isMainnet, data)
+                    return convertUplcDataToShelleyAddress(
+                        config.isMainnet,
+                        data
+                    )
                 case "Any":
                     // TODO: should this throw an error?
                     return null
                 case "AssetClass":
-                    return AssetClass.fromUplcData(data)
+                    return convertUplcDataToAssetClass(data)
                 case "Bool":
-                    return decodeBoolData(data, true)
+                    return uplcDataToBool(data, true)
                 case "ByteArray":
-                    return ByteArrayData.expect(data).bytes
+                    return expectByteArrayData(data).bytes
                 case "SpendingCredential":
                 case "Credential":
-                    return SpendingCredential.fromUplcData(data)
+                    return convertUplcDataToSpendingCredential(data)
                 case "Data":
                     return data
                 case "DCert":
@@ -491,56 +500,56 @@ function uplcToSchema(schema, data, inputContextOnly) {
                     )
                 case "Duration":
                 case "Int":
-                    return IntData.expect(data).value
+                    return expectIntData(data).value
                 case "MintingPolicyHash":
-                    return MintingPolicyHash.fromUplcData(data)
+                    return convertUplcDataToMintingPolicyHash(data)
                 case "PubKey":
-                    return PubKey.fromUplcData(data)
+                    return convertUplcDataToPubKey(data)
                 case "PubKeyHash":
-                    return PubKeyHash.fromUplcData(data)
+                    return convertUplcDataToPubKeyHash(data)
                 case "Ratio": {
-                    const [top, bottom] = ListData.expect(data).items
+                    const [top, bottom] = expectListData(data).items
                     return [
-                        IntData.expect(top).value,
-                        IntData.expect(bottom).value
+                        expectIntData(top).value,
+                        expectIntData(bottom).value
                     ]
                 }
                 case "Real":
-                    return decodeRealData(data)
+                    return uplcDataToReal(data)
                 case "ScriptHash":
-                    return ScriptHash.fromUplcData(data)
+                    return expectByteArrayData(data).bytes
                 case "StakingCredential":
-                    return StakingCredential.fromUplcData(data)
+                    return convertUplcDataToStakingCredential(data)
                 case "StakingHash":
-                    return StakingHash.fromUplcData(data)
+                    throw new Error("not yet implemented")
                 case "StakingValidatorHash":
-                    return StakingValidatorHash.fromUplcData(data)
+                    return convertUplcDataToStakingValidatorHash(data)
                 case "String":
-                    return decodeUtf8(ByteArrayData.expect(data).bytes)
+                    return decodeUtf8(expectByteArrayData(data).bytes)
                 case "Time":
-                    return Number(IntData.expect(data).value) // a number has enough precision to represent ms since 1970 for another 142000 years
+                    return Number(expectIntData(data).value) // a number has enough precision to represent ms since 1970 for another 142000 years
                 case "TimeRange":
-                    return TimeRange.fromUplcData(data)
+                    return convertUplcDataToTimeRange(data)
                 case "TxId":
-                    return TxId.fromUplcData(data)
+                    return convertUplcDataToTxId(data)
                 case "TxInput":
-                    return TxInput.fromUplcData(config.isMainnet, data)
+                    return convertUplcDataToTxInput(config.isMainnet, data)
                 case "TxOutput":
-                    return TxOutput.fromUplcData(config.isMainnet, data)
+                    return convertUplcDataToTxOutput(config.isMainnet, data)
                 case "TxOutputDatum":
-                    return TxOutputDatum.fromUplcData(data)
+                    return convertUplcDataToTxOutputDatum(data)
                 case "TxOutputId":
-                    return TxOutputId.fromUplcData(data)
+                    return convertUplcDataToTxOutputId(data)
                 case "ValidatorHash":
-                    return ValidatorHash.fromUplcData(data)
+                    return convertUplcDataToValidatorHash(data)
                 case "Value":
-                    return Value.fromUplcData(data)
+                    return convertUplcDataToValue(data)
                 default:
                     throw new Error(`not yet implemented for ${name}`)
             }
         }
         case "list":
-            return ListData.expect(data).items.map((x, i) =>
+            return expectListData(data).items.map((x, i) =>
                 uplcToSchemaWithDataPath(schema.itemType, x, {
                     ...context,
                     dataPath: `${dataPath}[${i}]`
@@ -548,7 +557,7 @@ function uplcToSchema(schema, data, inputContextOnly) {
             )
         case "map":
             return new Map(
-                MapData.expect(data).items.map(([k, v], i) => {
+                expectMapData(data).items.map(([k, v], i) => {
                     const key = uplcToSchemaWithDataPath(schema.keyType, k, {
                         ...context,
                         dataPath: `${dataPath}[mapKey @${i}]`
@@ -565,20 +574,20 @@ function uplcToSchema(schema, data, inputContextOnly) {
                 })
             )
         case "tuple":
-            return ListData.expect(data).items.map((x, i) =>
+            return expectListData(data).items.map((x, i) =>
                 uplcToSchemaWithDataPath(schema.itemTypes[i], x, {
                     ...context,
                     dataPath: `${dataPath}[tuple@${i}]`
                 })
             )
         case "option": {
-            const optionData = decodeOptionData(data)
+            const optionData = unwrapUplcDataOption(data)
             return optionData
                 ? uplcToSchemaWithDataPath(schema.someType, optionData, {
                       ...context,
                       dataPath: `${dataPath}::Some`
                   })
-                : None
+                : undefined
         }
         case "struct": {
             defs[schema.id] = schema
@@ -592,7 +601,7 @@ function uplcToSchema(schema, data, inputContextOnly) {
                         )
                     }
                 case "list": {
-                    const fields = ListData.expect(data).items
+                    const fields = expectListData(data).items
 
                     if (fields.length != schema.fieldTypes.length) {
                         throw new Error(
@@ -616,7 +625,7 @@ function uplcToSchema(schema, data, inputContextOnly) {
                 }
                 case "map": {
                     // never uses a ConstrData (one MAY be used in the Enum layer, if needed)
-                    const encodedEntries = MapData.expect(data).items
+                    const encodedEntries = expectMapData(data).items
 
                     if (encodedEntries.length != schema.fieldTypes.length) {
                         throw new Error(
@@ -632,7 +641,7 @@ function uplcToSchema(schema, data, inputContextOnly) {
                         return encodedEntries.findIndex(([key, _]) => {
                             return (
                                 targetName ==
-                                decodeUtf8(ByteArrayData.expect(key).bytes)
+                                decodeUtf8(expectByteArrayData(key).bytes)
                             )
                         })
                     }
@@ -640,7 +649,7 @@ function uplcToSchema(schema, data, inputContextOnly) {
                     return Object.fromEntries(
                         schema.fieldTypes
                             .map(({ name, type, key: encodingKey }) => {
-                                const i = expectSome(
+                                const i = expectDefined(
                                     findSerializedFieldIndex(
                                         encodingKey || name
                                     )
@@ -692,7 +701,7 @@ function uplcToSchema(schema, data, inputContextOnly) {
         }
         case "enum": {
             defs[schema.id] = schema
-            const { tag, fields } = ConstrData.expect(data)
+            const { tag, fields } = expectConstrData(data)
 
             const variantSchema = schema.variantTypes[tag]
 
@@ -727,7 +736,7 @@ function uplcToSchema(schema, data, inputContextOnly) {
         }
         case "variant": {
             defs[schema.id] = schema
-            const { fields } = ConstrData.expect(data)
+            const { fields } = expectConstrData(data)
 
             return Object.fromEntries(
                 fields.map((field, i) => [
@@ -752,9 +761,9 @@ function uplcToSchema(schema, data, inputContextOnly) {
  * @returns {Cast<TStrict, TPermissive>}
  */
 export function configureCast(cast, config) {
-    if (cast instanceof Cast) {
+    if ("kind" in cast && cast.kind == "Cast") {
         return cast
     } else {
-        return cast(config)
+        return /** @type {any} */ (cast)(config)
     }
 }

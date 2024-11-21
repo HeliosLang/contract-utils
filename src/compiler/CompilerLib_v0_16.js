@@ -1,20 +1,12 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
 import { readHeader } from "@helios-lang/compiler-utils"
-import { expectSome } from "@helios-lang/type-utils"
+import { expectDefined } from "@helios-lang/type-utils"
 import { getValidatorTypes } from "./CompilerLib.js"
 
 /**
- * @typedef {import("@helios-lang/uplc").UplcData} UplcData
- * @typedef {import("../codegen/index.js").TypeCheckedModule} TypeCheckedModule
- * @typedef {import("../codegen/index.js").TypeCheckedValidator} TypeCheckedValidator
- * @typedef {import("../codegen/index.js").TypeSchema} TypeSchema
- * @typedef {import("./CompilerLib.js").CompileOptions} CompileOptions
- * @typedef {import("./CompilerLib.js").CompileOutput} CompileOutput
- * @typedef {import("./CompilerLib.js").CompilerLib} CompilerLib
- * @typedef {import("./CompilerLib.js").DagDependencies} DagDependencies
- * @typedef {import("./CompilerLib.js").ScriptHashType} ScriptHashType
- * @typedef {import("./CompilerLib.js").SourceDetails} SourceDetails
- * @typedef {import("./CompilerLib.js").TypeCheckOutput} TypeCheckOutput
+ * @import { TypeSchema } from "@helios-lang/type-utils"
+ * @import { UplcData } from "@helios-lang/uplc"
+ * @import { CompileOptions, CompileOutput, CompilerLib, DagDependencies, ScriptHashType, SourceDetails, TypeCheckOutput, TypeCheckedModule, TypeCheckedValidator }  from "../index.js"
  */
 
 /**
@@ -131,9 +123,17 @@ import { getValidatorTypes } from "./CompilerLib.js"
  */
 
 /**
+ * @param {any} lib
+ * @returns {CompilerLib}
+ */
+export function makeCompilerLib_v0_16(lib) {
+    return new CompilerLib_v0_16(lib)
+}
+
+/**
  * @implements {CompilerLib}
  */
-export class CompilerLib_v0_16 {
+class CompilerLib_v0_16 {
     /**
      * @param {any} lib
      */
@@ -570,7 +570,7 @@ export class CompilerLib_v0_16 {
                 const module_ =
                     moduleName.value == program.name
                         ? program.mainModule
-                        : expectSome(
+                        : expectDefined(
                               program.mainImportedModules.find(
                                   (m) => m.name.value == moduleName.value
                               ),
