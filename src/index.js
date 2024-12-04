@@ -1,4 +1,4 @@
-export { makeCast, makeUserFunc } from "./cast/index.js"
+export { makeCast, makeUserFunc, makeErgoCast } from "./cast/index.js"
 export {
     makeContractContextBuilder,
     contractContextCache
