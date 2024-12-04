@@ -7,6 +7,7 @@ export { typeCheckFiles, typeCheckScripts } from "./compiler/ops.js"
 export { makeLoadedScriptsWriter } from "./codegen/index.js"
 export { loadCompilerLib } from "./compiler/ops.js"
 
+export { genTypes } from "./codegen/TypeSchema.js"
 /**
  * @import { MintingContext, MintingPolicyHash, ScriptHash, SpendingContext, StakingContext, StakingValidatorHash, ValidatorHash } from "@helios-lang/ledger"
  * @import { TypeSchema } from "@helios-lang/type-utils"
