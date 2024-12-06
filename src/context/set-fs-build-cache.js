@@ -4,6 +4,7 @@ import * as path from "node:path"
 import { contractContextCache } from "./ContractContextCache.js"
 
 /**
+ * @import { JsonSafe } from "@helios-lang/type-utils"
  * @typedef {import("./ContractContextCache.js").ExplicitCache} ExplicitCache
  */
 

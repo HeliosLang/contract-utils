@@ -1,9 +1,5 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
-import {
-    expectDefined as expectDefined,
-    isLeft,
-    isString
-} from "@helios-lang/type-utils"
+import { expectDefined, isLeft, isString } from "@helios-lang/type-utils"
 import {
     makeConstrData,
     makeUplcDataValue,
@@ -12,7 +8,7 @@ import {
 import { makeCast } from "./Cast.js"
 
 /**
- * @import { TypeSchema } from "@helios-lang/type-utils"
+ * @import { Either, TypeSchema } from "@helios-lang/type-utils"
  * @import { CekResult, UplcData, UplcLogger, UplcProgram, UplcValue } from "@helios-lang/uplc"
  * @import { Cast, CastConfig, UnsafeArgsT, UserFunc, UserFuncProps } from "../index.js"
  */

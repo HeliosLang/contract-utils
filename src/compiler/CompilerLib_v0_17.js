@@ -9,7 +9,7 @@ import { makeUplcSourceMap } from "@helios-lang/uplc"
 /**
  * @typedef {{
  *   name: string
- *   currentScriptIndex: Option<number>
+ *   currentScriptIndex: number | undefined
  *   changeParam(key: string, value: UplcData): void
  *   compile(options: {
  *     optimize?: boolean,

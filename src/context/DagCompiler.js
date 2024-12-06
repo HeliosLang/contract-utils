@@ -389,7 +389,7 @@ export class DagCompiler {
      * If any $currentScriptIndex is missing, None is returned
      * @private
      * @param {LoadedValidator[]} validators
-     * @returns {Option<Record<string, number>>}
+     * @returns {Record<string, number> | undefined}
      */
     getValidatorIndices(validators) {
         /**

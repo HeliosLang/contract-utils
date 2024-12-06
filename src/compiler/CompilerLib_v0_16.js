@@ -602,7 +602,7 @@ class CompilerLib_v0_16 {
     /**
      * @private
      * @param {any} program
-     * @param {Option<Record<string, UplcData>>} parameters
+     * @param {Record<string, UplcData> | undefined} parameters
      */
     setParameters(program, parameters) {
         if (!parameters) {

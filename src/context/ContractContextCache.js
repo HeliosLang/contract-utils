@@ -4,6 +4,7 @@ import { JSON } from "@helios-lang/type-utils"
 import { cacheEntryFromJson, cacheEntryToJsonSafe } from "./CacheEntry.js"
 
 /**
+ * @import { JsonSafe } from "@helios-lang/type-utils"
  * @import { UplcData, UplcProgram } from "@helios-lang/uplc"
  * @import { LoadedModule, LoadedValidator } from "../index.js"
  * @typedef {import("./CacheEntry.js").CacheEntry} CacheEntry
@@ -31,7 +32,7 @@ class ContractContextCache {
     /**
      * Explicitly specified by user by calling setBuildCache()
      * @readwrite
-     * @type {Option<ExplicitCache>}
+     * @type {ExplicitCache | undefined}
      */
     explicitCache
 
@@ -117,7 +118,7 @@ class ContractContextCache {
 
     /**
      * @param {string} key - empty string is used to access positional cache (eg. for esbuild-plugn)
-     * @returns {Option<CacheEntry>}
+     * @returns {CacheEntry | undefined}
      */
     get(key) {
         if (key != "") {
