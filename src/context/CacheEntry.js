@@ -94,10 +94,10 @@ export function cacheEntryToJsonSafe(entry) {
 
         if (
             !(
-                typeof hash.context == "object" &&
-                hash.context !== null &&
-                "redeemer" in hash.context &&
-                "program" in hash.context
+                typeof context == "object" &&
+                context !== null &&
+                "redeemer" in context &&
+                "program" in context
             )
         ) {
             throw new Error("invalid context")
@@ -107,11 +107,11 @@ export function cacheEntryToJsonSafe(entry) {
          * @type {Cast<any, any> | undefined}
          */
         const redeemer = /** @type {any} */ (
-            typeof hash.context.redeemer == "object" &&
-            hash.context.redeemer !== null &&
-            "kind" in hash.context.redeemer &&
-            hash.context.redeemer.kind == "Cast"
-                ? hash.context.redeemer
+            typeof context.redeemer == "object" &&
+            context.redeemer !== null &&
+            "kind" in context.redeemer &&
+            context.redeemer.kind == "Cast"
+                ? context.redeemer
                 : undefined
         )
 
@@ -125,14 +125,14 @@ export function cacheEntryToJsonSafe(entry) {
         let datum = undefined
 
         if (
-            "datum" in hash.context &&
-            hash.context.datum &&
-            typeof hash.context.datum == "object" &&
-            hash.context.datum !== null &&
-            "kind" in hash.context.datum &&
-            hash.context.datum.kind == "Cast"
+            "datum" in context &&
+            context.datum &&
+            typeof context.datum == "object" &&
+            context.datum !== null &&
+            "kind" in context.datum &&
+            context.datum.kind == "Cast"
         ) {
-            datum = /** @type {any} */ (hash.context.datum)
+            datum = /** @type {any} */ (context.datum)
         }
 
         if (["spending", "mixed"].includes(purpose) && !datum) {
@@ -142,7 +142,7 @@ export function cacheEntryToJsonSafe(entry) {
         /**
          * @type {UplcProgramV1 | UplcProgramV2}
          */
-        const program = /** @type {any} */ (hash.context.program)
+        const program = /** @type {any} */ (context.program)
 
         resValidators[name] = {
             purpose: purpose,
@@ -250,6 +250,7 @@ export function cacheEntryFromJson(entry) {
         let redeemer = makeCast(props.redeemer, props.castConfig)
 
         switch (props.purpose) {
+            case "mixed": // TODO: de we need a separate ValidatorHash type for this?
             case "spending": {
                 res.validators[name] = makeValidatorHash(props.bytes, {
                     datum: makeCast(
@@ -273,15 +274,6 @@ export function cacheEntryFromJson(entry) {
                     redeemer: redeemer,
                     program: program
                 })
-                break
-            }
-            case "mixed": {
-                throw new Error("implement ScriptHash type")
-                /*res.validators[name] = new ScriptHash(props.bytes, {
-                    datum: makeCast(expectDefined(props.datum), props.castConfig),
-                    redeemer: redeemer,
-                    program: program
-                })*/
                 break
             }
             default:

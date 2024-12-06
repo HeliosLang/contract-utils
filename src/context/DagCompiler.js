@@ -283,20 +283,13 @@ export class DagCompiler {
         const redeemer = configureCast(validator.$Redeemer, this.config)
 
         switch (validator.$purpose) {
+            case "mixed": // TODO: do we need a separate ValidatorHash type for this?
             case "spending":
                 this.cachedValidators[name] = makeValidatorHash(hash, {
                     program,
                     redeemer,
                     datum: configureCast(validator.$Datum, this.config)
                 })
-                break
-            case "mixed":
-                throw new Error("not yet implemented")
-                /*this.cachedValidators[name] = new ScriptHash(hash, {
-                    program,
-                    redeemer,
-                    datum: configureCast(validator.$Datum, this.config)
-                })*/
                 break
             case "minting":
                 this.cachedValidators[name] = makeMintingPolicyHash(hash, {
