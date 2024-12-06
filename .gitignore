@@ -5,6 +5,7 @@ node_modules
 log.*
 *.log
 examples/**/*.json
+!examples/**/package.json
 examples/**/*.js
 !examples/**/contract.js
 types

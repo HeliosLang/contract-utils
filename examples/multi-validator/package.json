@@ -1,0 +1,16 @@
+{
+  "name": "spending_example",
+  "type": "module",
+  "scripts": {
+    "transpile": "hl2ts"
+  },
+  "dependencies": {
+    "@helios-lang/compiler": "^0.17.8",
+    "@helios-lang/contract-utils": "file:../..",
+    "@helios-lang/ledger": "0.6.8",
+    "@helios-lang/tx-utils": "^0.3.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.3"
+  }
+}
