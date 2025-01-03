@@ -122,8 +122,10 @@ export { genTypes } from "./codegen/TypeSchema.js"
  */
 
 /**
+ * `unwrapSingleFieldEnumVariants` defaults to false. If true, the following enum variant data structure is used: `{VariantName: SingleFieldData}`, instead of the more verbose `{VariantName: {SingleFieldName: SingleFieldData}}`
  * @typedef {{
  *   isMainnet: boolean
+ *   unwrapSingleFieldEnumVariants?: boolean
  * }} CastConfig
  */
 
@@ -154,19 +156,6 @@ export { genTypes } from "./codegen/TypeSchema.js"
  * @template TStrict
  * @template TPermissive
  * @typedef {Cast<TStrict, TPermissive> | ConfigurableCast<TStrict, TPermissive>} CastLike
- */
-
-/**
- * @typedef {Object} SchemaToUplcContext
- * @prop {Record<string, TypeSchema>} defs - symbol table permitting recursive schema references
- * @prop {string} dataPath - provides developer-facing cues for any parsing errors, showing the deep field path of any error
- */
-
-/**
- * @typedef {Object} UplcToSchemaContext
- * @prop {Record<string, TypeSchema>} defs - symbol table permitting recursive schema references
- * @prop {string} dataPath - provides developer-facing cues for any parsing errors, showing the deep field path of any error
- * @prop {CastConfig} config - has isMainnet indicator
  */
 
 /**

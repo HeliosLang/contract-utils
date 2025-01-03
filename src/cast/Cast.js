@@ -54,9 +54,24 @@ import {
 
 /**
  * @import { TxInput, TxOutput } from "@helios-lang/ledger"
- * @import { TypeSchema } from "@helios-lang/type-utils"
- * @import { UplcData } from "@helios-lang/uplc"
- * @import { Cast, CastConfig, CastLike, SchemaToUplcContext, UplcToSchemaContext } from "../index.js"
+ * @import { EnumTypeSchema, TypeSchema } from "@helios-lang/type-utils"
+ * @import { ConstrData, UplcData } from "@helios-lang/uplc"
+ * @import { Cast, CastConfig, CastLike } from "../index.js"
+ */
+
+/**
+ * @typedef {Object} SchemaToUplcContext
+ * @prop {Record<string, TypeSchema>} defs - symbol table permitting recursive schema references
+ * @prop {string} dataPath - provides developer-facing cues for any parsing errors, showing the deep field path of any error
+ * @prop {boolean} unwrapSingleFieldEnumVariants - defaults to false. If true, assumes the following input objects for enum variants: `{VariantName: SingleFieldData}`, instead of  the more verbose `{VariantName: {SingleFieldName: SingleFieldData}}`
+ */
+
+/**
+ * @typedef {Object} UplcToSchemaContext
+ * @prop {Record<string, TypeSchema>} defs - symbol table permitting recursive schema references
+ * @prop {string} dataPath - provides developer-facing cues for any parsing errors, showing the deep field path of any error
+ * @prop {boolean} unwrapSingleFieldEnumVariants - defaults to false. If true, the following enum variant outputs are created: `{VariantName: SingleFieldData}`, instead of  the more verbose `{VariantName: {SingleFieldName: SingleFieldData}}`
+ * @prop {boolean} isMainnet
  */
 
 /**
@@ -110,8 +125,10 @@ class CastImpl {
      * @returns {TStrict}
      */
     fromUplcData(data, dataPath = "") {
-        return uplcToSchemaWithDataPath(this.schema, data, {
-            config: this.config,
+        return convertUplcDataToSchemaDataWithDataPath(this.schema, data, {
+            isMainnet: this.config.isMainnet,
+            unwrapSingleFieldEnumVariants:
+                !!this.config.unwrapSingleFieldEnumVariants,
             dataPath,
             defs: {}
         })
@@ -129,8 +146,10 @@ class CastImpl {
      * @returns {UplcData}
      */
     toUplcData(x, dataPath = "") {
-        const t = schemaToUplcWithDataPath(this.schema, x, {
+        const t = convertSchemaDataToUplcDataWithDataPath(this.schema, x, {
             defs: {},
+            unwrapSingleFieldEnumVariants:
+                !!this.config.unwrapSingleFieldEnumVariants,
             dataPath
         })
         t.rawData = x
@@ -140,13 +159,13 @@ class CastImpl {
 
 /**
  * @param {TypeSchema} schema
- * @param {any} x
+ * @param {any} x - data
  * @param {SchemaToUplcContext} context
  * @returns {UplcData}
  */
-function schemaToUplcWithDataPath(schema, x, context) {
+function convertSchemaDataToUplcDataWithDataPath(schema, x, context) {
     try {
-        const t = schemaToUplc(schema, x, context)
+        const t = convertSchemaDataToUplcData(schema, x, context)
         t.dataPath = context.dataPath
         return t
     } catch (e) {
@@ -160,27 +179,36 @@ function schemaToUplcWithDataPath(schema, x, context) {
 }
 
 /**
+ * @template T [{dataPath: string}]
+ * @param {T} context
+ * @param {string} dataPath
+ * @returns {T}
+ */
+function passContext(context, dataPath) {
+    return {
+        ...context,
+        dataPath
+    }
+}
+
+/**
  * @param {TypeSchema} schema
- * @param {any} x
- * @param {SchemaToUplcContext} inputContextOnly
+ * @param {any} x - JS data
+ * @param {SchemaToUplcContext} context
  * @returns {UplcData}
  */
-function schemaToUplc(schema, x, inputContextOnly) {
-    // const { defs = {}, dataPath = "" } = inputContext
-    // important: DON'T extend the inputContext for use in nested calls.
-    const { dataPath, defs } = inputContextOnly
-
-    // Only the defs can be passed down, and it's simpler syntactically
-    //   ... just use the defs directly in the nested calls.
+function convertSchemaDataToUplcData(schema, x, context) {
+    const { dataPath, defs } = context
 
     const kind = schema.kind
     switch (kind) {
         case "reference": {
             const def = expectDefined(defs[schema.id])
-            return schemaToUplcWithDataPath(def, x, {
-                defs,
-                dataPath: `${dataPath}::ref{${schema.id}}`
-            })
+            return convertSchemaDataToUplcDataWithDataPath(
+                def,
+                x,
+                passContext(context, `${dataPath}::ref{${schema.id}}`)
+            )
         }
         case "internal": {
             const name = schema.name
@@ -258,10 +286,11 @@ function schemaToUplc(schema, x, inputContextOnly) {
         case "list":
             return makeListData(
                 x.map((x, i) =>
-                    schemaToUplcWithDataPath(schema.itemType, x, {
-                        defs,
-                        dataPath: `${dataPath}.list[${i}]`
-                    })
+                    convertSchemaDataToUplcDataWithDataPath(
+                        schema.itemType,
+                        x,
+                        passContext(context, `${dataPath}.list[${i}]`)
+                    )
                 )
             )
         case "map": {
@@ -275,14 +304,22 @@ function schemaToUplc(schema, x, inputContextOnly) {
                 entries.map(([k, v], i) => {
                     const displayKey = "string" == typeof k ? `'${k}'` : `@{i}`
                     return [
-                        schemaToUplcWithDataPath(schema.keyType, k, {
-                            defs,
-                            dataPath: `${dataPath}[mapKey ${displayKey}]`
-                        }),
-                        schemaToUplcWithDataPath(schema.valueType, v, {
-                            defs,
-                            dataPath: `${dataPath}[mapVal ${displayKey}]`
-                        })
+                        convertSchemaDataToUplcDataWithDataPath(
+                            schema.keyType,
+                            k,
+                            passContext(
+                                context,
+                                `${dataPath}[mapKey ${displayKey}]`
+                            )
+                        ),
+                        convertSchemaDataToUplcDataWithDataPath(
+                            schema.valueType,
+                            v,
+                            passContext(
+                                context,
+                                `${dataPath}[mapVal ${displayKey}]`
+                            )
+                        )
                     ]
                 })
             )
@@ -290,19 +327,21 @@ function schemaToUplc(schema, x, inputContextOnly) {
         case "tuple":
             return makeListData(
                 x.map((x, i) =>
-                    schemaToUplcWithDataPath(schema.itemTypes[i], x, {
-                        defs,
-                        dataPath: `${dataPath}[tuple@${i}]`
-                    })
+                    convertSchemaDataToUplcDataWithDataPath(
+                        schema.itemTypes[i],
+                        x,
+                        passContext(context, `${dataPath}[tuple@${i}]`)
+                    )
                 )
             )
         case "option":
             return wrapUplcDataOption(
                 x
-                    ? schemaToUplcWithDataPath(schema.someType, x, {
-                          defs,
-                          dataPath: `${dataPath}::Some`
-                      })
+                    ? convertSchemaDataToUplcDataWithDataPath(
+                          schema.someType,
+                          x,
+                          passContext(context, `${dataPath}::Some`)
+                      )
                     : undefined
             )
         case "struct": {
@@ -310,21 +349,25 @@ function schemaToUplc(schema, x, inputContextOnly) {
             switch (schema.format) {
                 case "singleton":
                     const singleFieldName = schema.fieldTypes[0].name
-                    return schemaToUplcWithDataPath(
+                    return convertSchemaDataToUplcDataWithDataPath(
                         schema.fieldTypes[0].type,
                         x[singleFieldName],
-                        {
-                            defs,
-                            dataPath: `${dataPath}[sfStruct.${singleFieldName}]`
-                        }
+                        passContext(
+                            context,
+                            `${dataPath}[sfStruct.${singleFieldName}]`
+                        )
                     )
                 case "list":
                     return makeListData(
                         schema.fieldTypes.map(({ name, type }) =>
-                            schemaToUplcWithDataPath(type, x[name], {
-                                defs,
-                                dataPath: `${dataPath}[fStruct].${name}`
-                            })
+                            convertSchemaDataToUplcDataWithDataPath(
+                                type,
+                                x[name],
+                                passContext(
+                                    context,
+                                    `${dataPath}[fStruct].${name}`
+                                )
+                            )
                         )
                     )
                 case "map": {
@@ -365,14 +408,15 @@ function schemaToUplc(schema, x, inputContextOnly) {
                                 encodeUtf8(encodingKey)
                             )
 
-                            const valueData = schemaToUplcWithDataPath(
-                                ft.type,
-                                value,
-                                {
-                                    defs,
-                                    dataPath: `${dataPath}[mStruct].${fieldName}${encodingInfo}`
-                                }
-                            )
+                            const valueData =
+                                convertSchemaDataToUplcDataWithDataPath(
+                                    ft.type,
+                                    value,
+                                    passContext(
+                                        context,
+                                        `${dataPath}[mStruct].${fieldName}${encodingInfo}`
+                                    )
+                                )
 
                             pairs.push([keyData, valueData])
                         }
@@ -405,16 +449,11 @@ function schemaToUplc(schema, x, inputContextOnly) {
                 )
             }
 
-            // Gives the encoding of nested data a context to prevent a second ConstrData wrapper on the MapData
-            // ... only for the first field.
-            return makeConstrData(
+            return convertEnumVariantDataToConstrData(
+                schema,
                 tag,
-                schema.variantTypes[tag].fieldTypes.map((f, i) =>
-                    schemaToUplcWithDataPath(f.type, variantFields[f.name], {
-                        defs,
-                        dataPath: `${dataPath}[${schema.name}::${variantName}].${f.name}`
-                    })
-                )
+                variantFields,
+                passContext(context, dataPath)
             )
         }
         case "variant":
@@ -423,10 +462,14 @@ function schemaToUplc(schema, x, inputContextOnly) {
             return makeConstrData(
                 schema.tag,
                 schema.fieldTypes.map(({ name, type }) =>
-                    schemaToUplcWithDataPath(type, x[name], {
-                        defs,
-                        dataPath: `${dataPath}[enumVariant ${schema.id}.${name}`
-                    })
+                    convertSchemaDataToUplcDataWithDataPath(
+                        type,
+                        x[name],
+                        passContext(
+                            context,
+                            `${dataPath}[enumVariant ${schema.id}.${name}`
+                        )
+                    )
                 )
             )
         default:
@@ -435,12 +478,53 @@ function schemaToUplc(schema, x, inputContextOnly) {
 }
 
 /**
+ * Gives the encoding of nested data a context to prevent a second ConstrData wrapper on the MapData
+ *  ... only for the first field.
+ * @param {EnumTypeSchema} schema
+ * @param {number} tag
+ * @param {any} data - can be any in order to represent a single unwrapped field
+ * @param {SchemaToUplcContext} context
+ * @returns {ConstrData}
+ */
+function convertEnumVariantDataToConstrData(schema, tag, data, context) {
+    const variantSchema = schema.variantTypes[tag]
+    const variantName = variantSchema.name
+
+    if (
+        context.unwrapSingleFieldEnumVariants &&
+        variantSchema.fieldTypes.length == 1
+    ) {
+        const singleFieldName = variantSchema.fieldTypes[0].name
+
+        // rewrap as preparation for converting to UplcData
+        data = {
+            [singleFieldName]: data
+        }
+    }
+
+    // at this point `data` should be of type `Record<string, any>`
+    return makeConstrData(
+        tag,
+        variantSchema.fieldTypes.map((f) =>
+            convertSchemaDataToUplcDataWithDataPath(
+                f.type,
+                data[f.name],
+                passContext(
+                    context,
+                    `[${schema.name}::${variantName}].${f.name}`
+                )
+            )
+        )
+    )
+}
+
+/**
  * @param {TypeSchema} schema
  * @param {UplcData} data
  * @param {UplcToSchemaContext} context
  * @returns {any}
  */
-function uplcToSchemaWithDataPath(schema, data, context) {
+function convertUplcDataToSchemaDataWithDataPath(schema, data, context) {
     try {
         const t = uplcToSchema(schema, data, context)
         return t
@@ -460,15 +544,12 @@ function uplcToSchemaWithDataPath(schema, data, context) {
  * This should fail when deviating
  * @param {TypeSchema} schema
  * @param {UplcData} data
- * @param {UplcToSchemaContext} inputContextOnly
+ * @param {UplcToSchemaContext} context
  * @returns {any}
  */
-function uplcToSchema(schema, data, inputContextOnly) {
+function uplcToSchema(schema, data, context) {
     const kind = schema.kind
-    const { config, defs } = inputContextOnly
-    // Note: don't use the inputContext directly in nested calls.
-    const { dataPath, ...context } = inputContextOnly
-    //   use { ... context } augmented with a de-novo `dataPath` attr
+    const { dataPath, defs, isMainnet } = context
 
     switch (kind) {
         case "internal": {
@@ -476,10 +557,7 @@ function uplcToSchema(schema, data, inputContextOnly) {
 
             switch (name) {
                 case "Address":
-                    return convertUplcDataToShelleyAddress(
-                        config.isMainnet,
-                        data
-                    )
+                    return convertUplcDataToShelleyAddress(isMainnet, data)
                 case "Any":
                     // TODO: should this throw an error?
                     return null
@@ -533,9 +611,9 @@ function uplcToSchema(schema, data, inputContextOnly) {
                 case "TxId":
                     return convertUplcDataToTxId(data)
                 case "TxInput":
-                    return convertUplcDataToTxInput(config.isMainnet, data)
+                    return convertUplcDataToTxInput(isMainnet, data)
                 case "TxOutput":
-                    return convertUplcDataToTxOutput(config.isMainnet, data)
+                    return convertUplcDataToTxOutput(isMainnet, data)
                 case "TxOutputDatum":
                     return convertUplcDataToTxOutputDatum(data)
                 case "TxOutputId":
@@ -550,43 +628,51 @@ function uplcToSchema(schema, data, inputContextOnly) {
         }
         case "list":
             return expectListData(data).items.map((x, i) =>
-                uplcToSchemaWithDataPath(schema.itemType, x, {
-                    ...context,
-                    dataPath: `${dataPath}[${i}]`
-                })
+                convertUplcDataToSchemaDataWithDataPath(
+                    schema.itemType,
+                    x,
+                    passContext(context, `${dataPath}[${i}]`)
+                )
             )
         case "map":
             return new Map(
                 expectMapData(data).items.map(([k, v], i) => {
-                    const key = uplcToSchemaWithDataPath(schema.keyType, k, {
-                        ...context,
-                        dataPath: `${dataPath}[mapKey @${i}]`
-                    })
+                    const key = convertUplcDataToSchemaDataWithDataPath(
+                        schema.keyType,
+                        k,
+                        passContext(context, `${dataPath}[mapKey @${i}]`)
+                    )
                     const displayKey =
                         "string" == typeof key ? `'${key}'` : `@{i}`
                     return [
                         key,
-                        uplcToSchemaWithDataPath(schema.valueType, v, {
-                            ...context,
-                            dataPath: `${dataPath}[mapVal ${displayKey}]`
-                        })
+                        convertUplcDataToSchemaDataWithDataPath(
+                            schema.valueType,
+                            v,
+                            passContext(
+                                context,
+                                `${dataPath}[mapVal ${displayKey}]`
+                            )
+                        )
                     ]
                 })
             )
         case "tuple":
             return expectListData(data).items.map((x, i) =>
-                uplcToSchemaWithDataPath(schema.itemTypes[i], x, {
-                    ...context,
-                    dataPath: `${dataPath}[tuple@${i}]`
-                })
+                convertUplcDataToSchemaDataWithDataPath(
+                    schema.itemTypes[i],
+                    x,
+                    passContext(context, `${dataPath}[tuple@${i}]`)
+                )
             )
         case "option": {
             const optionData = unwrapUplcDataOption(data)
             return optionData
-                ? uplcToSchemaWithDataPath(schema.someType, optionData, {
-                      ...context,
-                      dataPath: `${dataPath}::Some`
-                  })
+                ? convertUplcDataToSchemaDataWithDataPath(
+                      schema.someType,
+                      optionData,
+                      passContext(context, `${dataPath}::Some`)
+                  )
                 : undefined
         }
         case "struct": {
@@ -594,11 +680,12 @@ function uplcToSchema(schema, data, inputContextOnly) {
             switch (schema.format) {
                 case "singleton":
                     return {
-                        [schema.fieldTypes[0].name]: uplcToSchemaWithDataPath(
-                            schema.fieldTypes[0].type,
-                            data,
-                            { ...context, dataPath: `${dataPath}[sfStruct]` }
-                        )
+                        [schema.fieldTypes[0].name]:
+                            convertUplcDataToSchemaDataWithDataPath(
+                                schema.fieldTypes[0].type,
+                                data,
+                                passContext(context, `${dataPath}[sfStruct]`)
+                            )
                     }
                 case "list": {
                     const fields = expectListData(data).items
@@ -615,10 +702,14 @@ function uplcToSchema(schema, data, inputContextOnly) {
                             const { name, type } = schema.fieldTypes[i]
                             return [
                                 name,
-                                uplcToSchemaWithDataPath(type, field, {
-                                    ...context,
-                                    dataPath: `${dataPath}[fStruct].${name}`
-                                })
+                                convertUplcDataToSchemaDataWithDataPath(
+                                    type,
+                                    field,
+                                    passContext(
+                                        context,
+                                        `${dataPath}[fStruct].${name}`
+                                    )
+                                )
                             ]
                         })
                     )
@@ -679,13 +770,13 @@ function uplcToSchema(schema, data, inputContextOnly) {
                                 return /** @type {const} */ ([
                                     i,
                                     name,
-                                    uplcToSchemaWithDataPath(
+                                    convertUplcDataToSchemaDataWithDataPath(
                                         type,
                                         encodedDataPair[1],
-                                        {
-                                            ...context,
-                                            dataPath: `${dataPath}[mStruct].${name}`
-                                        }
+                                        passContext(
+                                            context,
+                                            `${dataPath}[mStruct].${name}`
+                                        )
                                     )
                                 ])
                             })
@@ -701,38 +792,12 @@ function uplcToSchema(schema, data, inputContextOnly) {
         }
         case "enum": {
             defs[schema.id] = schema
-            const { tag, fields } = expectConstrData(data)
 
-            const variantSchema = schema.variantTypes[tag]
-
-            if (!variantSchema) {
-                throw new Error(`tag ${tag} out of range`)
-            }
-
-            const nExpected = variantSchema.fieldTypes.length
-
-            if (fields.length != nExpected) {
-                throw new Error(
-                    `expected ${nExpected} fields for variant ${variantSchema.name} (tag ${tag}), got ${fields.length} fields`
-                )
-            }
-
-            const fieldCount = variantSchema.fieldTypes.length
-            return {
-                [variantSchema.name]: Object.fromEntries(
-                    fields.map((f, i) => [
-                        variantSchema.fieldTypes[i].name,
-                        uplcToSchemaWithDataPath(
-                            variantSchema.fieldTypes[i].type,
-                            f,
-                            {
-                                ...context,
-                                dataPath: `${dataPath}[${schema.name}::${variantSchema.name}]`
-                            }
-                        )
-                    ])
-                )
-            }
+            return convertConstrDataFieldsToEnumVariantFields(
+                schema,
+                expectConstrData(data),
+                passContext(context, dataPath)
+            )
         }
         case "variant": {
             defs[schema.id] = schema
@@ -741,16 +806,70 @@ function uplcToSchema(schema, data, inputContextOnly) {
             return Object.fromEntries(
                 fields.map((field, i) => [
                     schema.fieldTypes[i].name,
-                    uplcToSchemaWithDataPath(schema.fieldTypes[i].type, field, {
-                        ...context,
-                        dataPath: `${dataPath}[enumVariant ${schema.id}].${schema.fieldTypes[i].name}`
-                    })
+                    convertUplcDataToSchemaDataWithDataPath(
+                        schema.fieldTypes[i].type,
+                        field,
+                        passContext(
+                            context,
+                            `${dataPath}[enumVariant ${schema.id}].${schema.fieldTypes[i].name}`
+                        )
+                    )
                 ])
             )
         }
         default:
             throw new Error(`unhandled schema kind '${kind}'`)
     }
+}
+
+/**
+ * @param {EnumTypeSchema} schema
+ * @param {ConstrData} data
+ * @param {UplcToSchemaContext} context
+ * @returns {Record<string, any>}
+ */
+function convertConstrDataFieldsToEnumVariantFields(schema, data, context) {
+    const { tag, fields } = data
+
+    const variantSchema = schema.variantTypes[tag]
+
+    if (!variantSchema) {
+        throw new Error(`tag ${tag} out of range`)
+    }
+
+    const nExpected = variantSchema.fieldTypes.length
+
+    if (fields.length != nExpected) {
+        throw new Error(
+            `expected ${nExpected} fields for variant ${variantSchema.name} (tag ${tag}), got ${fields.length} fields`
+        )
+    }
+    const result = {
+        [variantSchema.name]: Object.fromEntries(
+            fields.map((f, i) => [
+                variantSchema.fieldTypes[i].name,
+                convertUplcDataToSchemaDataWithDataPath(
+                    variantSchema.fieldTypes[i].type,
+                    f,
+                    passContext(
+                        context,
+                        `${context.dataPath}[${schema.name}::${variantSchema.name}]`
+                    )
+                )
+            ])
+        )
+    }
+
+    if (
+        context.unwrapSingleFieldEnumVariants &&
+        variantSchema.fieldTypes.length == 1
+    ) {
+        const singleFieldName = variantSchema.fieldTypes[0].name
+        const variantName = variantSchema.name
+        result[variantName] = result[variantName][singleFieldName]
+    }
+
+    return result
 }
 
 /**
