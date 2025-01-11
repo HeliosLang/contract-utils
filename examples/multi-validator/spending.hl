@@ -11,6 +11,8 @@ enum Datum {
 	Two {
 		code: Int
 	}
+
+	const P: Int = 0
 }
 
 func main(datum: Datum, redeemer: String) -> Bool {

@@ -1,4 +1,13 @@
-export { makeCast, makeUserFunc } from "./cast/index.js"
+export { writeContractContextArtifacts } from "./artifacts/index.js"
+export {
+    convertFromUplcData,
+    convertToUplcData,
+    evalUserFunc,
+    evalUserFuncUnsafe,
+    makeCast,
+    makeUserFunc,
+    profileUserFunc
+} from "./cast/index.js"
 export {
     makeContractContextBuilder,
     contractContextCache
@@ -187,6 +196,7 @@ export { genTypes } from "./codegen/TypeSchema.js"
  * @typedef {object} UserFunc
  * @prop {UplcProgram} uplc
  * @prop {string} name
+ * @prop {UserFuncProps} props
  * @prop {(namedArgs: ArgsT, logOptions?: UplcLogger | undefined) => RetT} eval
  * @prop {(namedArgs: UnsafeArgsT<ArgsT>, logOptions?: UplcLogger | undefined) => RetT extends void ? void : UplcData} evalUnsafe
  * @prop {(namedArgs: UnsafeArgsT<ArgsT>, logOptions?: UplcLogger | undefined) => CekResult} profile
@@ -262,7 +272,7 @@ export { genTypes } from "./codegen/TypeSchema.js"
  */
 
 /**
- * @template {LoadedValidator} V
+ * @template {LoadedValidator} [V=LoadedValidator]
  * @typedef {V extends {"$purpose": "spending", "$Datum": CastLike<any, any>, "$Redeemer": CastLike<any, any>} ? {
  *       $hash: ValidatorHash<
  *         SpendingContext<
@@ -299,32 +309,34 @@ export { genTypes } from "./codegen/TypeSchema.js"
  *          >
  *       >
  *     } & ContractTypesContext<V["$types"]> & ContractUserFuncsContext<V["$functions"]> :
- *     never
+ *     {
+ *         $hash: ScriptHash<any>
+ *     } & ContractTypesContext & ContractUserFuncsContext
  * } ContractValidatorContexts
  */
 
 /**
- * @template {LoadedModule} V
+ * @template {LoadedModule} [V=LoadedModule]
  * @typedef {ContractTypesContext<V["$types"]> & ContractUserFuncsContext<V["$functions"]>} ContractModuleContexts
  */
 
 /**
- * @template {{[typeName: string]: CastLike<any, any>}} T
+ * @template {{[typeName: string]: CastLike<any, any>}} [T={[typeName: string]: CastLike<any, any>}]
  * @typedef {{
  *   [K in keyof T]: Cast<StrictType<T[K]>, PermissiveType<T[K]>>
  * }} ContractTypesContext
  */
 
 /**
- * @template {{[funcName: string]: (uplc: UplcProgram, config: CastConfig) => UserFunc<any, any>}} T
+ * @template {{[funcName: string]: (uplc: UplcProgram, config: CastConfig) => UserFunc<any, any>}} [T={[funcName: string]: (uplc: UplcProgram, config: CastConfig) => UserFunc<any, any>}]
  * @typedef {{
  *   [K in keyof T]: ReturnType<T[K]>
  * }} ContractUserFuncsContext
  */
 
 /**
- * @template {{[name: string]: LoadedValidator}} Vs
- * @template {{[name: string]: LoadedModule}} Ms
+ * @template {{[name: string]: LoadedValidator}} [Vs={[name: string]: LoadedValidator}]
+ * @template {{[name: string]: LoadedModule}} [Ms={[name: string]: LoadedModule}]
  * @typedef {{
  *   [K in keyof Vs]: ContractValidatorContexts<Vs[K]>
  * } & {
@@ -357,4 +369,20 @@ export { genTypes } from "./codegen/TypeSchema.js"
  * @prop {<V extends LoadedValidator>(validator: V) => ContractContextBuilder<Vs & {[K in V["$name"]]: V}, Ms & ExtractDependencies<V>>} with
  * @prop {<M extends LoadedModule>(m: M) => ContractContextBuilder<Vs, Ms & {[K in M["$name"]]: M}>} withModule
  * @prop {(props: ContractContextBuilderProps) => ContractContext<Vs, Ms>} build
+ */
+
+/**
+ * A subset of the Node FS interface, that can easily be implemented in other environments
+ * This type symbol shadows `FileSystem` from the FileSystem API
+ * @typedef {{
+ *   mkdirSync(path: string, options?: {recursive: boolean}): void
+ *   writeFileSync(path: string, content: string): void
+ * }} FileSystem
+ */
+
+/**
+ * @typedef {{
+ *   outDir: string
+ *   fs: FileSystem
+ * }} WriteContractContextArtifactsOptions
  */

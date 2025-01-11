@@ -2,6 +2,8 @@ module utils
 
 struct MyUtilType {
     hello: Int
+
+    const P: Int = 0
 }
 
 const my_assetclass: AssetClass = AssetClass::new(Scripts::match_string_policy, #)

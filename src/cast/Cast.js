@@ -125,12 +125,11 @@ class CastImpl {
      * @returns {TStrict}
      */
     fromUplcData(data, dataPath = "") {
-        return convertUplcDataToSchemaDataWithDataPath(this.schema, data, {
+        return convertFromUplcData(this.schema, data, {
             isMainnet: this.config.isMainnet,
             unwrapSingleFieldEnumVariants:
                 !!this.config.unwrapSingleFieldEnumVariants,
-            dataPath,
-            defs: {}
+            dataPath
         })
     }
 
@@ -146,15 +145,52 @@ class CastImpl {
      * @returns {UplcData}
      */
     toUplcData(x, dataPath = "") {
-        const t = convertSchemaDataToUplcDataWithDataPath(this.schema, x, {
-            defs: {},
+        return convertToUplcData(this.schema, x, {
+            dataPath,
             unwrapSingleFieldEnumVariants:
-                !!this.config.unwrapSingleFieldEnumVariants,
-            dataPath
+                !!this.config.unwrapSingleFieldEnumVariants
         })
-        t.rawData = x
-        return t
     }
+}
+
+/**
+ * @template T
+ * @param {TypeSchema} schema
+ * @param {UplcData} data
+ * @param {{
+ *   isMainnet: boolean,
+ *   dataPath?: string,
+ *   unwrapSingleFieldEnumVariants?: boolean
+ * }} options
+ * @returns {T}
+ */
+export function convertFromUplcData(schema, data, options) {
+    return convertUplcDataToSchemaDataWithDataPath(schema, data, {
+        isMainnet: options.isMainnet,
+        unwrapSingleFieldEnumVariants: !!options.unwrapSingleFieldEnumVariants,
+        dataPath: options.dataPath ?? "",
+        defs: {}
+    })
+}
+
+/**
+ * @template T
+ * @param {TypeSchema} schema
+ * @param {T} x
+ * @param {{
+ *   dataPath?: string,
+ *   unwrapSingleFieldEnumVariants?: boolean
+ * }} [options]
+ * @returns {UplcData}
+ */
+export function convertToUplcData(schema, x, options = {}) {
+    const t = convertSchemaDataToUplcDataWithDataPath(schema, x, {
+        defs: {},
+        unwrapSingleFieldEnumVariants: !!options.unwrapSingleFieldEnumVariants,
+        dataPath: options.dataPath ?? ""
+    })
+    t.rawData = x
+    return t
 }
 
 /**

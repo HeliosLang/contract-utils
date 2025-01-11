@@ -134,9 +134,8 @@ class LoadedScriptsWriterImpl {
      * @returns {LoadedScriptsWriter}
      */
     writeImportType(path, ...typeNames) {
-        this.definition.writeLine("/**")
-
         this.definition
+            .writeLine("/**")
             .writeLine(` * @import { ${typeNames.join(", ")} } from "${path}";`)
             .writeLine(" */")
         ;[this.declaration, this.combined].forEach((w) => {
@@ -389,29 +388,54 @@ ${datumTypes ? `    $Datum: (config: CastConfig) => makeCast<${datumTypes[0]}, $
 }
 
 /**
- * @param {TypeCheckedUserFunc} fn
- * @returns {[string, string]}
+ * @param {TypeCheckedUserFunc} props
+ * @param {boolean} unsafe
+ * @returns {string}
  */
-function genFuncType(fn) {
+export function genUserFuncRetType(props, unsafe = false) {
+    const retTypeStr = props?.returns ? genTypes(props.returns)[0] : "void"
+
+    if (unsafe) {
+        return retTypeStr == "void" ? "void" : "UplcData"
+    } else {
+        return retTypeStr
+    }
+}
+
+/**
+ * @param {TypeCheckedUserFunc} props
+ * @param {boolean} [unsafe]
+ * @returns {string}
+ */
+export function genUserFuncArgsType(props, unsafe = false) {
     /**
      * @type {string[]}
      */
     const fields = []
 
-    if (fn.requiresScriptContext) {
+    if (props.requiresScriptContext) {
         fields.push("$scriptContext: UplcData")
     }
 
-    if (fn.requiresCurrentScript) {
+    if (props.requiresCurrentScript) {
         fields.push("$currentScript: string")
     }
 
-    fn.arguments.forEach(({ name, type, isOptional }, i) => {
-        fields.push(`${name}${isOptional ? "?" : ""}: ${genTypes(type)[1]}`)
+    props.arguments.forEach(({ name, type, isOptional }, i) => {
+        fields.push(
+            `${name}${isOptional ? "?" : ""}: ${unsafe ? "UplcData" : genTypes(type)[1]}`
+        )
     })
 
     const argsTypeStr = `{${fields.join(", ")}}`
-    const retTypeStr = fn?.returns ? genTypes(fn.returns)[0] : "void"
 
-    return [argsTypeStr, retTypeStr]
+    return argsTypeStr
+}
+
+/**
+ * @param {TypeCheckedUserFunc} fn
+ * @returns {[string, string]}
+ */
+export function genFuncType(fn) {
+    return [genUserFuncArgsType(fn, false), genUserFuncRetType(fn)]
 }

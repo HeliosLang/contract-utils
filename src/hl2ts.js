@@ -14,10 +14,6 @@ import { loadCompilerLib } from "./compiler/index.js"
 import { typeCheckFiles } from "./compiler/ops.js"
 
 /**
- * @import { CompilerLib, TypeCheckedModule, TypeCheckedValidator } from "./index.js"
- */
-
-/**
  * @typedef {{
  *   name: string
  *   purpose: string

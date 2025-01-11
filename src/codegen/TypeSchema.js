@@ -166,3 +166,126 @@ export function genTypes(schema) {
             throw new Error(`unhandled TypeSchema kind '${kind}'`)
     }
 }
+
+/**
+ * @param {TypeSchema} schema
+ * @returns {Map<string, string>} - key=name, value=from
+ */
+export function collectBuiltinTypes(schema) {
+    /**
+     * @type {Map<string, string>}
+     */
+    const m = new Map()
+
+    collectBuiltinTypesInternal(schema, m)
+
+    return m
+}
+
+/**
+ * @param {TypeSchema} schema
+ * @param {Map<string, string>} m - key=name, value=from
+ */
+function collectBuiltinTypesInternal(schema, m) {
+    const kind = schema.kind
+
+    switch (kind) {
+        case "internal":
+            const name = schema.name
+            switch (name) {
+                case "Bool":
+                case "ByteArray":
+                case "Real":
+                case "String":
+                    break
+                case "AssetClass":
+                    m.set("AssetClass", "@helios-lang/ledger")
+                    m.set("MintingPolicyHash", "@helios-lang/ledger")
+                    break
+                case "Any":
+                case "Data":
+                    m.set("UplcData", "@helios-lang/uplc")
+                    break
+                case "Int":
+                case "Duration":
+                case "Ratio":
+                    m.set("IntLike", "@helios-lang/codec-utils")
+                    break
+                case "Address":
+                case "MintingPolicyHash":
+                case "PubKey":
+                case "PubKeyHash":
+                case "SpendingCredential":
+                case "StakingCredential":
+                case "StakingValidatorHash":
+                case "TimeLike":
+                case "TxId":
+                case "TxInput":
+                case "TxOutput":
+                case "TxOutputId":
+                case "ValidatorHash":
+                    m.set(name, "@helios-lang/ledger")
+                    break
+                case "StakingHash":
+                    // TODO: implement this
+                    return ["never", "never"]
+                case "TimeRange":
+                    m.set("TimeRange", "@helios-lang/ledger")
+                    m.set("TimeLike", "@helios-lang/ledger")
+                    break
+                case "TxOutputDatum":
+                    m.set("TxOutputDatum", "@helios-lang/ledger")
+                    m.set("DatumHash", "@helios-lang/ledger")
+                    m.set("UplcData", "@helios-lang/uplc")
+                    break
+                case "Value":
+                    m.set("Value", "@helios-lang/ledger")
+                    m.set("IntLike", "@helios-lang/codec-utils")
+                    m.set("MintingPolicyHash", "@helios-lang/ledger")
+                    break
+                default:
+                    throw new Error(`unhandled primitive '${name}' in hl2ts`)
+            }
+            break
+        case "list": {
+            collectBuiltinTypesInternal(schema.itemType, m)
+            break
+        }
+        case "map": {
+            collectBuiltinTypesInternal(schema.keyType, m)
+            collectBuiltinTypesInternal(schema.valueType, m)
+            break
+        }
+        case "tuple": {
+            schema.itemTypes.forEach((it) => collectBuiltinTypesInternal(it, m))
+            break
+        }
+        case "option": {
+            collectBuiltinTypesInternal(schema.someType, m)
+            break
+        }
+        case "struct": {
+            schema.fieldTypes.forEach(({ type }) => {
+                collectBuiltinTypesInternal(type, m)
+            })
+            break
+        }
+        case "enum": {
+            schema.variantTypes.forEach((variant) => {
+                collectBuiltinTypesInternal(variant, m)
+            })
+            break
+        }
+        case "variant": {
+            schema.fieldTypes.forEach(({ type }) => {
+                collectBuiltinTypesInternal(type, m)
+            })
+
+            break
+        }
+        case "reference":
+            throw new Error("recursive data structures not yet handled")
+        default:
+            throw new Error(`unhandled TypeSchema kind '${kind}'`)
+    }
+}
