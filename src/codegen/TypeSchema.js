@@ -211,6 +211,9 @@ function collectBuiltinTypesInternal(schema, m) {
                 case "Ratio":
                     m.set("IntLike", "@helios-lang/codec-utils")
                     break
+                case "Time":
+                    m.set("TimeLike", "@helios-lang/ledger")
+                    break
                 case "Address":
                 case "MintingPolicyHash":
                 case "PubKey":
