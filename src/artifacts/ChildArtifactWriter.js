@@ -51,7 +51,7 @@ export class ChildArtifactWriter extends ArtifactWriter {
             this.writeDeclLine(
                 `export const ${name}: UplcProgramV1`
             ).writeDefLine(
-                `export const ${name} = /* @__PURE__ */ ${stringifyProgram("decodeUplcProgramV1FromCbor", program)}`
+                `export const ${name} = ${stringifyProgram("decodeUplcProgramV1FromCbor", program)}`
             )
         } else if (program.plutusVersion == "PlutusScriptV2") {
             this.addImport("UplcProgramV2", "@helios-lang/uplc", true)
@@ -60,7 +60,7 @@ export class ChildArtifactWriter extends ArtifactWriter {
             this.writeDeclLine(
                 `export const ${name}: UplcProgramV2`
             ).writeDefLine(
-                `export const ${name} = /* @__PURE__ */ ${stringifyProgram("decodeUplcProgramV2FromCbor", program)}`
+                `export const ${name} = ${stringifyProgram("decodeUplcProgramV2FromCbor", program)}`
             )
         } else if (program.plutusVersion == "PlutusScriptV3") {
             this.addImport("UplcProgramV3", "@helios-lang/uplc", true)
@@ -69,7 +69,7 @@ export class ChildArtifactWriter extends ArtifactWriter {
             this.writeDeclLine(
                 `export const ${name}: UplcProgramV3`
             ).writeDefLine(
-                `export const ${name} = /* @__PURE__ */ ${stringifyProgram("decodeUplcProgramV3FromCbor", program)}`
+                `export const ${name} = ${stringifyProgram("decodeUplcProgramV3FromCbor", program)}`
             )
         } else {
             throw new Error("unhandled Plutus version")
@@ -88,7 +88,7 @@ export class ChildArtifactWriter extends ArtifactWriter {
 function stringifyProgram(decoderName, program) {
     const sourceMap = makeUplcSourceMap({ term: program.root })
 
-    return `${decoderName}(
+    return `/* @__PURE__ */ ${decoderName}(
     "${bytesToHex(program.toCbor())}",
     {${stringifyAlt("decodeUplcProgramV2FromCbor", program.alt)}
         sourceMap: ${JSON.stringify(sourceMap.toJsonSafe(), undefined, 4).split("\n").join("\n        ")}
@@ -109,7 +109,7 @@ function stringifyAlt(decoderName, alt) {
     const sourceMap = makeUplcSourceMap({ term: alt.root })
 
     return `
-        alt: ${decoderName}(
+        alt: /* @__PURE__ */ ${decoderName}(
             "${bytesToHex(alt.toCbor())}",
             {
                 sourceMap: ${JSON.stringify(sourceMap.toJsonSafe(), undefined, 4).split("\n").join("\n                ")}
