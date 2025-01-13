@@ -9,3 +9,4 @@ examples/**/*.json
 examples/**/*.js
 !examples/**/contract.js
 types
+dist

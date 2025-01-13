@@ -51,7 +51,6 @@ export class ModuleArtifact extends ChildArtifactWriter {
             // either function or type
             const symbolDetails = symbols[symbolName]
 
-            console.log(symbolName)
             if ("schema" in symbolDetails) {
                 // collect members
                 const members = /** @type {Record<string, FunctionDetails>} */ (

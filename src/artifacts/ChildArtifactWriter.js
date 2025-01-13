@@ -51,7 +51,7 @@ export class ChildArtifactWriter extends ArtifactWriter {
             this.writeDeclLine(
                 `export const ${name}: UplcProgramV1`
             ).writeDefLine(
-                `export const ${name} = ${stringifyProgram("decodeUplcProgramV1FromCbor", program)}`
+                `export const ${name} = /* @__PURE__ */ ${stringifyProgram("decodeUplcProgramV1FromCbor", program)}`
             )
         } else if (program.plutusVersion == "PlutusScriptV2") {
             this.addImport("UplcProgramV2", "@helios-lang/uplc", true)
@@ -60,7 +60,7 @@ export class ChildArtifactWriter extends ArtifactWriter {
             this.writeDeclLine(
                 `export const ${name}: UplcProgramV2`
             ).writeDefLine(
-                `export const ${name} = ${stringifyProgram("decodeUplcProgramV2FromCbor", program)}`
+                `export const ${name} = /* @__PURE__ */ ${stringifyProgram("decodeUplcProgramV2FromCbor", program)}`
             )
         } else if (program.plutusVersion == "PlutusScriptV3") {
             this.addImport("UplcProgramV3", "@helios-lang/uplc", true)
@@ -69,7 +69,7 @@ export class ChildArtifactWriter extends ArtifactWriter {
             this.writeDeclLine(
                 `export const ${name}: UplcProgramV3`
             ).writeDefLine(
-                `export const ${name} = ${stringifyProgram("decodeUplcProgramV3FromCbor", program)}`
+                `export const ${name} = /* @__PURE__ */ ${stringifyProgram("decodeUplcProgramV3FromCbor", program)}`
             )
         } else {
             throw new Error("unhandled Plutus version")

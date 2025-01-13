@@ -54,7 +54,7 @@ class ValdiatorArtifact extends ModuleArtifact {
                 this.writeDeclLine(
                     `export const $hash: MintingPolicyHash`
                 ).writeDefLine(
-                    `export const $hash = makeMintingPolicyHash("${hash.toHex()}")`
+                    `export const $hash = /* @__PURE__ */ makeMintingPolicyHash("${hash.toHex()}")`
                 )
             } else {
                 this.addImport("makeCast", "@helios-lang/contract-utils")
@@ -73,9 +73,9 @@ class ValdiatorArtifact extends ModuleArtifact {
                 this.writeProgram("$program", program).writeDeclLine(
                     `export const $hash: MintingPolicyHash<MintingContext<${types[0]}, ${types[1]}>>`
                 )
-                    .writeDefLine(`export const $hash = makeMintingPolicyHash("${hash.toHex()}", {
+                    .writeDefLine(`export const $hash = /* @__PURE__ */ makeMintingPolicyHash("${hash.toHex()}", {
     program: $program,
-    redeemer: makeCast(${JSON.stringify(redeemer.schema, undefined, 4).split("\n").join("\n    ")}, {isMainnet: ${this.isMainnet}})
+    redeemer: /* @__PURE__*/ makeCast(${JSON.stringify(redeemer.schema, undefined, 4).split("\n").join("\n    ")}, {isMainnet: ${this.isMainnet}})
 })`)
             }
         } else if (hash.kind == "StakingValidatorHash") {
@@ -89,7 +89,7 @@ class ValdiatorArtifact extends ModuleArtifact {
                 this.writeDeclLine(
                     `export const $hash: StakingValidatorHash`
                 ).writeDefLine(
-                    `export const $hash = makeStakingValidatorHash("${hash.toHex()}")`
+                    `export const $hash = /* @__PURE__*/ makeStakingValidatorHash("${hash.toHex()}")`
                 )
             } else {
                 this.addImport("makeCast", "@helios-lang/contract-utils")
@@ -108,9 +108,9 @@ class ValdiatorArtifact extends ModuleArtifact {
                 this.writeProgram("$program", program).writeDeclLine(
                     `export const $hash: StakingValidatorHash<StakingContext<${types[0]}, ${types[1]}>>`
                 )
-                    .writeDefLine(`export const $hash = makeStakingValidatorHash("${hash.toHex()}", {
+                    .writeDefLine(`export const $hash = /* @__PURE__*/ makeStakingValidatorHash("${hash.toHex()}", {
     program: $program,
-    redeemer: makeCast(${JSON.stringify(redeemer.schema, undefined, 4).split("\n").join("\n    ")}, {isMainnet: ${this.isMainnet}})
+    redeemer: /* @__PURE__ */ makeCast(${JSON.stringify(redeemer.schema, undefined, 4).split("\n").join("\n    ")}, {isMainnet: ${this.isMainnet}})
 })`)
             }
         } else if (hash.kind == "ValidatorHash") {
@@ -124,7 +124,7 @@ class ValdiatorArtifact extends ModuleArtifact {
                 this.writeDeclLine(
                     `export const $hash: ValidatorHash`
                 ).writeDefLine(
-                    `export const $hash = makeValidatorHash("${hash.toHex()}")`
+                    `export const $hash = /* @__PURE__ */ makeValidatorHash("${hash.toHex()}")`
                 )
             } else {
                 this.addImport("makeCast", "@helios-lang/contract-utils")
@@ -147,10 +147,10 @@ class ValdiatorArtifact extends ModuleArtifact {
                 this.writeProgram("$program", program).writeDeclLine(
                     `export const $hash: ValidatorHash<SpendingContext<${dTypes[0]}, ${dTypes[1]}, ${rTypes[0]}, ${rTypes[1]}>>`
                 )
-                    .writeDefLine(`export const $hash = makeValidatorHash("${hash.toHex()}", {
+                    .writeDefLine(`export const $hash = /* @__PURE__ */ makeValidatorHash("${hash.toHex()}", {
     program: $program,
-    datum: makeCast(${JSON.stringify(datum.schema, undefined, 4).split("\n").join("\n    ")}, {isMainnet: ${this.isMainnet}}),
-    redeemer: makeCast(${JSON.stringify(redeemer.schema, undefined, 4).split("\n").join("\n    ")}, {isMainnet: ${this.isMainnet}})
+    datum: /* @__PURE__ */ makeCast(${JSON.stringify(datum.schema, undefined, 4).split("\n").join("\n    ")}, {isMainnet: ${this.isMainnet}}),
+    redeemer: /* @__PURE__ */ makeCast(${JSON.stringify(redeemer.schema, undefined, 4).split("\n").join("\n    ")}, {isMainnet: ${this.isMainnet}})
 })`)
             }
         }

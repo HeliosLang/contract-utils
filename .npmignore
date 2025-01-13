@@ -10,3 +10,4 @@ log.*
 examples/*
 *.png
 *.svg
+test

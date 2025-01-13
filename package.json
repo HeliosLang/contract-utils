@@ -50,11 +50,11 @@
     },
     "dependencies": {
         "@helios-lang/cli-utils": "^0.1.10",
-        "@helios-lang/codec-utils": "^0.3.3",
-        "@helios-lang/compiler-utils": "^0.5.2",
-        "@helios-lang/crypto": "0.2.2",
-        "@helios-lang/ledger": "^0.6.11",
-        "@helios-lang/type-utils": "^0.2.8",
-        "@helios-lang/uplc": "^0.7.8"
+        "@helios-lang/codec-utils": "^0.3.4",
+        "@helios-lang/compiler-utils": "^0.5.3",
+        "@helios-lang/crypto": "0.2.3",
+        "@helios-lang/ledger": "^0.6.14",
+        "@helios-lang/type-utils": "^0.2.9",
+        "@helios-lang/uplc": "^0.7.9"
     }
 }
