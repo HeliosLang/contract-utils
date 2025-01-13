@@ -1,13 +1,17 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
 import { expectDefined, isRight } from "@helios-lang/type-utils"
+import { convertFromUplcData } from "../cast/index.js"
 import {
     genUserFuncArgsType,
     genUserFuncRetType
 } from "../codegen/LoadedScriptsWriter.js"
+import { genTypes } from "../codegen/TypeSchema.js"
 import { ChildArtifactWriter } from "./ChildArtifactWriter.js"
 
 /**
- * @import { UplcProgram } from "@helios-lang/uplc"
+ * @import { Address, AssetClass } from "@helios-lang/ledger"
+ * @import { TypeSchema } from "@helios-lang/type-utils"
+ * @import { UplcData, UplcProgram } from "@helios-lang/uplc"
  * @import { UserFuncProps } from "../index.js"
  * @import { Artifact } from "./Artifact.js"
  * @import { FunctionDetails } from "./symbols.js"
@@ -91,8 +95,8 @@ export const $props = ${JSON.stringify(props, undefined, 4)}`)
     return profileUserFunc($program, $props, args, logOptions)
 }`)
 
-        if (isConst) {
-            // attempt to evaluate, and add $data
+        if (isConst && props.returns) {
+            // attempt to evaluate, and add $constData and $constValue
             try {
                 const result = program.eval([])
 
@@ -114,19 +118,143 @@ export const $props = ${JSON.stringify(props, undefined, 4)}`)
                     )
 
                     this.addImport(uplcDataType, "@helios-lang/uplc", true)
+                        .writeDeclLine(`export const $constCborHex: string`)
+                        .writeDefLine(
+                            `export const $constCborHex = "${bytesToHex(data.toCbor())}"`
+                        )
                         .writeDeclLine(
                             `export const $constData: ${uplcDataType}`
                         )
                         .addImport("decodeUplcData", "@helios-lang/uplc", false)
                         .writeDefLine(
-                            `export const $constData = /* @__PURE__ */ decodeUplcData("${bytesToHex(data.toCbor())}")`
+                            `export const $constData = /* @__PURE__ */ decodeUplcData($constCborHex)`
                         )
 
-                    // TODO: $constValue
+                    const valueTypeSchema = props.returns
+                    const valueTypes = genTypes(valueTypeSchema)
+                    this.collectAndImportTypes(valueTypeSchema)
+                    this.writeDeclLine(
+                        `export const $constValue: ${valueTypes[0]}`
+                    )
+
+                    const value = convertFromUplcData(valueTypeSchema, data, {
+                        isMainnet: this.isMainnet
+                    })
+                    const constValueStr = this.stringifyConstValue(
+                        valueTypeSchema,
+                        data,
+                        value
+                    )
+
+                    if (constValueStr !== undefined) {
+                        this.writeDefLine(
+                            `export const $constValue = ${constValueStr}`
+                        )
+                    } else {
+                        // fallback
+                        this.addImport(
+                            "convertFromUplcData",
+                            "@helios-lang/contract-utils"
+                        )
+                            .writeDefLine(`export const $constValue = /* @__PURE__ */ convertFromUplcData(${JSON.stringify(valueTypeSchema)}, $constData, {
+    isMainnet: ${this.isMainnet}
+})`)
+                    }
                 }
             } catch (_e) {
                 // don't do anything, simply ignore
             }
         }
+    }
+
+    /**
+     * @param {TypeSchema} schema
+     * @param {UplcData} data
+     * @param {any} value
+     * @returns {string | undefined}
+     */
+    stringifyConstValue(schema, data, value) {
+        // TODO: it might be more efficient to represent the following directly as a primitive value
+        if (schema.kind == "internal" && schema.name == "Address") {
+            /**
+             * @type {Address}
+             */
+            const v = value
+            if (v.era == "Shelley") {
+                this.addImport(
+                    "makeShelleyAddress",
+                    "@helios-lang/ledger",
+                    false
+                )
+                return `/* @__PURE__ */ makeShelleyAddress("${v.toBech32()}")`
+            }
+        } else if (schema.kind == "internal" && schema.name == "AssetClass") {
+            /**
+             * @type {AssetClass}
+             */
+            const v = value
+            this.addImport("parseAssetClass", "@helios-lang/ledger", false)
+            return `/* @__PURE__ */ parseAssetClass("${v.toString()}")`
+        } else if (schema.kind == "internal" && schema.name == "Bool") {
+            /**
+             * @type {boolean}
+             */
+            const v = value
+            return v.toString()
+        } else if (schema.kind == "internal" && schema.name == "ByteArray") {
+            /**
+             * @type {number[]}
+             */
+            const v = value
+            return `[${v.map((b) => b.toString()).join(", ")}]`
+        } else if (
+            schema.kind == "internal" &&
+            ["Any", "Data"].includes(schema.name)
+        ) {
+            return "$constData"
+        } else if (
+            schema.kind == "internal" &&
+            ["Duration", "Int"].includes(schema.name)
+        ) {
+            /**
+             * @type {bigint}
+             */
+            const v = value
+            return `${v.toString()}n`
+        } else if (
+            schema.kind == "internal" &&
+            [
+                "MintingPolicyHash",
+                "PubKeyHash",
+                "StakingValidatorHash",
+                "TxId",
+                "ValidatorHash"
+            ].includes(schema.name)
+        ) {
+            /**
+             * @type {{bytes: number[]}}
+             */
+            const v = value
+            const makerFunc = `make${schema.name}`
+            this.addImport(makerFunc, "@helios-lang/ledger", false)
+            return `/* @__PURE__ */ ${makerFunc}("${bytesToHex(v.bytes)}")`
+        } else if (
+            schema.kind == "internal" &&
+            ["Real", "Time"].includes(schema.name)
+        ) {
+            /**
+             * @type {number}
+             */
+            const v = value
+            return v.toString()
+        } else if (schema.kind == "internal" && schema.name == "String") {
+            /**
+             * @type {string}
+             */
+            const v = value
+            return `"${v.toString()}"`
+        }
+
+        return undefined
     }
 }

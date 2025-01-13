@@ -1,4 +1,4 @@
-import { collectBuiltinTypes, genTypes } from "../codegen/TypeSchema.js"
+import { genTypes } from "../codegen/TypeSchema.js"
 import { ChildArtifactWriter } from "./ChildArtifactWriter.js"
 import { writeFunctionArtifact } from "./FunctionArtifact.js"
 
@@ -73,11 +73,7 @@ export const $schema = ${JSON.stringify(schema, undefined, 4)}`
         this.writeDeclLine(`export type $StrictType = ${types[0]}`)
         this.writeDeclLine(`export type $PermissiveType = ${types[1]}`)
 
-        const internalTypes = collectBuiltinTypes(schema)
-
-        Array.from(internalTypes.entries()).forEach(([name, from]) => {
-            this.addImport(name, from, true)
-        })
+        this.collectAndImportTypes(schema)
     }
 
     writeConverters() {

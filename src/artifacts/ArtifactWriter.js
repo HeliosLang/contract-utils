@@ -1,8 +1,10 @@
 import { makeStringWriter } from "@helios-lang/codec-utils"
 import { expectDefined } from "@helios-lang/type-utils"
+import { collectBuiltinTypes } from "../codegen/TypeSchema.js"
 
 /**
  * @import { StringWriter } from "@helios-lang/codec-utils"
+ * @import { TypeSchema } from "@helios-lang/type-utils"
  * @import { FileSystem } from "../index.js"
  */
 
@@ -59,6 +61,17 @@ export class ArtifactWriter {
     addImport(name, from, isType = false) {
         this.imports.push([name, from, isType])
         return this
+    }
+
+    /**
+     * @param {TypeSchema} schema
+     */
+    collectAndImportTypes(schema) {
+        const internalTypes = collectBuiltinTypes(schema)
+
+        Array.from(internalTypes.entries()).forEach(([name, from]) => {
+            this.addImport(name, from, true)
+        })
     }
 
     /**

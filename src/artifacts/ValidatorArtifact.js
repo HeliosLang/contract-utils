@@ -206,9 +206,11 @@ class ValdiatorArtifact extends ModuleArtifact {
         super.writeAggregateExport(name)
 
         if (name == "main") {
-            this.writeDefLine(
-                `import { $program } from "./${name}/index.js"`
-            ).writeDefLine(`export { $program }`)
+            this.writeDefLine(`import { $program } from "./${name}/index.js"`)
+                .writeDefLine(`export { $program }`)
+                .writeDefLine(
+                    `export { $programCborHex } from "./${name}/index.js"`
+                )
             this.hasMainFunction = true
         }
 

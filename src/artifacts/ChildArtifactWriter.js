@@ -45,6 +45,14 @@ export class ChildArtifactWriter extends ArtifactWriter {
      * @returns {ChildArtifactWriter}
      */
     writeProgram(name, program, includeDef) {
+        this.writeDeclLine(`export const $programCborHex: string`)
+
+        if (includeDef) {
+            this.writeDefLine(
+                `export const $programCborHex = "${bytesToHex(program.toCbor())}"`
+            )
+        }
+
         if (program.plutusVersion == "PlutusScriptV1") {
             this.addImport("UplcProgramV1", "@helios-lang/uplc", true)
             this.writeDeclLine(`export const ${name}: UplcProgramV1`)
@@ -102,7 +110,7 @@ function stringifyProgram(decoderName, program) {
     const sourceMap = makeUplcSourceMap({ term: program.root })
 
     return `/* @__PURE__ */ ${decoderName}(
-    "${bytesToHex(program.toCbor())}",
+    $programCborHex,
     {${stringifyAlt("decodeUplcProgramV2FromCbor", program.alt)}
         sourceMap: ${JSON.stringify(sourceMap.toJsonSafe(), undefined, 4).split("\n").join("\n        ")}
     }
