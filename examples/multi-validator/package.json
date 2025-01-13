@@ -2,6 +2,7 @@
     "name": "spending_example",
     "type": "module",
     "scripts": {
+        "build": "pnpm run transpile && node ./contract.js",
         "transpile": "hl2ts"
     },
     "dependencies": {

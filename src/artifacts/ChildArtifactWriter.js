@@ -41,36 +41,49 @@ export class ChildArtifactWriter extends ArtifactWriter {
     /**
      * @param {string} name
      * @param {UplcProgram} program
+     * @param {boolean} includeDef
      * @returns {ChildArtifactWriter}
      */
-    writeProgram(name, program) {
+    writeProgram(name, program, includeDef) {
         if (program.plutusVersion == "PlutusScriptV1") {
             this.addImport("UplcProgramV1", "@helios-lang/uplc", true)
-            this.addImport("decodeUplcProgramV1FromCbor", "@helios-lang/uplc")
+            this.writeDeclLine(`export const ${name}: UplcProgramV1`)
 
-            this.writeDeclLine(
-                `export const ${name}: UplcProgramV1`
-            ).writeDefLine(
-                `export const ${name} = ${stringifyProgram("decodeUplcProgramV1FromCbor", program)}`
-            )
+            if (includeDef) {
+                this.addImport(
+                    "decodeUplcProgramV1FromCbor",
+                    "@helios-lang/uplc"
+                )
+                this.writeDefLine(
+                    `export const ${name} = ${stringifyProgram("decodeUplcProgramV1FromCbor", program)}`
+                )
+            }
         } else if (program.plutusVersion == "PlutusScriptV2") {
             this.addImport("UplcProgramV2", "@helios-lang/uplc", true)
-            this.addImport("decodeUplcProgramV2FromCbor", "@helios-lang/uplc")
+            this.writeDeclLine(`export const ${name}: UplcProgramV2`)
 
-            this.writeDeclLine(
-                `export const ${name}: UplcProgramV2`
-            ).writeDefLine(
-                `export const ${name} = ${stringifyProgram("decodeUplcProgramV2FromCbor", program)}`
-            )
+            if (includeDef) {
+                this.addImport(
+                    "decodeUplcProgramV2FromCbor",
+                    "@helios-lang/uplc"
+                )
+                this.writeDefLine(
+                    `export const ${name} = ${stringifyProgram("decodeUplcProgramV2FromCbor", program)}`
+                )
+            }
         } else if (program.plutusVersion == "PlutusScriptV3") {
             this.addImport("UplcProgramV3", "@helios-lang/uplc", true)
-            this.addImport("decodeUplcProgramV3FromCbor", "@helios-lang/uplc")
+            this.writeDeclLine(`export const ${name}: UplcProgramV3`)
 
-            this.writeDeclLine(
-                `export const ${name}: UplcProgramV3`
-            ).writeDefLine(
-                `export const ${name} = ${stringifyProgram("decodeUplcProgramV3FromCbor", program)}`
-            )
+            if (includeDef) {
+                this.addImport(
+                    "decodeUplcProgramV3FromCbor",
+                    "@helios-lang/uplc"
+                )
+                this.writeDefLine(
+                    `export const ${name} = ${stringifyProgram("decodeUplcProgramV3FromCbor", program)}`
+                )
+            }
         } else {
             throw new Error("unhandled Plutus version")
         }

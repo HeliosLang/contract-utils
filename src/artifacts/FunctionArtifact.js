@@ -22,7 +22,7 @@ export function writeFunctionArtifact(parent, name, details) {
     const program = details.uplc
     const props = details.props
 
-    artifact.writeProgram("$program", program)
+    artifact.writeProgram("$program", program, true)
     artifact.writeProps(props)
     artifact.writeEvals(props)
 

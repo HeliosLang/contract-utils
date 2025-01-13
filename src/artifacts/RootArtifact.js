@@ -16,6 +16,11 @@ export function writeContractContextArtifacts(context, options) {
 
     const root = new RootArtifact(options.fs, options.outDir, isMainnet)
 
+    /**
+     * @type {string[]}
+     */
+    let validatorNames = []
+
     for (let moduleName in context) {
         if (moduleName.startsWith("$")) {
             continue
@@ -30,11 +35,14 @@ export function writeContractContextArtifacts(context, options) {
                 moduleDetails.$hash,
                 moduleDetails
             )
+
+            validatorNames.push(moduleName)
         } else {
             writeModuleArtifact(root, moduleName, moduleDetails)
         }
     }
 
+    root.writeValidatorNameUtils(validatorNames)
     root.save()
 }
 
@@ -57,6 +65,27 @@ class RootArtifact extends ArtifactWriter {
         super(fs, dir)
 
         this.isMainnet = isMainnet
+    }
+
+    /**
+     * @param {string[]} names
+     */
+    writeValidatorNameUtils(names) {
+        this.writeDeclLine(
+            `export type $ValidatorNameType = ${names.map((n) => `"${n}"`).join(" | ")}`
+        )
+            .writeDeclLine(
+                `export const $VALIDATOR_NAMES: $ValidatorNameType[]`
+            )
+            .writeDeclLine(
+                `export function $isValidatorName(name: string): name is $ValidatorNameType`
+            )
+            .writeDefLine(
+                `export const $VALIDATOR_NAMES = [${names.map((n) => `"${n}"`).join(", ")}]`
+            )
+            .writeDefLine(
+                `export function $isValidatorName(name) {return $VALIDATOR_NAMES.includes(name)}`
+            )
     }
 }
 
