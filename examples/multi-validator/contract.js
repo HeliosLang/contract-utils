@@ -5,12 +5,13 @@ import {
 } from "@helios-lang/contract-utils"
 import { makeAddress, makeAssetClass } from "@helios-lang/ledger"
 import { makeTxBuilder } from "@helios-lang/tx-utils"
-import { match_string, match_string_policy } from "./index.js"
+import { match_string, match_string_policy, mixed_validator } from "./index.js"
 
 export function createApp() {
     const context = makeContractContextBuilder()
         .with(match_string)
         .with(match_string_policy)
+        .with(mixed_validator)
         .build({
             isMainnet: false,
             expectedHashes: {

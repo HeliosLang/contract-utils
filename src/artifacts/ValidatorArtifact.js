@@ -54,7 +54,12 @@ class ValdiatorArtifact extends ModuleArtifact {
         this.writeDeclLine(`export const $hashHex: string`)
         this.writeDefLine(`export const $hashHex = "${hash.toHex()}"`)
 
-        if (purpose == "mixed") {
+        const isMixed =
+            purpose == "mixed" ||
+            /** @type {any} */ (hash.context)?.redeemer?.schema?.id ==
+                "__helios__mixedargs"
+
+        if (isMixed) {
             this.addImport("ValidatorHash", "@helios-lang/ledger", true)
                 .addImport("makeValidatorHash", "@helios-lang/ledger", false)
                 .addImport("MintingPolicyHash", "@helios-lang/ledger", true)
@@ -161,7 +166,7 @@ class ValdiatorArtifact extends ModuleArtifact {
     program: $program,
     datum: /* @__PURE__ */ makeCast(${JSON.stringify(datum.schema, undefined, 4).split("\n").join("\n    ")}, {isMainnet: ${this.isMainnet}}),
     redeemer: /* @__PURE__ */ makeCast(${JSON.stringify(redeemer.schema, undefined, 4).split("\n").join("\n    ")}, {isMainnet: ${this.isMainnet}})
-})`
+}`
                     )
                     .writeDefLine(
                         `export const $validatorHash = /* @__PURE__ */ makeValidatorHash($hashHex, $context)`
