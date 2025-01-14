@@ -55,10 +55,10 @@ export class ArtifactWriter {
     /**
      * @param {string} name
      * @param {string} from
-     * @param {boolean} [isType]
+     * @param {boolean} isType
      * @returns {ArtifactWriter}
      */
-    addImport(name, from, isType = false) {
+    addImport(name, from, isType) {
         this.imports.push([name, from, isType])
         return this
     }

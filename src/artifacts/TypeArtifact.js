@@ -77,8 +77,16 @@ export const $schema = ${JSON.stringify(schema, undefined, 4)}`
     }
 
     writeConverters() {
-        this.addImport("convertToUplcData", "@helios-lang/contract-utils")
-        this.addImport("convertFromUplcData", "@helios-lang/contract-utils")
+        this.addImport(
+            "convertToUplcData",
+            "@helios-lang/contract-utils",
+            false
+        )
+        this.addImport(
+            "convertFromUplcData",
+            "@helios-lang/contract-utils",
+            false
+        )
         this.addImport("UplcData", "@helios-lang/uplc", true)
 
         this.writeDeclLine(

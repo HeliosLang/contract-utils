@@ -12,14 +12,15 @@ import { ModuleArtifact } from "./ModuleArtifact.js"
  * @param {Artifact} parent
  * @param {string} name
  * @param {ScriptHash} hash
+ * @param {string} purpose
  * @param {ModuleSymbols} symbols
  */
-export function writeValidatorArtifact(parent, name, hash, symbols) {
+export function writeValidatorArtifact(parent, name, hash, purpose, symbols) {
     const artifact = new ValdiatorArtifact(parent, name)
 
     artifact.writeSymbols(symbols)
 
-    artifact.writeHash(hash)
+    artifact.writeHash(hash, purpose)
 
     artifact.save()
 
@@ -47,17 +48,149 @@ class ValdiatorArtifact extends ModuleArtifact {
 
     /**
      * @param {ScriptHash} hash
+     * @param {string} purpose
      */
-    writeHash(hash) {
+    writeHash(hash, purpose) {
         this.writeDeclLine(`export const $hashHex: string`)
         this.writeDefLine(`export const $hashHex = "${hash.toHex()}"`)
 
-        if (hash.kind == "MintingPolicyHash") {
+        if (purpose == "mixed") {
+            this.addImport("ValidatorHash", "@helios-lang/ledger", true)
+                .addImport("makeValidatorHash", "@helios-lang/ledger", false)
+                .addImport("MintingPolicyHash", "@helios-lang/ledger", true)
+                .addImport(
+                    "makeMintingPolicyHash",
+                    "@helios-lang/ledger",
+                    false
+                )
+                .addImport("StakingValidatorHash", "@helios-lang/ledger", true)
+                .addImport(
+                    "makeStakingValidatorHash",
+                    "@helios-lang/ledger",
+                    false
+                )
+
+            if (!hash.context) {
+                this.writeDeclLine(`export const $validatorHash: ValidatorHash`)
+                    .writeDefLine(
+                        `export const $validatorHash = /* @__PURE__ */ makeValidatorHash($hashHex)`
+                    )
+                    .writeDeclLine(
+                        `export const $mintingPolicyHash: MintingPolicyHash`
+                    )
+                    .writeDefLine(
+                        `export const $mintingPolicyHash = /* @__PURE__ */ makeMintingPolicyHash($hashHex)`
+                    )
+                    .writeDeclLine(
+                        `export const $stakingValidatorHash: StakingValidatorHash`
+                    )
+                    .writeDefLine(
+                        `export const $stakingValidatorHash = /* @__PURE__ */ makeStakingValidatorHash($hashHex)`
+                    )
+                    .addImport("ShelleyAddress", "@helios-lang/ledger", true)
+                    .writeDeclLine(
+                        `export const $validatorAddress: ShelleyAddress`
+                    )
+                    .addImport(
+                        "makeShelleyAddress",
+                        "@helios-lang/ledger",
+                        false
+                    )
+                    .writeDefLine(
+                        `export const $validatorAddress = /* @__PURE__ */ makeShelleyAddress(${this.isMainnet}, $validatorHash)`
+                    )
+            } else {
+                this.writeDeclLine(
+                    `export const $validatorHashWithoutContext: ValidatorHash`
+                )
+                    .writeDefLine(
+                        `export const $validatorHashWithoutContext = /* @__PURE__ */ makeValidatorHash($hashHex)`
+                    )
+                    .writeDeclLine(
+                        `export const $mintingPolicyHashWithoutContext: MintingPolicyHash`
+                    )
+                    .writeDefLine(
+                        `export const $mintingPolicyHashWithoutContext = /* @__PURE__ */ makeMintingPolicyHash($hashHex)`
+                    )
+                    .writeDeclLine(
+                        `export const $stakingValidatorHashWithoutContext: StakingValidatorHash`
+                    )
+                    .writeDefLine(
+                        `export const $stakingValidatorHashWithoutContext = /* @__PURE__ */ makeStakingValidatorHash($hashHex)`
+                    )
+                    .addImport("ShelleyAddress", "@helios-lang/ledger", true)
+                    .writeDeclLine(
+                        `export const $addressWithoutContext: ShelleyAddress`
+                    )
+                    .addImport(
+                        "makeShelleyAddress",
+                        "@helios-lang/ledger",
+                        false
+                    )
+                    .writeDefLine(
+                        `export const $addressWithoutContext = /* @__PURE__ */ makeShelleyAddress(${this.isMainnet}, $validatorHashWithoutContext)`
+                    )
+
+                this.addImport("makeCast", "@helios-lang/contract-utils", false)
+                this.addImport("SpendingContext", "@helios-lang/ledger", true)
+
+                const context =
+                    /** @type {SpendingContext<unknown, unknown, unknown, unknown>} */ (
+                        hash.context
+                    )
+                const program = context.program
+                const datum = /** @type {Cast<unknown, unknown>} */ (
+                    context.datum
+                )
+                const redeemer = /** @type {Cast<unknown, unknown>} */ (
+                    context.redeemer
+                )
+                const dTypes = genTypes(datum.schema)
+                const rTypes = genTypes(redeemer.schema)
+
+                this.writeProgram("$program", program, !this.hasMainFunction)
+
+                this.writeDeclLine(
+                    `export type $ContextType = SpendingContext<${dTypes[0]}, ${dTypes[1]}, ${rTypes[0]}, ${rTypes[1]}>`
+                )
+                    .writeDeclLine(
+                        `export const $validatorHash: ValidatorHash<$ContextType>`
+                    )
+                    .writeDefLine(
+                        `const $context = {
+    program: $program,
+    datum: /* @__PURE__ */ makeCast(${JSON.stringify(datum.schema, undefined, 4).split("\n").join("\n    ")}, {isMainnet: ${this.isMainnet}}),
+    redeemer: /* @__PURE__ */ makeCast(${JSON.stringify(redeemer.schema, undefined, 4).split("\n").join("\n    ")}, {isMainnet: ${this.isMainnet}})
+})`
+                    )
+                    .writeDefLine(
+                        `export const $validatorHash = /* @__PURE__ */ makeValidatorHash($hashHex, $context)`
+                    )
+                    .writeDeclLine(
+                        `export const $mintingPolicyHash: MintingPolicyHash<$ContextType>`
+                    )
+                    .writeDefLine(
+                        `export const $mintingPolicyHash = /* @__PURE__ */ makeMintingPolicyHash($hashHex, $context)`
+                    )
+                    .writeDeclLine(
+                        `export const $stakingValidatorHash: StakingValidatorHash<$ContextType>`
+                    )
+                    .writeDefLine(
+                        `export const $stakingValidatorHash = /* @__PURE__ */ makeStakingValidatorHash($hashHex, $context)`
+                    )
+                    .writeDeclLine(
+                        `export const $address: ShelleyAddress<ValidatorHash<$ContextType>>`
+                    )
+                    .writeDefLine(
+                        `export const $address = /* @__PURE__ */ makeShelleyAddress(${this.isMainnet}, $validatorHash)`
+                    )
+            }
+        } else if (hash.kind == "MintingPolicyHash") {
             this.addImport(
                 "MintingPolicyHash",
                 "@helios-lang/ledger",
                 true
-            ).addImport("makeMintingPolicyHash", "@helios-lang/ledger")
+            ).addImport("makeMintingPolicyHash", "@helios-lang/ledger", false)
 
             if (!hash.context) {
                 this.writeDeclLine(
@@ -72,7 +205,7 @@ class ValdiatorArtifact extends ModuleArtifact {
                     `export const $hashWithoutContext = /* @__PURE__ */ makeMintingPolicyHash($hashHex)`
                 )
 
-                this.addImport("makeCast", "@helios-lang/contract-utils")
+                this.addImport("makeCast", "@helios-lang/contract-utils", false)
                 this.addImport("MintingContext", "@helios-lang/ledger", true)
 
                 const context =
@@ -102,7 +235,11 @@ class ValdiatorArtifact extends ModuleArtifact {
                 "StakingValidatorHash",
                 "@helios-lang/ledger",
                 true
-            ).addImport("makeStakingValidatorHash", "@helios-lang/ledger")
+            ).addImport(
+                "makeStakingValidatorHash",
+                "@helios-lang/ledger",
+                false
+            )
 
             if (!hash.context) {
                 this.writeDeclLine(
@@ -117,7 +254,7 @@ class ValdiatorArtifact extends ModuleArtifact {
                     `export const $hashWithoutContext = /* @__PURE__*/ makeStakingValidatorHash($hashHex)`
                 )
 
-                this.addImport("makeCast", "@helios-lang/contract-utils")
+                this.addImport("makeCast", "@helios-lang/contract-utils", false)
                 this.addImport("StakingContext", "@helios-lang/ledger", true)
 
                 const context =
@@ -147,22 +284,44 @@ class ValdiatorArtifact extends ModuleArtifact {
                 "ValidatorHash",
                 "@helios-lang/ledger",
                 true
-            ).addImport("makeValidatorHash", "@helios-lang/ledger")
+            ).addImport("makeValidatorHash", "@helios-lang/ledger", false)
 
             if (!hash.context) {
-                this.writeDeclLine(
-                    `export const $hash: ValidatorHash`
-                ).writeDefLine(
-                    `export const $hash = /* @__PURE__ */ makeValidatorHash($hashHex)`
-                )
+                this.writeDeclLine(`export const $hash: ValidatorHash`)
+                    .writeDefLine(
+                        `export const $hash = /* @__PURE__ */ makeValidatorHash($hashHex)`
+                    )
+                    .addImport("ShelleyAddress", "@helios-lang/ledger", true)
+                    .writeDeclLine(`export const $address: ShelleyAddress`)
+                    .addImport(
+                        "makeShelleyAddress",
+                        "@helios-lang/ledger",
+                        false
+                    )
+                    .writeDefLine(
+                        `export const $address = /* @__PURE__ */ makeShelleyAddress(${this.isMainnet}, $hash)`
+                    )
             } else {
                 this.writeDeclLine(
                     `export const $hashWithoutContext: ValidatorHash`
-                ).writeDefLine(
-                    `export const $hashWithoutContext = /* @__PURE__ */ makeValidatorHash($hashHex)`
                 )
+                    .writeDefLine(
+                        `export const $hashWithoutContext = /* @__PURE__ */ makeValidatorHash($hashHex)`
+                    )
+                    .addImport("ShelleyAddress", "@helios-lang/ledger", true)
+                    .writeDeclLine(
+                        `export const $addressWithoutContext: ShelleyAddress`
+                    )
+                    .addImport(
+                        "makeShelleyAddress",
+                        "@helios-lang/ledger",
+                        false
+                    )
+                    .writeDefLine(
+                        `export const $addressWithoutContext = /* @__PURE__ */ makeShelleyAddress(${this.isMainnet}, $hashWithoutContext)`
+                    )
 
-                this.addImport("makeCast", "@helios-lang/contract-utils")
+                this.addImport("makeCast", "@helios-lang/contract-utils", false)
                 this.addImport("SpendingContext", "@helios-lang/ledger", true)
 
                 const context =
@@ -188,11 +347,20 @@ class ValdiatorArtifact extends ModuleArtifact {
                         `export const $hash: ValidatorHash<$ContextType>`
                     )
                     .writeDefLine(
-                        `export const $hash = /* @__PURE__ */ makeValidatorHash($hashHex, {
+                        `const $context = {
     program: $program,
     datum: /* @__PURE__ */ makeCast(${JSON.stringify(datum.schema, undefined, 4).split("\n").join("\n    ")}, {isMainnet: ${this.isMainnet}}),
     redeemer: /* @__PURE__ */ makeCast(${JSON.stringify(redeemer.schema, undefined, 4).split("\n").join("\n    ")}, {isMainnet: ${this.isMainnet}})
-})`
+}`
+                    )
+                    .writeDefLine(
+                        `export const $hash = /* @__PURE__ */ makeValidatorHash($hashHex, $context)`
+                    )
+                    .writeDeclLine(
+                        `export const $address: ShelleyAddress<ValidatorHash<$ContextType>>`
+                    )
+                    .writeDefLine(
+                        `export const $address = /* @__PURE__ */ makeShelleyAddress(${this.isMainnet}, $hash)`
                     )
             }
         }

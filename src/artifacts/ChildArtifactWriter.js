@@ -60,7 +60,8 @@ export class ChildArtifactWriter extends ArtifactWriter {
             if (includeDef) {
                 this.addImport(
                     "decodeUplcProgramV1FromCbor",
-                    "@helios-lang/uplc"
+                    "@helios-lang/uplc",
+                    false
                 )
                 this.writeDefLine(
                     `export const ${name} = ${stringifyProgram("decodeUplcProgramV1FromCbor", program)}`
@@ -73,7 +74,8 @@ export class ChildArtifactWriter extends ArtifactWriter {
             if (includeDef) {
                 this.addImport(
                     "decodeUplcProgramV2FromCbor",
-                    "@helios-lang/uplc"
+                    "@helios-lang/uplc",
+                    false
                 )
                 this.writeDefLine(
                     `export const ${name} = ${stringifyProgram("decodeUplcProgramV2FromCbor", program)}`
@@ -86,7 +88,8 @@ export class ChildArtifactWriter extends ArtifactWriter {
             if (includeDef) {
                 this.addImport(
                     "decodeUplcProgramV3FromCbor",
-                    "@helios-lang/uplc"
+                    "@helios-lang/uplc",
+                    false
                 )
                 this.writeDefLine(
                     `export const ${name} = ${stringifyProgram("decodeUplcProgramV3FromCbor", program)}`

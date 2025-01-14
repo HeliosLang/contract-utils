@@ -33,6 +33,7 @@ export function writeContractContextArtifacts(context, options) {
                 root,
                 moduleName,
                 moduleDetails.$hash,
+                moduleDetails.$purpose,
                 moduleDetails
             )
 

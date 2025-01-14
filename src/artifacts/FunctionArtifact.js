@@ -69,7 +69,7 @@ export const $props = ${JSON.stringify(props, undefined, 4)}`)
         this.addImport("UplcData", "@helios-lang/uplc", true)
         this.addImport("CekResult", "@helios-lang/uplc", true)
 
-        this.addImport("evalUserFunc", "@helios-lang/contract-utils")
+        this.addImport("evalUserFunc", "@helios-lang/contract-utils", false)
             .writeDeclLine(
                 `export function $eval(args${isConst ? "?" : ""}: ${safeArgsType}, logOptions?: UplcLogger | undefined): ${retType}`
             )
@@ -78,7 +78,11 @@ export const $props = ${JSON.stringify(props, undefined, 4)}`)
     return evalUserFunc($program, $props, args, logOptions)
 }`
             )
-            .addImport("evalUserFuncUnsafe", "@helios-lang/contract-utils")
+            .addImport(
+                "evalUserFuncUnsafe",
+                "@helios-lang/contract-utils",
+                false
+            )
             .writeDeclLine(
                 `export function $evalUnsafe(args${isConst ? "?" : ""}: ${unsafeArgsType}, logOptions?: UplcLogger | undefined): ${unsafeRetType}`
             )
@@ -87,7 +91,7 @@ export const $props = ${JSON.stringify(props, undefined, 4)}`)
     return evalUserFuncUnsafe($program, $props, args, logOptions)
 }`
             )
-            .addImport("profileUserFunc", "@helios-lang/contract-utils")
+            .addImport("profileUserFunc", "@helios-lang/contract-utils", false)
             .writeDeclLine(
                 `export function $profile(args${isConst ? "?" : ""}: ${unsafeArgsType}, logOptions?: UplcLogger | undefined): CekResult`
             )
@@ -154,7 +158,8 @@ export const $props = ${JSON.stringify(props, undefined, 4)}`)
                         // fallback
                         this.addImport(
                             "convertFromUplcData",
-                            "@helios-lang/contract-utils"
+                            "@helios-lang/contract-utils",
+                            false
                         )
                             .writeDefLine(`export const $constValue = /* @__PURE__ */ convertFromUplcData(${JSON.stringify(valueTypeSchema)}, $constData, {
     isMainnet: ${this.isMainnet}
