@@ -49,6 +49,8 @@ export function genTypes(schema) {
                     return ["[bigint, bigint]", "[IntLike, IntLike]"]
                 case "Real":
                     return ["number", "number"]
+                case "ScriptHash":
+                    return ["ScriptHash", "ScriptHash | string | number[]"]
                 case "SpendingCredential":
                     return ["SpendingCredential", "SpendingCredential"]
                 case "StakingCredential":
@@ -218,6 +220,7 @@ function collectBuiltinTypesInternal(schema, m) {
                 case "MintingPolicyHash":
                 case "PubKey":
                 case "PubKeyHash":
+                case "ScriptHash":
                 case "SpendingCredential":
                 case "StakingCredential":
                 case "StakingValidatorHash":
