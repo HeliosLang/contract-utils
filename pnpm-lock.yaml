@@ -18,20 +18,20 @@ importers:
         specifier: '*'
         version: 0.17.10
       '@helios-lang/compiler-utils':
-        specifier: ^0.5.3
-        version: 0.5.3
+        specifier: ^0.5.11
+        version: 0.5.11
       '@helios-lang/crypto':
         specifier: 0.2.3
         version: 0.2.3
       '@helios-lang/ledger':
-        specifier: ^0.7.1
-        version: 0.7.1
+        specifier: ^0.7.2
+        version: 0.7.2
       '@helios-lang/type-utils':
         specifier: ^0.2.9
         version: 0.2.9
       '@helios-lang/uplc':
-        specifier: ^0.7.11
-        version: 0.7.11
+        specifier: ^0.7.12
+        version: 0.7.12
     devDependencies:
       '@types/node':
         specifier: ^20.11.24
@@ -60,6 +60,9 @@ packages:
   '@helios-lang/codec-utils@0.3.4':
     resolution: {integrity: sha512-YiYwBwkbRmu9/4tqHNGIk/haVb0+MLrwXZc+6/KMwGT5WKzypZSkDgH+aZEdHtdTmYhVyIj9ojBljAhMxi8ezg==}
 
+  '@helios-lang/compiler-utils@0.5.11':
+    resolution: {integrity: sha512-u0A7oQyqSb4LeCAGydVb0fxxcLnuG/nGiPofOsjFtuLZUNbKCGDcmFQb4jJITXh6hieOUTroeUdEqVEFQ5Chaw==}
+
   '@helios-lang/compiler-utils@0.5.3':
     resolution: {integrity: sha512-/tDgLwYM5GEimqOvLqeQvXzfS1ej2ytXFH8f4zK0XnJlW29JpJYrPJRNUlVfU8NbyUZwi2TAFSBSDCtU6sCAyA==}
 
@@ -75,8 +78,8 @@ packages:
   '@helios-lang/ir@0.3.3':
     resolution: {integrity: sha512-eIT2AEZ07xKI9L29aI+O5MXLs8HW1Tz8Wu4ceoPSlQN5EtqwxfzGWIiAQrGY1nf3sGu3nJS6p6KhHsdIK2C3AA==}
 
-  '@helios-lang/ledger@0.7.1':
-    resolution: {integrity: sha512-N1ZZgut2RScwCN0qgZpPaDdYtPY0lQA7k0NggqTm+W5I2p02lnIZClH8Utdkq3LtlJv51zpdeIQ1bNReIKDXeA==}
+  '@helios-lang/ledger@0.7.2':
+    resolution: {integrity: sha512-KPg1jcM7f9cbXt8gGz2N4l9VoH8ZCzLEj+OsulQy8cVP+LdSxM7AmINgItqS1vy7nlqhO9QvvN9NVUkcj/lcxQ==}
 
   '@helios-lang/type-utils@0.1.25':
     resolution: {integrity: sha512-tOqyBWtaI6n/xhfaZr8cnL+Syv0X5whbxpzPLayfDwllI9el54fQ4P4e8CUUm2ls8WNSAgC9razCd2Q3qnMwlA==}
@@ -84,8 +87,8 @@ packages:
   '@helios-lang/type-utils@0.2.9':
     resolution: {integrity: sha512-79/aGqD9ZXNXUypDHf+tSSg4PBacovX5Q4U2GXKVcaH5a194PVZJ+Dsz2J5vLREUeSwSM7HLTEysqasyadbtEQ==}
 
-  '@helios-lang/uplc@0.7.11':
-    resolution: {integrity: sha512-exrxM51jf1NdmT0OzcpDQL3wmcHa/aq4KqI2QuCrBaki62Fd1/wf8k4O3ZTeTpGu0vjd6agNSebVVOUIK1CenQ==}
+  '@helios-lang/uplc@0.7.12':
+    resolution: {integrity: sha512-ixMuE8fTkLhj0o6WpkwyTPeLshCb2Z3NnQ1brYPS6KvzNNnD0bWAyOrHkCCeM4GVwnLfDiyUcAvF9eW1NeowNQ==}
 
   '@helios-lang/uplc@0.7.9':
     resolution: {integrity: sha512-gbZNd+FB+syQ6D18V4OcZbfJhwYot+hNBCtyZBQpsgiUF8RuOIkER2vVP2K60y1CHF5TdM3FSIrJjdZnZSW9Zw==}
@@ -125,6 +128,11 @@ snapshots:
 
   '@helios-lang/codec-utils@0.3.4': {}
 
+  '@helios-lang/compiler-utils@0.5.11':
+    dependencies:
+      '@helios-lang/codec-utils': 0.3.4
+      '@helios-lang/type-utils': 0.2.9
+
   '@helios-lang/compiler-utils@0.5.3':
     dependencies:
       '@helios-lang/codec-utils': 0.3.4
@@ -152,23 +160,23 @@ snapshots:
       '@helios-lang/type-utils': 0.2.9
       '@helios-lang/uplc': 0.7.9
 
-  '@helios-lang/ledger@0.7.1':
+  '@helios-lang/ledger@0.7.2':
     dependencies:
       '@helios-lang/cbor': 0.3.0
       '@helios-lang/codec-utils': 0.3.4
       '@helios-lang/crypto': 0.2.3
       '@helios-lang/type-utils': 0.2.9
-      '@helios-lang/uplc': 0.7.11
+      '@helios-lang/uplc': 0.7.12
 
   '@helios-lang/type-utils@0.1.25': {}
 
   '@helios-lang/type-utils@0.2.9': {}
 
-  '@helios-lang/uplc@0.7.11':
+  '@helios-lang/uplc@0.7.12':
     dependencies:
       '@helios-lang/cbor': 0.3.0
       '@helios-lang/codec-utils': 0.3.4
-      '@helios-lang/compiler-utils': 0.5.3
+      '@helios-lang/compiler-utils': 0.5.11
       '@helios-lang/crypto': 0.2.3
       '@helios-lang/era': 0.1.4
       '@helios-lang/type-utils': 0.2.9
