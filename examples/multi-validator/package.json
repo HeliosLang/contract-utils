@@ -6,10 +6,10 @@
         "transpile": "hl2ts"
     },
     "dependencies": {
-        "@helios-lang/compiler": "^0.17.15",
+        "@helios-lang/compiler": "^0.17.16",
         "@helios-lang/contract-utils": "file:../..",
-        "@helios-lang/ledger": "^0.7.3",
-        "@helios-lang/tx-utils": "^0.6.5"
+        "@helios-lang/ledger": "^0.7.4",
+        "@helios-lang/tx-utils": "^0.6.6"
     },
     "devDependencies": {
         "typescript": "^5.4.3"
