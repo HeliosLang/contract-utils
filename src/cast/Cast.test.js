@@ -11,7 +11,7 @@ import {
 import { makeCast } from "./Cast.js"
 
 /**
- * @import { TypeSchema } from "@helios-lang/type-utils"
+ * @import { EnumTypeSchema, TypeSchema } from "@helios-lang/type-utils"
  * @import { Cast, StrictType } from "../index.js"
  */
 
@@ -73,6 +73,118 @@ describe("Cast", () => {
                 cast.toUplcData([10, 11]).toString(),
                 expectedData.toString()
             )
+        })
+    })
+
+    describe("enum", () => {
+        // enum AwesomeThing {
+        //     Incredible  // ConstrData#0 / tag 121
+        //     42: Alive { milliseconds: Int }  // ConstrData#42
+        //     Amazing { x : Int }  // ConstrData#43
+        //     42000: SuperAwesome  // ConstrData #42000
+        // }
+
+        /**
+         * @type {EnumTypeSchema}
+         */
+        const schema = {
+            kind: /** @type {const} */ ("enum"),
+            name: "AwesomeThing",
+            id: "taggedEnum",
+            variantTypes: [
+                {
+                    kind: /** @type {const} */ ("variant"),
+                    tag: 0,
+                    name: "Incredible",
+                    id: "taggedEnum__Incredible",
+                    fieldTypes: []
+                },
+                {
+                    kind: /** @type {const} */ ("variant"),
+                    tag: 42,
+                    name: "Alive",
+                    id: "taggedEnum__Alive",
+                    fieldTypes: [
+                        {
+                            name: "milliseconds",
+                            type: { kind: "internal", name: "Int" }
+                        }
+                    ]
+                },
+                {
+                    kind: /** @type {const} */ ("variant"),
+                    tag: 43,
+                    name: "Amazing",
+                    id: "taggedEnum__Amazing",
+                    fieldTypes: []
+                },
+                {
+                    kind: /** @type {const} */ ("variant"),
+                    tag: 42000,
+                    name: "SuperAwesome",
+                    id: "taggedEnum__SuperAwesome",
+                    fieldTypes: []
+                }
+            ]
+        }
+
+        const cast = makeCast(schema, { isMainnet: false })
+
+        it("fromUplcData(ConstrData#0) == '{Incredible: {}}'", () => {
+            const data = makeConstrData(0, [])
+            deepEqual(cast.fromUplcData(data), { Incredible: {} })
+        })
+
+        it("fromUplcData(ConstrData#42) == { Alive: { milliseconds: 1000 } }", () => {
+            const data = makeConstrData(42, [makeIntData(1000)])
+            deepEqual(cast.fromUplcData(data), {
+                Alive: { milliseconds: 1000 }
+            })
+        })
+
+        it("fromUplcData(ConstrData#43) == { Amazing: {} }", () => {
+            const data = makeConstrData(43, [])
+            deepEqual(cast.fromUplcData(data), { Amazing: {} })
+        })
+
+        it("fromUplcData(ConstrData#42000) == { SuperAwesome: {} }", () => {
+            const data = makeConstrData(42000, [])
+            deepEqual(cast.fromUplcData(data), { SuperAwesome: {} })
+        })
+
+        it("toUplcData({ Incredible: {} }) == ConstrData#0", () => {
+            const data = cast.toUplcData({ Incredible: {} })
+            strictEqual(makeConstrData(0, []).isEqual(data), true)
+        })
+
+        it("toUplcData({ Alive: { milliseconds: 19_000 } }) == ConstrData#42", () => {
+            const data = cast.toUplcData({ Alive: { milliseconds: 19_000 } })
+            strictEqual(
+                makeConstrData(42, [makeIntData(19_000)]).isEqual(data),
+                true
+            )
+        })
+
+        it("toUplcData({ Amazing: { x: 42 } }) == ConstrData#43", () => {
+            const data = cast.toUplcData({ Amazing: {} })
+            strictEqual(makeConstrData(43, []).isEqual(data), true)
+        })
+
+        it("toUplcData({ SuperAwesome: {} }) == ConstrData#42000", () => {
+            const data = cast.toUplcData({ SuperAwesome: {} })
+            strictEqual(makeConstrData(42000, []).isEqual(data), true)
+        })
+
+        it("toUplcData() throws on invalid variant tag", () => {
+            throws(() => {
+                cast.toUplcData({ Invalid: {} })
+            }, /invalid enum variant 'Invalid'/)
+        })
+
+        it("fromUplcData() throws on invalid variant tag", () => {
+            throws(() => {
+                cast.fromUplcData(makeConstrData(123, []))
+            }, /invalid enum variant tag 123/)
         })
     })
 
