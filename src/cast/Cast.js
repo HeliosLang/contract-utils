@@ -475,15 +475,17 @@ function convertSchemaDataToUplcData(schema, x, context) {
             defs[schema.id] = schema
             const variantName = Object.keys(x)[0]
             const variantFields = Object.values(x)[0]
-            const tag = schema.variantTypes.findIndex(
+            const foundVariant = schema.variantTypes.find(
                 (v) => v.name == variantName
             )
-
-            if (tag == -1) {
+            if (!foundVariant) {
                 throw new Error(
-                    `invalid variant ${variantName} (expected: ${schema.variantTypes.map((v) => v.name).join(", ")})`
+                    `invalid enum variant '${variantName}' (expected one of: ${schema.variantTypes
+                        .map((v) => v.name)
+                        .join(", ")})`
                 )
             }
+            const tag = foundVariant.tag
 
             return convertEnumVariantDataToConstrData(
                 schema,
@@ -523,7 +525,14 @@ function convertSchemaDataToUplcData(schema, x, context) {
  * @returns {ConstrData}
  */
 function convertEnumVariantDataToConstrData(schema, tag, data, context) {
-    const variantSchema = schema.variantTypes[tag]
+    const variantSchema = schema.variantTypes.find((v) => v.tag == tag)
+    if (!variantSchema) {
+        throw new Error(
+            `invalid enum variant tag ${tag} (expected one of: ${schema.variantTypes
+                .map((v) => v.tag)
+                .join(", ")})`
+        )
+    }
     const variantName = variantSchema.name
 
     if (
@@ -867,10 +876,14 @@ function uplcToSchema(schema, data, context) {
 function convertConstrDataFieldsToEnumVariantFields(schema, data, context) {
     const { tag, fields } = data
 
-    const variantSchema = schema.variantTypes[tag]
+    const variantSchema = schema.variantTypes.find((v) => v.tag == tag)
 
     if (!variantSchema) {
-        throw new Error(`tag ${tag} out of range`)
+        throw new Error(
+            `invalid enum variant tag ${tag} (expected one of: ${schema.variantTypes
+                .map((v) => v.tag)
+                .join(", ")})`
+        )
     }
 
     const nExpected = variantSchema.fieldTypes.length
