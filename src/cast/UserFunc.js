@@ -3,7 +3,7 @@ import { expectDefined, isLeft, isString } from "@helios-lang/type-utils"
 import {
     makeConstrData,
     makeUplcDataValue,
-    UplcRuntimeError
+    makeUplcRuntimeError
 } from "@helios-lang/uplc"
 import { makeCast } from "./Cast.js"
 
@@ -159,7 +159,7 @@ export function evalUserFuncUnsafe(
     const result = profileUserFunc(program, props, namedArgs, logOptions).result
 
     if (isLeft(result)) {
-        throw new UplcRuntimeError(result.left.error, result.left.callSites)
+        throw makeUplcRuntimeError(result.left.error, result.left.callSites)
     } else if (!isString(result.right) && result.right.kind == "data") {
         return /** @type {any} */ (result.right.value)
     } else if (props.returns) {

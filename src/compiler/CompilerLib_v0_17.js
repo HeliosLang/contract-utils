@@ -1,8 +1,14 @@
 import { bytesToHex } from "@helios-lang/codec-utils"
-import { makeUplcSourceMap } from "@helios-lang/uplc"
+import {
+    makeUplcApply,
+    makeUplcDelay,
+    makeUplcForce,
+    makeUplcLambda,
+    makeUplcSourceMap
+} from "@helios-lang/uplc"
 
 /**
- * @import { UplcData, UplcProgramV2 } from "@helios-lang/uplc"
+ * @import { UplcData, UplcProgramV2, UplcTerm } from "@helios-lang/uplc"
  * @import { CompilerLib, CompileOptions, CompileOutput, ScriptHashType, TypeCheckOutput } from "../index.js"
  */
 
@@ -114,11 +120,13 @@ class CompilerLib_v0_17 {
                           const ir = options.debug ? uplc.ir : undefined
                           const altIr = options.debug ? alt?.ir : undefined
                           const sourceMap = makeUplcSourceMap({
-                              term: uplc.root
+                              term: changeUplcCallTermsToUplcApply(uplc.root)
                           }).toJsonSafe()
                           const altSourceMap = alt
                               ? makeUplcSourceMap({
-                                    term: alt.root
+                                    term: changeUplcCallTermsToUplcApply(
+                                        alt.root
+                                    )
                                 }).toJsonSafe()
                               : undefined
 
@@ -155,7 +163,9 @@ class CompilerLib_v0_17 {
                 : {})
         })
 
-        const sourceMap = makeUplcSourceMap({ term: uplc.root })
+        const sourceMap = makeUplcSourceMap({
+            term: changeUplcCallTermsToUplcApply(uplc.root)
+        })
 
         return {
             cborHex: bytesToHex(uplc.toCbor()),
@@ -174,5 +184,45 @@ class CompilerLib_v0_17 {
         const { analyzeMulti } = this.lib
 
         return analyzeMulti(validatorSources, moduleSources)
+    }
+}
+
+/**
+ * @param {UplcTerm} root
+ * @returns {UplcTerm}
+ */
+function changeUplcCallTermsToUplcApply(root) {
+    if (
+        root.kind == "apply" ||
+        root.kind == "builtin" ||
+        root.kind == "case" ||
+        root.kind == "const" ||
+        root.kind == "constr" ||
+        root.kind == "error" ||
+        root.kind == "var"
+    ) {
+        return root
+    } else if (root.kind == "delay") {
+        return makeUplcDelay({
+            arg: changeUplcCallTermsToUplcApply(root.arg),
+            site: root.site
+        })
+    } else if (root.kind == "force") {
+        return makeUplcForce({
+            arg: changeUplcCallTermsToUplcApply(root.arg),
+            site: root.site
+        })
+    } else if (root.kind == "lambda") {
+        return makeUplcLambda({
+            body: changeUplcCallTermsToUplcApply(root.children[0]),
+            site: root.site
+        })
+    } else {
+        const term = /** @type {any} */ (root)
+        return makeUplcApply({
+            fn: changeUplcCallTermsToUplcApply(term.fn),
+            arg: changeUplcCallTermsToUplcApply(term.arg),
+            site: term.site
+        })
     }
 }
