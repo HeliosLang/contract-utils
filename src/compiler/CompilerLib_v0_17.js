@@ -120,13 +120,11 @@ class CompilerLib_v0_17 {
                           const ir = options.debug ? uplc.ir : undefined
                           const altIr = options.debug ? alt?.ir : undefined
                           const sourceMap = makeUplcSourceMap({
-                              term: changeUplcCallTermsToUplcApply(uplc.root)
+                              term: uplc.root
                           }).toJsonSafe()
                           const altSourceMap = alt
                               ? makeUplcSourceMap({
-                                    term: changeUplcCallTermsToUplcApply(
-                                        alt.root
-                                    )
+                                    term: alt.root
                                 }).toJsonSafe()
                               : undefined
 
@@ -164,7 +162,7 @@ class CompilerLib_v0_17 {
         })
 
         const sourceMap = makeUplcSourceMap({
-            term: changeUplcCallTermsToUplcApply(uplc.root)
+            term: uplc.root
         })
 
         return {
@@ -184,45 +182,5 @@ class CompilerLib_v0_17 {
         const { analyzeMulti } = this.lib
 
         return analyzeMulti(validatorSources, moduleSources)
-    }
-}
-
-/**
- * @param {UplcTerm} root
- * @returns {UplcTerm}
- */
-function changeUplcCallTermsToUplcApply(root) {
-    if (
-        root.kind == "apply" ||
-        root.kind == "builtin" ||
-        root.kind == "case" ||
-        root.kind == "const" ||
-        root.kind == "constr" ||
-        root.kind == "error" ||
-        root.kind == "var"
-    ) {
-        return root
-    } else if (root.kind == "delay") {
-        return makeUplcDelay({
-            arg: changeUplcCallTermsToUplcApply(root.arg),
-            site: root.site
-        })
-    } else if (root.kind == "force") {
-        return makeUplcForce({
-            arg: changeUplcCallTermsToUplcApply(root.arg),
-            site: root.site
-        })
-    } else if (root.kind == "lambda") {
-        return makeUplcLambda({
-            body: changeUplcCallTermsToUplcApply(root.children[0]),
-            site: root.site
-        })
-    } else {
-        const term = /** @type {any} */ (root)
-        return makeUplcApply({
-            fn: changeUplcCallTermsToUplcApply(term.fn),
-            arg: changeUplcCallTermsToUplcApply(term.arg),
-            site: term.site
-        })
     }
 }
