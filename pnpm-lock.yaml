@@ -18,20 +18,20 @@ importers:
         specifier: '*'
         version: 0.17.10
       '@helios-lang/compiler-utils':
-        specifier: ^0.5.13
-        version: 0.5.13
+        specifier: ^0.5.15
+        version: 0.5.15
       '@helios-lang/crypto':
         specifier: 0.2.3
         version: 0.2.3
       '@helios-lang/ledger':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.8
+        version: 0.7.8
       '@helios-lang/type-utils':
-        specifier: ^0.2.9
-        version: 0.2.9
+        specifier: ^0.3.0
+        version: 0.3.0
       '@helios-lang/uplc':
-        specifier: ^0.7.14
-        version: 0.7.14
+        specifier: ^0.7.15
+        version: 0.7.15
     devDependencies:
       '@types/node':
         specifier: ^20.11.24
@@ -60,8 +60,8 @@ packages:
   '@helios-lang/codec-utils@0.3.4':
     resolution: {integrity: sha512-YiYwBwkbRmu9/4tqHNGIk/haVb0+MLrwXZc+6/KMwGT5WKzypZSkDgH+aZEdHtdTmYhVyIj9ojBljAhMxi8ezg==}
 
-  '@helios-lang/compiler-utils@0.5.13':
-    resolution: {integrity: sha512-gUq/2ihwFeeJdokYr+iHOhi5xpL7GEk93x178825jDoDe7dzBgpNvA5THU7dLF+IRAEK+mk5g+KcHUrJZq/1qg==}
+  '@helios-lang/compiler-utils@0.5.15':
+    resolution: {integrity: sha512-tPI92av0d4eOR4a2U1ORNeT2Sanc9AvvoNQn9aZHSSn10rW1AvDnqd7L4Zj0cjc9uT6BD4wFv0jVdr3gECODVQ==}
 
   '@helios-lang/compiler-utils@0.5.3':
     resolution: {integrity: sha512-/tDgLwYM5GEimqOvLqeQvXzfS1ej2ytXFH8f4zK0XnJlW29JpJYrPJRNUlVfU8NbyUZwi2TAFSBSDCtU6sCAyA==}
@@ -78,8 +78,8 @@ packages:
   '@helios-lang/ir@0.3.3':
     resolution: {integrity: sha512-eIT2AEZ07xKI9L29aI+O5MXLs8HW1Tz8Wu4ceoPSlQN5EtqwxfzGWIiAQrGY1nf3sGu3nJS6p6KhHsdIK2C3AA==}
 
-  '@helios-lang/ledger@0.7.4':
-    resolution: {integrity: sha512-YGzXzaGQ4fXSW3/I0mrSBtH5poMcEInBgIxuHzGkgUTuZpV31zJ/qphkSJbw6AeT+DsiuJ/gtJ8CcCfzjnxE4w==}
+  '@helios-lang/ledger@0.7.8':
+    resolution: {integrity: sha512-+WsFB/0wdpEguDo6/eMh45amh78VM9xk3+eBOZ7MZBj8LosTwVx+LYzEC+jShldDg5A5mTAr+N+C75WcbzVmkg==}
 
   '@helios-lang/type-utils@0.1.25':
     resolution: {integrity: sha512-tOqyBWtaI6n/xhfaZr8cnL+Syv0X5whbxpzPLayfDwllI9el54fQ4P4e8CUUm2ls8WNSAgC9razCd2Q3qnMwlA==}
@@ -87,8 +87,11 @@ packages:
   '@helios-lang/type-utils@0.2.9':
     resolution: {integrity: sha512-79/aGqD9ZXNXUypDHf+tSSg4PBacovX5Q4U2GXKVcaH5a194PVZJ+Dsz2J5vLREUeSwSM7HLTEysqasyadbtEQ==}
 
-  '@helios-lang/uplc@0.7.14':
-    resolution: {integrity: sha512-aTwCP4xnJP4CuPu03tV0+AnaTQxCH+4Srpb9Il4teS1SDMWOkQlR+GgyX5ohg3OjxV9lPPEoPPAiAT0+bGestA==}
+  '@helios-lang/type-utils@0.3.0':
+    resolution: {integrity: sha512-7iEzd/6Qw7srA5ye2gveUcNlRA5jpZZ2YGeCOZc93irpFwpZaJl8P35yQfRXTRfX77W5t57Hc+Zmg/I2eGbq2Q==}
+
+  '@helios-lang/uplc@0.7.15':
+    resolution: {integrity: sha512-GAzsIJXtlA6B9wz5avA+cFIe1wLmzztIfUHfWPanp1q9FjYBPbA/Bv25CdGJC6pAGG/tq9uVAixGHQKBIToFDw==}
 
   '@helios-lang/uplc@0.7.9':
     resolution: {integrity: sha512-gbZNd+FB+syQ6D18V4OcZbfJhwYot+hNBCtyZBQpsgiUF8RuOIkER2vVP2K60y1CHF5TdM3FSIrJjdZnZSW9Zw==}
@@ -128,7 +131,7 @@ snapshots:
 
   '@helios-lang/codec-utils@0.3.4': {}
 
-  '@helios-lang/compiler-utils@0.5.13':
+  '@helios-lang/compiler-utils@0.5.15':
     dependencies:
       '@helios-lang/codec-utils': 0.3.4
       '@helios-lang/type-utils': 0.2.9
@@ -160,23 +163,25 @@ snapshots:
       '@helios-lang/type-utils': 0.2.9
       '@helios-lang/uplc': 0.7.9
 
-  '@helios-lang/ledger@0.7.4':
+  '@helios-lang/ledger@0.7.8':
     dependencies:
       '@helios-lang/cbor': 0.3.0
       '@helios-lang/codec-utils': 0.3.4
       '@helios-lang/crypto': 0.2.3
       '@helios-lang/type-utils': 0.2.9
-      '@helios-lang/uplc': 0.7.14
+      '@helios-lang/uplc': 0.7.15
 
   '@helios-lang/type-utils@0.1.25': {}
 
   '@helios-lang/type-utils@0.2.9': {}
 
-  '@helios-lang/uplc@0.7.14':
+  '@helios-lang/type-utils@0.3.0': {}
+
+  '@helios-lang/uplc@0.7.15':
     dependencies:
       '@helios-lang/cbor': 0.3.0
       '@helios-lang/codec-utils': 0.3.4
-      '@helios-lang/compiler-utils': 0.5.13
+      '@helios-lang/compiler-utils': 0.5.15
       '@helios-lang/crypto': 0.2.3
       '@helios-lang/era': 0.1.4
       '@helios-lang/type-utils': 0.2.9
